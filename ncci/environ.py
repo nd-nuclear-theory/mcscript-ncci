@@ -64,6 +64,8 @@ class Environment(object):
 
     def mfdn_filename(self, name):
         """Construct filename for MFDn executable."""
+        if os.path.isfile(name):
+            return name
         return os.path.join(mcscript.parameters.run.install_dir, "mfdn", name)
 
     def interaction_filename(self, name):
