@@ -1,4 +1,4 @@
-"""mfdn -- define scripting for h2mixer+MFDn runs
+"""ncci -- define scripting for NCCI runs
 
     Expected dictionary keys for h2mixer + mfdn run:
 
@@ -131,6 +131,7 @@
     - 09/22/17 (pjf): Take "observables" as list of tuples instead of dict.
     - 09/24/17 (pjf): Add option to save wavefunctions for postprocessing.
     - 10/25/17 (pjf): Rename "observables" to "tb_observables".
+    - 12/19/17 (pjf): Rename mfdn back to ncci
 """
 
 __ALL__ = ['descriptors', 'handlers', 'radial', 'operators', 'tbme', 'utils', 'modes', 'environ']
