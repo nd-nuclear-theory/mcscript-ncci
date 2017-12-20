@@ -10,11 +10,12 @@
     - 06/03/17 (pjf): Updated for new scripting.
     - 07/31/17 (pjf): Set MFDn driver module in task dictionary.
     - 08/11/17 (pjf): Update for split single-particle and many-body truncation modes.
+    - 12/19/17 (pjf): Update for mfdn->ncci rename.
 """
 
 import mcscript
-import mfdn
-import mfdn.mfdn_v14
+import ncci
+import ncci.mfdn_v14
 
 # initialize mcscript
 mcscript.init()
@@ -23,7 +24,7 @@ mcscript.init()
 # build task list
 ##################################################################
 
-mfdn.environ.environ.interaction_run_list = [
+ncci.environ.environ.interaction_run_list = [
     "run0164-JISP16-ob-9",
     "run0164-JISP16-ob-13",
     "run0164-JISP16-tb-10",
@@ -92,7 +93,7 @@ task_list = [
         "hw_coul": 20.,
 
         # basis parameters
-        "basis_mode": mfdn.modes.BasisMode.kDirect,
+        "basis_mode": ncci.modes.BasisMode.kDirect,
         "hw": 20.,
 
         # transformation parameters
@@ -102,8 +103,8 @@ task_list = [
         "target_truncation": None,
 
         # traditional oscillator many-body truncation
-        "sp_truncation_mode": mfdn.modes.SingleParticleTruncationMode.kNmax,
-        "mb_truncation_mode": mfdn.modes.ManyBodyTruncationMode.kNmax,
+        "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
+        "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
         "truncation_parameters": {
             "Nv": 0,
             "Nmax": Nmax,
@@ -131,7 +132,7 @@ task_list = [
         # version parameters
         "h2_format": 0,
         "mfdn_executable": "v14-beta06/xmfdn-h2-lan",
-        "mfdn_driver": mfdn.mfdn_v14,
+        "mfdn_driver": ncci.mfdn_v14,
     }
     for Nmax in Nmax_list
     for (interaction, use_coulomb, truncation_int) in interaction_coulomb_truncation_list
@@ -160,10 +161,10 @@ def task_mask(current_task):
 
 mcscript.task.init(
     task_list,
-    task_descriptor=mfdn.descriptors.task_descriptor_7,
+    task_descriptor=ncci.descriptors.task_descriptor_7,
     task_pool=task_pool,
     task_mask=task_mask,
-    phase_handler_list=[mfdn.handlers.task_handler_oscillator],
+    phase_handler_list=[ncci.handlers.task_handler_oscillator],
     # Note: change to mcscript.task.archive_handler_hsi for tape backup
     archive_phase_handler_list=[mcscript.task.archive_handler_generic]
     )

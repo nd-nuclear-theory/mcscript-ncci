@@ -113,7 +113,7 @@ runmfdn10: counting-only run with MFDn v15
 
     Usage: qsubm --here mfdn10
 
-runmfdn1: harmonic oscillator direct run with MFDn v15b01 and duct-tape postprocessor
+runmfdn11: harmonic oscillator direct run with MFDn v15b01 and duct-tape postprocessor
 
     4He Nmax02 hw20 (direct)
 
