@@ -1,4 +1,4 @@
-"""handlers.py -- task handlers for MFDn runs.
+"""radial.py -- radial matrix element generation for NCCI runs.
 
 Patrick Fasano
 University of Notre Dame
