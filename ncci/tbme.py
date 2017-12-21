@@ -167,13 +167,16 @@ def generate_tbme(task, postfix=""):
 
     # sources: VNN
     if ("VNN" in required_sources):
-        VNN_filename = environ.interaction_filename(
-            "{}-{}-{:g}.bin".format(
-                task["interaction"],
-                mcscript.utils.dashify(task["truncation_int"]),
-                task["hw_int"]
+        if os.path.isfile(task["interaction"]):
+            VNN_filename = task["interaction"]
+        else:
+            VNN_filename = environ.interaction_filename(
+                "{}-{}-{:g}.bin".format(
+                    task["interaction"],
+                    mcscript.utils.dashify(task["truncation_int"]),
+                    task["hw_int"]
+                )
             )
-        )
         if task["basis_mode"] is modes.BasisMode.kDirect:
             lines.append("define-source input VNN {VNN_filename}".format(VNN_filename=VNN_filename, **task))
         else:

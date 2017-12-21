@@ -16,6 +16,7 @@ University of Notre Dame
 - 10/15/17 (pjf): Add em-gen and obscalc-ob filenames.
 - 12/20/17 (pjf): Remove singleton layer of indirection and make methods module
     globals.
+- 12/21/17 (pjf): Allow absolute paths for MFDn and interaction filenames.
 """
 
 import os
@@ -50,6 +51,8 @@ def mfdn_filename(name):
 
 def interaction_filename(name):
     """Construct filename for interaction h2 file."""
+    if os.path.isfile(name):
+        return name
     return mcscript.utils.search_in_subdirectories(data_dir_h2_list, interaction_run_list, name)
 
 
