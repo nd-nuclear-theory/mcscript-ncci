@@ -28,8 +28,8 @@ import mcscript.utils
 # environment configuration
 ################################################################
 
-data_dir_h2_list = os.environ.get("SHELL_DATA_DIR_H2").split(":")
-# Base directories for interaction tbme files ("SHELL_DATA_DIR_H2")
+data_dir_h2_list = os.environ.get("NCCI_DATA_DIR_H2").split(":")
+# Base directories for interaction tbme files ("NCCI_DATA_DIR_H2")
 # Environment variable is interpreted as a PATH-style colon-delimited list.
 
 interaction_run_list = []
