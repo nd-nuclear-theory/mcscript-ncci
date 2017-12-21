@@ -135,7 +135,7 @@
 """
 
 __ALL__ = ['descriptors', 'handlers', 'radial', 'operators', 'tbme', 'utils', 'modes', 'environ']
-from . import descriptors, handlers, radial, operators, tbme, utils, modes, postprocessing
+from . import descriptors, handlers, radial, operators, tbme, utils, modes, postprocessing, environ
 
 if (__name__ == "__MAIN__"):
     pass

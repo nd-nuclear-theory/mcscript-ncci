@@ -43,7 +43,7 @@ def run_mfdn(task, postfix=""):
     inputlist["TwoMj"] = int(2*task["Mj"])
 
     # single-particle orbitals
-    inputlist["orbitalfile"] = environ.filenames.orbitals_filename(postfix)
+    inputlist["orbitalfile"] = environ.orbitals_filename(postfix)
 
     # truncation mode
     truncation_setup_functions[task["mb_truncation_mode"]](task, inputlist)
@@ -92,7 +92,7 @@ def run_mfdn(task, postfix=""):
     # invoke MFDn
     mcscript.call(
         [
-            environ.environ.mfdn_filename(task["ducttape_executable"])
+            environ.mfdn_filename(task["ducttape_executable"])
         ],
         mode=mcscript.CallMode.kHybrid,
         check_return=True

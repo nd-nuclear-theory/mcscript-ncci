@@ -138,7 +138,7 @@ def generate_tbme(task, postfix=""):
         # given value
         target_weight_max = utils.weight_max_string(target_truncation)
     lines.append("set-target-indexing {orbitals_filename} {target_weight_max}".format(
-        orbitals_filename=environ.filenames.orbitals_filename(postfix),
+        orbitals_filename=environ.orbitals_filename(postfix),
         target_weight_max=target_weight_max,
         **task
     ))
@@ -150,12 +150,12 @@ def generate_tbme(task, postfix=""):
     # radial operator inputs
     for operator_type in ["r", "k"]:
         for power in [1, 2]:
-            radial_me_filename = environ.filenames.radial_me_filename(postfix, operator_type, power)
+            radial_me_filename = environ.radial_me_filename(postfix, operator_type, power)
             lines.append("define-radial-operator {} {} {}".format(operator_type, power, radial_me_filename))
     lines.append("")
 
     # pn overlap input
-    pn_olap_me_filename = environ.filenames.radial_pn_olap_filename(postfix)
+    pn_olap_me_filename = environ.radial_pn_olap_filename(postfix)
     lines.append("define-pn-overlaps {}".format(pn_olap_me_filename))
     lines.append("")
 
@@ -167,7 +167,7 @@ def generate_tbme(task, postfix=""):
 
     # sources: VNN
     if ("VNN" in required_sources):
-        VNN_filename = environ.environ.interaction_filename(
+        VNN_filename = environ.interaction_filename(
             "{}-{}-{:g}.bin".format(
                 task["interaction"],
                 mcscript.utils.dashify(task["truncation_int"]),
@@ -181,7 +181,7 @@ def generate_tbme(task, postfix=""):
             lines.append("define-source xform VNN {VNN_filename} {xform_weight_max_int} {radial_olap_int_filename}".format(
                 VNN_filename=VNN_filename,
                 xform_weight_max_int=xform_weight_max_int,
-                radial_olap_int_filename=environ.filenames.radial_olap_int_filename(postfix),
+                radial_olap_int_filename=environ.radial_olap_int_filename(postfix),
                 **task
             ))
 
@@ -190,7 +190,7 @@ def generate_tbme(task, postfix=""):
     # Note: This is the "unscaled" Coulomb, still awaiting the scaling
     # factor from dilation.
     if ("VC_unscaled" in required_sources):
-        VC_filename = environ.environ.interaction_filename(
+        VC_filename = environ.interaction_filename(
             "{}-{}-{:g}.bin".format(
                 "VC",
                 mcscript.utils.dashify(task["truncation_coul"]),
@@ -204,7 +204,7 @@ def generate_tbme(task, postfix=""):
             lines.append("define-source xform VC_unscaled {VC_filename} {xform_weight_max_coul} {radial_olap_coul_filename}".format(
                 VC_filename=VC_filename,
                 xform_weight_max_coul=xform_weight_max_coul,
-                radial_olap_coul_filename=environ.filenames.radial_olap_coul_filename(postfix),
+                radial_olap_coul_filename=environ.radial_olap_coul_filename(postfix),
                 **task
             ))
 
@@ -224,7 +224,7 @@ def generate_tbme(task, postfix=""):
     #
     # This is purely for easy diagnostic purposes, since lines will be
     # fed directly to h2mixer as stdin below.
-    mcscript.utils.write_input(environ.filenames.h2mixer_filename(postfix), input_lines=lines, verbose=False)
+    mcscript.utils.write_input(environ.h2mixer_filename(postfix), input_lines=lines, verbose=False)
 
     # create work directory if it doesn't exist yet (-p)
     mcscript.call(["mkdir", "-p", "work{:s}".format(postfix)])
@@ -232,7 +232,7 @@ def generate_tbme(task, postfix=""):
     # invoke h2mixer
     mcscript.call(
         [
-            environ.environ.shell_filename("h2mixer")
+            environ.shell_filename("h2mixer")
         ],
         input_lines=lines,
         mode=mcscript.CallMode.kSerial

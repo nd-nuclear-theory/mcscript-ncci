@@ -27,33 +27,33 @@ def generate_em(task, postfix=""):
 
     # set up orbitals
     lines += [
-        "set-indexing {:s}".format(environ.filenames.orbitals_filename(postfix)),
+        "set-indexing {:s}".format(environ.orbitals_filename(postfix)),
         "set-basis-scale-factor {:e}".format(utils.oscillator_length(task["hw"])),
         ]
 
     for (operator_type, order) in task.get("ob_observables", []):
         lines.append("define-radial-source {:s}".format(
-            environ.filenames.radial_me_filename(postfix, operator_type, order)
+            environ.radial_me_filename(postfix, operator_type, order)
             ))
         for species in ["p", "n"]:
             if operator_type == "E":
                 lines.append(
                     "define-target E {order:d} {species:s} {output_filename:s}".format(
                         order=order, species=species,
-                        output_filename=environ.filenames.observable_me_filename(postfix, operator_type, order, species)
+                        output_filename=environ.observable_me_filename(postfix, operator_type, order, species)
                         )
                     )
             elif operator_type == "M":
                 lines.append(
                     "define-target Dl {order:d} {species:s} {output_filename:s}".format(
                         order=order, species=species,
-                        output_filename=environ.filenames.observable_me_filename(postfix, "Dl", order, species)
+                        output_filename=environ.observable_me_filename(postfix, "Dl", order, species)
                         )
                     )
                 lines.append(
                     "define-target Ds {order:d} {species:s} {output_filename:s}".format(
                         order=order, species=species,
-                        output_filename=environ.filenames.observable_me_filename(postfix, "Ds", order, species)
+                        output_filename=environ.observable_me_filename(postfix, "Ds", order, species)
                         )
                     )
 
@@ -62,7 +62,7 @@ def generate_em(task, postfix=""):
 
     # write input file
     mcscript.utils.write_input(
-        environ.filenames.emgen_filename(postfix),
+        environ.emgen_filename(postfix),
         input_lines=lines,
         verbose=False
         )
@@ -70,7 +70,7 @@ def generate_em(task, postfix=""):
     # invoke em-gen
     mcscript.call(
         [
-            environ.environ.shell_filename("em-gen")
+            environ.shell_filename("em-gen")
         ],
         input_lines=lines,
         mode=mcscript.CallMode.kSerial
@@ -95,15 +95,15 @@ def evaluate_ob_observables(task, postfix=""):
 
     # indexing setup
     lines += [
-        "set-indexing {:s}".format(environ.filenames.orbitals_filename(postfix)),
+        "set-indexing {:s}".format(environ.orbitals_filename(postfix)),
         "set-robdme-info {:s}".format(os.path.join(work_dir, "mfdn.rppobdme.info")),
-        "set-output-file {:s}".format(environ.filenames.obscalc_ob_res_filename(postfix)),
+        "set-output-file {:s}".format(environ.obscalc_ob_res_filename(postfix)),
         ]
 
     # set up operators
     for (operator_type, order) in task.get("ob_observables", []):
         lines.append("define-radial-source {:s}".format(
-            environ.filenames.radial_me_filename(postfix, operator_type, order)
+            environ.radial_me_filename(postfix, operator_type, order)
             ))
         for species in ["p", "n"]:
             if operator_type == "M":
@@ -111,13 +111,13 @@ def evaluate_ob_observables(task, postfix=""):
                 lines.append(
                     "define-operator Dl({:s}) {:s}".format(
                         species,
-                        environ.filenames.observable_me_filename(postfix, "Dl", order, species)
+                        environ.observable_me_filename(postfix, "Dl", order, species)
                         )
                     )
                 lines.append(
                     "define-operator Ds({:s}) {:s}".format(
                         species,
-                        environ.filenames.observable_me_filename(postfix, "Ds", order, species)
+                        environ.observable_me_filename(postfix, "Ds", order, species)
                         )
                     )
             else:
@@ -125,7 +125,7 @@ def evaluate_ob_observables(task, postfix=""):
                     "define-operator {:s}({:s}) {:s}".format(
                         operator_type,
                         species,
-                        environ.filenames.observable_me_filename(postfix, operator_type, order, species)
+                        environ.observable_me_filename(postfix, operator_type, order, species)
                         )
                     )
 
@@ -247,7 +247,7 @@ def evaluate_ob_observables(task, postfix=""):
 
     # write input file
     mcscript.utils.write_input(
-        environ.filenames.obscalc_ob_filename(postfix),
+        environ.obscalc_ob_filename(postfix),
         input_lines=lines,
         verbose=False
         )
@@ -255,7 +255,7 @@ def evaluate_ob_observables(task, postfix=""):
     # invoke em-gen
     mcscript.call(
         [
-            environ.environ.shell_filename("obscalc-ob")
+            environ.shell_filename("obscalc-ob")
         ],
         input_lines=lines,
         mode=mcscript.CallMode.kSerial

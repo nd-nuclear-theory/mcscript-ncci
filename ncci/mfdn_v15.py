@@ -137,11 +137,11 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     inputlist["TwoMj"] = int(2*task["Mj"])
 
     # single-particle orbitals
-    inputlist["orbitalfile"] = environ.filenames.orbitals_filename(postfix)
+    inputlist["orbitalfile"] = environ.orbitals_filename(postfix)
     mcscript.call([
         "cp", "--verbose",
-        environ.filenames.orbitals_filename(postfix),
-        os.path.join(work_dir, environ.filenames.orbitals_filename(postfix))
+        environ.orbitals_filename(postfix),
+        os.path.join(work_dir, environ.orbitals_filename(postfix))
     ])
 
     # truncation mode
@@ -233,7 +233,7 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     # invoke MFDn
     mcscript.call(
         [
-            environ.environ.mfdn_filename(task["mfdn_executable"])
+            environ.mfdn_filename(task["mfdn_executable"])
         ],
         mode=mcscript.CallMode.kHybrid,
         check_return=True
@@ -277,14 +277,14 @@ def extract_natural_orbitals(task, postfix=""):
         [
             "cp", "--verbose",
             os.path.join(work_dir, obdme_info_filename),
-            environ.filenames.natorb_info_filename(postfix)
+            environ.natorb_info_filename(postfix)
         ]
     )
     mcscript.call(
         [
             "cp", "--verbose",
             obdme_filename[0],
-            environ.filenames.natorb_obdme_filename(postfix)
+            environ.natorb_obdme_filename(postfix)
         ]
     )
 
@@ -336,11 +336,11 @@ def save_mfdn_output(task, postfix=""):
     mcscript.call(["cp", "--verbose", work_dir+"/mfdn.out", out_filename])
 
     # append obscalc-ob output to res file
-    if os.path.exists(environ.filenames.obscalc_ob_res_filename(postfix)):
+    if os.path.exists(environ.obscalc_ob_res_filename(postfix)):
         print("Appending obscalc-ob output to res file...")
         with open(res_filename, 'a') as res_file:
             res_file.write("\n")
-            with open(environ.filenames.obscalc_ob_res_filename(postfix), 'r') as obs_file:
+            with open(environ.obscalc_ob_res_filename(postfix), 'r') as obs_file:
                 for line in obs_file:
                     res_file.write(line)
 
@@ -348,34 +348,34 @@ def save_mfdn_output(task, postfix=""):
     print("Saving full output files...")
     # logging
     archive_file_list = [
-        environ.filenames.h2mixer_filename(postfix),
+        environ.h2mixer_filename(postfix),
         "tbo_names{:s}.dat".format(postfix)
         ]
     # orbital information
     archive_file_list += [
-        environ.filenames.orbitals_int_filename(postfix),
-        environ.filenames.orbitals_filename(postfix),
+        environ.orbitals_int_filename(postfix),
+        environ.orbitals_filename(postfix),
         ]
     # transformation information
     archive_file_list += [
-        environ.filenames.radial_xform_filename(postfix),
-        # environ.filenames.radial_me_filename(postfix, operator_type, power),
-        environ.filenames.radial_olap_int_filename(postfix),
+        environ.radial_xform_filename(postfix),
+        # environ.radial_me_filename(postfix, operator_type, power),
+        environ.radial_olap_int_filename(postfix),
         ]
     # Coulomb information:
     if task["use_coulomb"]:
         archive_file_list += [
-            environ.filenames.orbitals_coul_filename(postfix),
-            environ.filenames.radial_olap_coul_filename(postfix),
+            environ.orbitals_coul_filename(postfix),
+            environ.radial_olap_coul_filename(postfix),
         ]
     # natural orbital information
     if task.get("natural_orbitals"):
         archive_file_list += [
-            environ.filenames.natorb_info_filename(postfix),
-            environ.filenames.natorb_obdme_filename(postfix),
+            environ.natorb_info_filename(postfix),
+            environ.natorb_obdme_filename(postfix),
             ]
         # glob for natural orbital xform
-        archive_file_list += glob.glob(environ.filenames.natorb_xform_filename(postfix))
+        archive_file_list += glob.glob(environ.natorb_xform_filename(postfix))
     # MFDn output
     archive_file_list += [
         work_dir+"/mfdn.input", work_dir+"/mfdn.out", work_dir+"/mfdn.res",
