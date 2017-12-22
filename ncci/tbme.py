@@ -19,6 +19,7 @@ University of Notre Dame
 - 10/25/17 (pjf): Rename "observables" to "tb_observables".
 """
 import collections
+import os
 
 import mcscript.utils
 
