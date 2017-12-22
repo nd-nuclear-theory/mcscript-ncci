@@ -12,12 +12,12 @@ Prerequisites: `mcscript`, `shell`
   Clone the shell repository and all submodules.  In the following,
   replace "netid" with your ND NetID:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  % git clone ssh://<netid>@crcfe01.crc.nd.edu/afs/crc.nd.edu/group/nuclthy/git/mcscript.git
+  % git clone ssh://<netid>@crcfe01.crc.nd.edu/afs/crc.nd.edu/group/nuclthy/git/mcscript-ncci.git
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   Or, from the secondary (public) repository on github:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  % git clone https://github.com/nd-nuclear-theory/mcscript.git
+  % git clone https://github.com/nd-nuclear-theory/mcscript-ncci.git
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   Then change your working directory (cd) to the project directory for
