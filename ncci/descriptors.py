@@ -41,7 +41,7 @@ def task_descriptor_7(task):
             "-hw{hw:06.3f}"
             "-a_cm{a_cm:g}"
             "-Nmax{Nmax:02d}{mixed_parity_indicator}{fci_indicator}-Mj{Mj:03.1f}"
-            "-lan{lanczos:d}-tol{tolerance:.1e}"
+            "-lan{max_iterations:d}-tol{tolerance:.1e}"
             "{natural_orbital_indicator}"
             )
     else:
@@ -84,7 +84,7 @@ def task_descriptor_7b(task):
             "-a_cm{a_cm:g}"
             "-Nmax{Nmax:02d}-Ncut{Ncut:s}"
             "{mixed_parity_indicator}{fci_indicator}-Mj{Mj:03.1f}"
-            "-lan{lanczos:d}-tol{tolerance:.1e}"
+            "-lan{max_iterations:d}-tol{tolerance:.1e}"
             "{natural_orbital_indicator}"
             )
     else:
@@ -132,7 +132,7 @@ def task_descriptor_8(task):
             "-a_cm{a_cm:g}"
             "-an{n_coeff:06.3f}-bl{l_coeff:06.3f}-spWTmax{sp_weight_max:06.3f}"
             "{mb_truncation}{mixed_parity_indicator}-Mj{Mj:03.1f}"
-            "-lan{lanczos:d}-tol{tolerance:.1e}"
+            "-lan{max_iterations:d}-tol{tolerance:.1e}"
             "{natural_orbital_indicator}"
             )
     else:

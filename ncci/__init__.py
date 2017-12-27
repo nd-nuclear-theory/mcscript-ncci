@@ -56,9 +56,9 @@
             possibly half-integral, *not* doubled!)
         "eigenvectors" (int): number of eigenvectors to calculate
         "initial_vector" (int): initial vector code for mfdn
-        "lanczos" (int): lanczos iterations
+        "max_iterations" (int): maximum number of diagonalization iterations
         "tolerance" (float): diagonalization tolerance parameter
-        "ndiag" (int): number of spare diagonal nodes
+        "ndiag" (int): number of spare diagonal nodes (MFDn v14 only)
         "partition_filename" (str): filename for partition file to use with MFDn (None: no
             partition file); for now absolute path is required, but path search protocol may
             be restored in future

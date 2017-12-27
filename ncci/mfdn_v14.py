@@ -96,7 +96,7 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     lines.append("1 {Nshell:d}  # min, max # S.P. shells for class 2 particles".format(Nshell=Nshell, **task))
     lines.append("{Nmin:d} {Nmax:d} {Nstep:d}  # N_min, N_max, delta_N".format(Nmin=Nmin, Nmax=Nmax, Nstep=Nstep))
     lines.append("{:d}   # Total 2 M_j".format(twice_Mj))
-    lines.append("{eigenvectors:d} {lanczos:d} {initial_vector:d} {tolerance:e}  # number of eigenvalues/vectors, max number of its, ...)".format(**task))
+    lines.append("{eigenvectors:d} {max_iterations:d} {initial_vector:d} {tolerance:e}  # number of eigenvalues/vectors, max number of its, ...)".format(**task))
     lines.append("{:d} {:d}  # rank of input Hamiltonian/interaction".format(2, 2))
     lines.append("{hw_for_trans:g} {k_mN_csqr:g}  # h-bar*omega, Nucleon mass (MeV) ".format(
         hw_for_trans=hw_for_trans, k_mN_csqr=utils.k_mN_csqr, **task

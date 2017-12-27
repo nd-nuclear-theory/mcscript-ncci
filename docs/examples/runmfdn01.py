@@ -73,7 +73,7 @@ task = {
     "Mj": 0,
     "eigenvectors": 2,
     "initial_vector": -2,
-    "lanczos": 200,
+    "max_iterations": 200,
     "tolerance": 1e-6,
     "partition_filename": None,
 

@@ -115,7 +115,7 @@ task_list = [
         "Mj": 0,
         "eigenvectors": 5,
         "initial_vector": -2,
-        "lanczos": 500,
+        "max_iterations": 500,
         "tolerance": 1e-6,
         "partition_filename": None,
 
