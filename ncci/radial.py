@@ -140,9 +140,9 @@ def set_up_natural_orbitals(task, source_postfix, target_postfix):
     Limitation: Currently only supports harmonic oscillator style
     truncation.
     """
-    # validate truncation mode
-    if task["sp_truncation_mode"] is not modes.SingleParticleTruncationMode.kNmax:
-        raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(modes.SingleParticleTruncationMode.kNmax, **task))
+    # validate truncation mode -- no longer applicable
+    # if task["sp_truncation_mode"] is not modes.SingleParticleTruncationMode.kNmax:
+    #     raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(modes.SingleParticleTruncationMode.kNmax, **task))
 
     # validate natural orbitals enabled
     if not task.get("natural_orbitals"):
