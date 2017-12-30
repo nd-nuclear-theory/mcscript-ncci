@@ -83,14 +83,6 @@ def set_up_orbitals_Nmax(task, postfix=""):
             "{:s}".format(environ.orbitals_filename(postfix))
         ]
     )
-    mcscript.call(
-        [
-            environ.shell_filename("radial-gen"),
-            "--identity",
-            environ.orbitals_filename(postfix),
-            environ.radial_xform_filename(postfix)
-        ]
-    )
 
 
 def set_up_orbitals_triangular(task, postfix=""):
@@ -114,14 +106,6 @@ def set_up_orbitals_triangular(task, postfix=""):
             "{n_coeff:f}".format(**truncation_parameters),
             "{l_coeff:f}".format(**truncation_parameters),
             "{:s}".format(environ.orbitals_filename(postfix))
-        ]
-    )
-    mcscript.call(
-        [
-            environ.shell_filename("radial-gen"),
-            "--identity",
-            environ.orbitals_filename(postfix),
-            environ.radial_xform_filename(postfix)
         ]
     )
 
@@ -225,6 +209,14 @@ def set_up_radial_analytic(task, postfix=""):
     set_up_observable_radial_analytic(task, postfix)
 
     # generate radial overlaps -- generate trivial identities if applicable
+    mcscript.call(
+        [
+            environ.shell_filename("radial-gen"),
+            "--identity",
+            environ.orbitals_filename(postfix),
+            environ.radial_xform_filename(postfix)
+        ]
+    )
     if (task["basis_mode"] in {modes.BasisMode.kDirect}):
         mcscript.call(
             [
