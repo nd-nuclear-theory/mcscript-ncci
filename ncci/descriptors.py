@@ -132,7 +132,7 @@ def task_descriptor_8(task):
             "-a_cm{a_cm:g}"
             "-an{n_coeff:06.3f}-bl{l_coeff:06.3f}-spWTmax{sp_weight_max:06.3f}"
             "{mb_truncation}{mixed_parity_indicator}-Mj{Mj:03.1f}"
-            "-lan{max_iterations:d}-tol{tolerance:.1e}"
+            "-its{max_iterations:d}-tol{tolerance:.1e}"
             "{natural_orbital_indicator}"
             )
     else:
