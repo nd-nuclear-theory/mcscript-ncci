@@ -52,7 +52,7 @@ def task_handler_dimension(task, postfix=""):
 
 
 def task_handler_nonzeros(task, postfix=""):
-    """Task handler for dimension counting-only run.
+    """Task handler for nonzero counting-only run.
 
     Arguments:
         task (dict): as described in module docstring
