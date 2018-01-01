@@ -9,6 +9,9 @@ setup(
     description=("Scripting for NCCI runs"),
     license="MIT",
     packages=['ncci'],
+    install_requires=[
+        "mcscript>=0.0.1",
+    ],
     long_description=inspect.getdoc(ncci),
     classifiers=[],
 )
