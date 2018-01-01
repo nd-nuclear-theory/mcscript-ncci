@@ -45,7 +45,8 @@ def set_up_interaction_orbitals(task, postfix=""):
             "--oscillator",
             "{truncation_int[1]:d}".format(**task),
             "{:s}".format(environ.orbitals_int_filename(postfix))
-        ]
+        ],
+        mode=mcscript.CallMode.kSerial
     )
     if task["use_coulomb"]:
         mcscript.call(
@@ -54,7 +55,8 @@ def set_up_interaction_orbitals(task, postfix=""):
                 "--oscillator",
                 "{truncation_coul[1]:d}".format(**task),
                 "{:s}".format(environ.orbitals_coul_filename(postfix))
-            ]
+            ],
+            mode=mcscript.CallMode.kSerial
         )
 
 
@@ -81,7 +83,8 @@ def set_up_orbitals_Nmax(task, postfix=""):
             "--oscillator",
             "{Nmax_orb:d}".format(Nmax_orb=Nmax_orb),
             "{:s}".format(environ.orbitals_filename(postfix))
-        ]
+        ],
+        mode=mcscript.CallMode.kSerial
     )
 
 
@@ -106,7 +109,8 @@ def set_up_orbitals_triangular(task, postfix=""):
             "{n_coeff:f}".format(**truncation_parameters),
             "{l_coeff:f}".format(**truncation_parameters),
             "{:s}".format(environ.orbitals_filename(postfix))
-        ]
+        ],
+        mode=mcscript.CallMode.kSerial
     )
 
 
@@ -156,7 +160,8 @@ def set_up_natural_orbitals(task, source_postfix, target_postfix):
             environ.natorb_obdme_filename(source_postfix),
             environ.natorb_xform_filename(target_postfix),
             environ.orbitals_filename(target_postfix)
-        ]
+        ],
+        mode=mcscript.CallMode.kSerial
     )
 
 
@@ -215,7 +220,8 @@ def set_up_radial_analytic(task, postfix=""):
             "--identity",
             environ.orbitals_filename(postfix),
             environ.radial_xform_filename(postfix)
-        ]
+        ],
+        mode=mcscript.CallMode.kSerial
     )
     if (task["basis_mode"] in {modes.BasisMode.kDirect}):
         mcscript.call(
@@ -294,7 +300,8 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
             environ.radial_xform_filename(source_postfix),
             environ.natorb_xform_filename(target_postfix),
             environ.radial_xform_filename(target_postfix)
-        ]
+        ],
+        mode=mcscript.CallMode.kSerial
     )
 
     # compose interaction transform
@@ -304,7 +311,8 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
             environ.radial_olap_int_filename(source_postfix),
             environ.natorb_xform_filename(target_postfix),
             environ.radial_olap_int_filename(target_postfix)
-        ]
+        ],
+        mode=mcscript.CallMode.kSerial
     )
 
     # compose Coulomb transform
