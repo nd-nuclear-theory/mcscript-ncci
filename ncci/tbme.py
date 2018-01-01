@@ -133,7 +133,7 @@ def generate_tbme(task, postfix=""):
                 target_weight_max = utils.weight_max_string(("ob", w1_max))
             else:
                 w1_max = truncation_parameters["sp_weight_max"]
-                w2_max = truncation_parameters["mb_weight_max"]  # TODO this is probably too large
+                w2_max = min(truncation_parameters["mb_weight_max"], 2*truncation_parameters["sp_weight_max"])  # TODO this is probably too large
                 target_weight_max = utils.weight_max_string((w1_max, w2_max))
     else:
         # given value
