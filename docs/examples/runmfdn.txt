@@ -122,3 +122,13 @@ runmfdn11: harmonic oscillator direct run with MFDn v15b01 and duct-tape postpro
     Usage: qsubm --here mfdn11
 
     We use tb-10 as the smallest available set of files.
+
+runmfdn12: manual orbital direct run with MFDn v15
+
+    4He manual orbital file hw20 (direct)
+
+    Interaction: run0164-JISP16-tb-10
+
+    Usage: qsubm --here mfdn12
+
+    We use tb-10 as the smallest available set of files.

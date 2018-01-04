@@ -13,6 +13,7 @@ University of Notre Dame
 - 9/12/17 (mac): Put mfdn executable filename under common mcscript install directory.
 - 09/12/17 (pjf): Split config.py -> mode.py + environ.py.
 - 09/27/17 (pjf): Add MFDnRunMode options for counting-only modes.
+- 01/04/18 (pjf): Add MFDnRunMode kManual for user-provided orbital file.
 """
 
 import enum
@@ -63,6 +64,13 @@ class BasisMode(enum.Enum):
 class SingleParticleTruncationMode(enum.Enum):
     """General truncation modes for single-particle basis
 
+    kManual:
+        - manually provided orbital file
+        - compatible with MFDn v15+
+        - "truncation_parameters" (dict) must contain:
+            - "sp_filename" (str): full path to orbital file
+            - "sp_weight_max" (float): maximum weight for single-particle orbitals
+
     kNmax:
         - traditional Nmax truncation; weight is (2*n + l)
         - compatible with MFDn v14+
@@ -84,6 +92,7 @@ class SingleParticleTruncationMode(enum.Enum):
 
     """
 
+    kManual = 0
     kNmax = 1
     kTriangular = 2
 

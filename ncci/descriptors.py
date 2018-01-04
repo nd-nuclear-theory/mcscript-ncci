@@ -11,12 +11,15 @@ University of Notre Dame
 - 08/26/17 (pjf): Add task_descriptor_8 for general truncation.
 - 09/12/17 (pjf): Update for config -> modes + environ split.
 - 10/04/17 (pjf): Add counting-only descriptor.
+- 01/04/18 (pjf): Add task_descriptor_9 for manual orbitals.
 """
 import mcscript.exception
 import mcscript.utils
 
 from . import modes
 
+
+_parity_map = {+1: "g0", -1: "g1", 0: "gx"}
 
 ################################################################
 # task descriptor for h2mixer + mfdn run
@@ -115,8 +118,7 @@ def task_descriptor_7b(task):
 def task_descriptor_8(task):
     """Task descriptor format 8
 
-        General (triangular) truncation run descriptor:
-        - No FCI support.
+        General (triangular) truncation run descriptor.
     """
     if (
             task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated)
@@ -151,6 +153,51 @@ def task_descriptor_8(task):
         coulomb_flag=coulomb_flag,
         mb_truncation=mb_truncation,
         mixed_parity_indicator=mixed_parity_indicator,
+        natural_orbital_indicator=natural_orbital_indicator,
+        **mcscript.utils.dict_union(task, truncation_parameters)
+        )
+
+    return descriptor
+
+
+def task_descriptor_9(task):
+    """Task descriptor format 9
+
+        General truncation run descriptor for manual orbitals.
+    """
+    if (
+            task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated)
+            and
+            task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kManual
+            and
+            task["mb_truncation_mode"] in (modes.ManyBodyTruncationMode.kWeightMax, modes.ManyBodyTruncationMode.kFCI)
+    ):
+        # oscillator basis
+        template_string = (
+            "Z{nuclide[0]}-N{nuclide[1]}-{interaction}-coul{coulomb_flag:d}"
+            "-hw{hw:06.3f}"
+            "-a_cm{a_cm:g}"
+            "-spWTmax{sp_weight_max:06.3f}"
+            "{mb_truncation}{parity_indicator}-Mj{Mj:03.1f}"
+            "-its{max_iterations:d}-tol{tolerance:.1e}"
+            "{natural_orbital_indicator}"
+            )
+    else:
+        raise mcscript.exception.ScriptError("mode not supported by task descriptor")
+
+    truncation_parameters = task["truncation_parameters"]
+    if task["mb_truncation_mode"] is modes.ManyBodyTruncationMode.kFCI:
+        mb_truncation = "-FCI"
+    elif task["mb_truncation_mode"] is modes.ManyBodyTruncationMode.kWeightMax:
+        mb_truncation = "-WTmax{mb_weight_max:06.3f}".format(**truncation_parameters)
+    parity_indicator = _parity_map[truncation_parameters["parity"]]
+    coulomb_flag = int(task["use_coulomb"])
+    natural_orbital_indicator = mcscript.utils.ifelse(task.get("natural_orbitals"), "-natorb", "")
+
+    descriptor = template_string.format(
+        coulomb_flag=coulomb_flag,
+        mb_truncation=mb_truncation,
+        parity_indicator=parity_indicator,
         natural_orbital_indicator=natural_orbital_indicator,
         **mcscript.utils.dict_union(task, truncation_parameters)
         )

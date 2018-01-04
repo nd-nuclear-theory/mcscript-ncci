@@ -22,8 +22,11 @@ University of Notre Dame
   + Generate pn overlaps.
   + Update for new --xform option of radial-gen.
 - 10/25/17 (pjf): Add radial generation for electromagnetic observables.
+- 01/04/18 (pjf): Add support for manual orbital files.
 """
+import errno
 import math
+import os
 
 import mcscript
 import mcscript.exception
@@ -58,6 +61,26 @@ def set_up_interaction_orbitals(task, postfix=""):
             ],
             mode=mcscript.CallMode.kSerial
         )
+
+
+def set_up_orbitals_manual(task, postfix=""):
+    """Copy in manually-provided orbitals.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+    if task["sp_truncation_mode"] is not modes.SingleParticleTruncationMode.kManual:
+        raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(modes.SingleParticleTruncationMode.kManual, **task))
+
+    truncation_parameters = task["truncation_parameters"]
+    if not os.path.exists(truncation_parameters["sp_filename"]):
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), "filename")
+    mcscript.call([
+        "cp", "--verbose",
+        truncation_parameters["sp_filename"],
+        environ.orbitals_filename(postfix)
+        ])
 
 
 def set_up_orbitals_Nmax(task, postfix=""):
@@ -122,6 +145,7 @@ def set_up_orbitals(task, postfix=""):
         postfix (string, optional): identifier to add to generated files
     """
     target_orbital_set_up_functions = {
+        modes.SingleParticleTruncationMode.kManual: set_up_orbitals_manual,
         modes.SingleParticleTruncationMode.kNmax: set_up_orbitals_Nmax,
         modes.SingleParticleTruncationMode.kTriangular: set_up_orbitals_triangular,
     }
