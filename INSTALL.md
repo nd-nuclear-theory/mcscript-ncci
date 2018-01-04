@@ -45,6 +45,11 @@ Prerequisites: `mcscript`, `shell`
 
 # 2. Environment Configuration
   `mcscript-ncci` requires environment variables to find interaction files.
+  TBME files are expected to live in subdirectories of `NCCI_DATA_DIR_H2`, and
+  follow the naming convention:
+  ```
+  <interaction_group>/<interaction name>-<ob|tb>-<N1bmax|N2bmax>-<hw>.bin
+  ```
 
   #### @NDCRC: ####
   `.cshrc`:
