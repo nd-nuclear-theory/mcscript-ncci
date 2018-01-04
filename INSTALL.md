@@ -43,11 +43,6 @@ Prerequisites: `mcscript`, `shell`
   % git pull
   ~~~~~~~~~~~~~~~~
 
-  a. Subsequently updating source
-  ~~~~~~~~~~~~~~~~
-  % git pull
-  ~~~~~~~~~~~~~~~~
-
 # 2. Environment Configuration
   `mcscript-ncci` requires environment variables to find interaction files.
 
