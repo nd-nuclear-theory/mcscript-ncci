@@ -20,15 +20,28 @@ Prerequisites: `mcscript`, `shell`
   % git clone https://github.com/nd-nuclear-theory/mcscript-ncci.git
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  Change your working directory to the repository for the following steps:
+  ~~~~~~~~~~~~~~~~
+  % cd mcscript
+  ~~~~~~~~~~~~~~~~
+
+  If you want the bleeding-edge, potentially broken version, check out the
+  `develop` branch:
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  % git checkout -t origin/develop
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
   Setup the package in your `PYTHONPATH` by running `pip` (or `pip3` on Debian):
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  % pip install --user --editable mcscript-ncci/
+  % pip install --user --editable .
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   This will ***fail*** if you have not already installed `mcscript`. If this
   happens, go back and ensure that `mcscript` has been installed successfully.
 
-  Then change your working directory (cd) to the project directory for
-  all the following steps.
+  a. Subsequently updating source
+  ~~~~~~~~~~~~~~~~
+  % git pull
+  ~~~~~~~~~~~~~~~~
 
   a. Subsequently updating source
   ~~~~~~~~~~~~~~~~
