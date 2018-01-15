@@ -14,7 +14,9 @@ University of Notre Dame
 - 09/25/17 (pjf): Add archive_handler_mfdn() and archive_handler_mfdn_hsi().
 - 10/11/17 (pjf): Break task handlers into serial/hybrid phases.
 - 10/18/17 (pjf): Call extract_natural_orbitals().
+- 01/15/18 (pjf): Use htar for archiving wavefunctions to tape.
 """
+import datetime
 import os
 import glob
 import mcscript
@@ -223,7 +225,7 @@ def archive_handler_mfdn():
     archive_filename = mcscript.task.archive_handler_generic(
         include_results=True)
 
-    # next, generate wavefunction archive and copy to tape separately
+    # next, generate wavefunction archive separately
     wavefunction_archive_filename = None
     wavefunction_dir = os.path.join(
         mcscript.parameters.run.work_dir, "wavefunctions")
@@ -257,10 +259,33 @@ def archive_handler_mfdn():
 
 def archive_handler_mfdn_hsi():
     """Generate archives for MFDn and save to tape."""
-    (archive_filename, wavefunction_archive_filename) = archive_handler_mfdn()
-    mcscript.task.archive_handler_hsi(archive_filename)
-    if wavefunction_archive_filename:
-        mcscript.task.archive_handler_hsi(wavefunction_archive_filename)
+    # first, generate usual archive for results directory and copy to tape
+   archive_filename = mcscript.task.archive_handler_generic(include_results=True)
+   mcscript.task.archive_handler_hsi(archive_filename)
+
+    # next, generate wavefunction archive and store directly to tape with htar
+    wavefunction_dir = os.path.join(mcscript.parameters.run.work_dir, "wavefunctions")
+    if os.path.exists(wavefunction_dir):
+        hsi_subdir = format(datetime.date.today().year, "04d")  # subdirectory named by year
+        wavefunction_archive_filename = os.path.join(
+            hsi_subdir,
+            "{:s}-archive-{:s}-wf.tar".format(
+                mcscript.parameters.run.name, mcscript.utils.date_tag())
+        )
+        toc_filename = "{}.toc".format(mcscript.parameters.run.name)
+        filename_list = [
+            os.path.join(mcscript.parameters.run.name, toc_filename),
+            os.path.join(mcscript.parameters.run.name, "wavefunctions")
+        ]
+        mcscript.control.call(
+            [
+                "htar",
+                "cvPf",
+                wavefunction_archive_filename,
+             ] + filename_list,
+            cwd=os.path.join(mcscript.parameters.run.work_dir, ".."),
+            check_return=True
+        )
 
 
 def archive_handler_mfdn_res_only(task):
