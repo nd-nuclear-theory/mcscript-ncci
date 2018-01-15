@@ -260,8 +260,8 @@ def archive_handler_mfdn():
 def archive_handler_mfdn_hsi():
     """Generate archives for MFDn and save to tape."""
     # first, generate usual archive for results directory and copy to tape
-   archive_filename = mcscript.task.archive_handler_generic(include_results=True)
-   mcscript.task.archive_handler_hsi(archive_filename)
+    archive_filename = mcscript.task.archive_handler_generic(include_results=True)
+    mcscript.task.archive_handler_hsi(archive_filename)
 
     # next, generate wavefunction archive and store directly to tape with htar
     wavefunction_dir = os.path.join(mcscript.parameters.run.work_dir, "wavefunctions")
