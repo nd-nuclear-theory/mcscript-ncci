@@ -24,6 +24,7 @@ University of Notre Dame
   + Use separate work directory for each postfix.
   + Factor out extract_natural_orbitals().
 - 10/25/17 (pjf): Rename "observables" to "tb_observables".
+- 02/11/18 (pjf): Correctly archive mfdn_partitioning.info.
 """
 import os
 import glob
@@ -383,6 +384,9 @@ def save_mfdn_output(task, postfix=""):
     ]
     if os.path.isfile(work_dir+"/mfdn_sp_orbitals.info"):
         archive_file_list += [work_dir+"/mfdn_sp_orbitals.info"]
+    # partitioning file
+    if os.path.isfile(work_dir+"/mfdn_partitioning.info"):
+        archive_file_list += [work_dir+"/mfdn_partitioning.info"]
     # renamed versions
     archive_file_list += [out_filename, res_filename]
     # MFDN obdme
