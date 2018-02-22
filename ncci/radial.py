@@ -340,15 +340,16 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
     )
 
     # compose Coulomb transform
-    mcscript.call(
-        [
-            environ.shell_filename("radial-compose"),
-            environ.radial_olap_coul_filename(source_postfix),
-            environ.natorb_xform_filename(target_postfix),
-            environ.radial_olap_coul_filename(target_postfix)
-        ],
-        mode=mcscript.CallMode.kSerial
-    )
+    if (task["use_coulomb"]):
+        mcscript.call(
+            [
+                environ.shell_filename("radial-compose"),
+                environ.radial_olap_coul_filename(source_postfix),
+                environ.natorb_xform_filename(target_postfix),
+                environ.radial_olap_coul_filename(target_postfix)
+            ],
+            mode=mcscript.CallMode.kSerial
+        )
 
     # transform radial integrals
     for operator_type in ["r", "k"]:
