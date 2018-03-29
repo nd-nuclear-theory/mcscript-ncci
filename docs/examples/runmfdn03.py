@@ -66,10 +66,10 @@ task = {
         "Nv": 0,
         "Nmax": 2,
         "Nstep": 2,
+        "M": 0,
         },
 
     # diagonalization parameters
-    "Mj": 0,
     "eigenvectors": 2,
     "initial_vector": -2,
     "max_iterations": 200,

@@ -64,10 +64,10 @@ task = {
         "n_coeff": 1.,
         "l_coeff": 1.,
         "parity": +1,
+        "M": 0,
         },
 
     # diagonalization parameters
-    "Mj": 0,
     "eigenvectors": 2,
     "initial_vector": -2,
     "max_iterations": 200,

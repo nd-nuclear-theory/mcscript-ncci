@@ -62,13 +62,13 @@ task = {
     "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
     "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
     "truncation_parameters": {
+        "M": 0,
         "Nv": 0,
         "Nmax": 2,
         "Nstep": 2,
         },
 
     # diagonalization parameters
-    "Mj": 0,
     "eigenvectors": 5,
     "initial_vector": -2,
     "max_iterations": 200,
