@@ -57,6 +57,7 @@ def set_up_Nmax_truncation(task, inputlist):
         inputlist["Nmin"] = 1
     inputlist["Nmax"] = int(truncation_parameters["Nmax"])
     inputlist["deltaN"] = int(truncation_parameters["Nstep"])
+    inputlist["TwoMj"] = int(2*truncation_parameters["M"])
 
 
 def set_up_WeightMax_truncation(task, inputlist):
@@ -74,6 +75,7 @@ def set_up_WeightMax_truncation(task, inputlist):
 
     inputlist["WTmax"] = truncation_parameters["mb_weight_max"]
     inputlist["parity"] = truncation_parameters["parity"]
+    inputlist["TwoMj"] = int(2*truncation_parameters["M"])
 
 
 def set_up_FCI_truncation(task, inputlist):
@@ -99,6 +101,8 @@ def set_up_FCI_truncation(task, inputlist):
 
     inputlist["WTmax"] = sum(task["nuclide"])*max_sp_weight
     inputlist["parity"] = int(parity)
+    inputlist["TwoMj"] = int(2*truncation_parameters["M"])
+
 
 
 truncation_setup_functions = {
@@ -133,9 +137,6 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
 
     # nucleus
     inputlist["Nprotons"], inputlist["Nneutrons"] = task["nuclide"]
-
-    # Mj
-    inputlist["TwoMj"] = int(2*task["Mj"])
 
     # single-particle orbitals
     inputlist["orbitalfile"] = environ.orbitals_filename(postfix)

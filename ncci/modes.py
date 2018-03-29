@@ -109,6 +109,7 @@ class ManyBodyTruncationMode(enum.Enum):
             - "Nv" (int): N of valence shell (for use in truncation)
             - "Nmax" (int): many-body excitation cutoff
             - "Nstep" (int): Nstep (2 for single parity, 1 for mixed parity)
+            - "M" (float): M-scheme angular momentum projection value
 
 
     kWeightMax:
@@ -116,6 +117,7 @@ class ManyBodyTruncationMode(enum.Enum):
         - "truncation_parameters" (dict) must contain:
             - "mb_weight_max" (float): maximum weight for many-body states
             - "parity" (int): absolute parity for run (+1, 0, or -1)
+            - "M" (float): M-scheme angular momentum projection value
 
 
     kFCI:
@@ -123,6 +125,7 @@ class ManyBodyTruncationMode(enum.Enum):
         - many-body basis constrained only by single-particle basis
         - "truncation_parameters" (dict) must contain:
             - "parity" (int): absolute parity for run (+1, 0, or -1)
+            - "M" (float): M-scheme angular momentum projection value
     """
 
     kNmax = 1

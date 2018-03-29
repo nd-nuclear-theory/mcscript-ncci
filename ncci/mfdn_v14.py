@@ -66,7 +66,7 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
 
     # base parameters
     truncation_parameters = task["truncation_parameters"]
-    twice_Mj = int(2*task["Mj"])
+    twice_Mj = int(2*truncation_parameters["M"])
     if task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kNmax:
         Nmax_orb = truncation_parameters["Nmax"] + truncation_parameters["Nv"]
         Nmax = truncation_parameters["Nmax"]

@@ -43,7 +43,7 @@ def task_descriptor_7(task):
             "Z{nuclide[0]}-N{nuclide[1]}-{interaction}-coul{coulomb_flag:d}"
             "-hw{hw:06.3f}"
             "-a_cm{a_cm:g}"
-            "-Nmax{Nmax:02d}{mixed_parity_indicator}{fci_indicator}-Mj{Mj:03.1f}"
+            "-Nmax{Nmax:02d}{mixed_parity_indicator}{fci_indicator}-Mj{M:03.1f}"
             "-lan{max_iterations:d}-tol{tolerance:.1e}"
             "{natural_orbital_indicator}"
             )
@@ -86,7 +86,7 @@ def task_descriptor_7b(task):
             "-hw{hw:06.3f}"
             "-a_cm{a_cm:g}"
             "-Nmax{Nmax:02d}-Ncut{Ncut:s}"
-            "{mixed_parity_indicator}{fci_indicator}-Mj{Mj:03.1f}"
+            "{mixed_parity_indicator}{fci_indicator}-Mj{M:03.1f}"
             "-lan{max_iterations:d}-tol{tolerance:.1e}"
             "{natural_orbital_indicator}"
             )
@@ -133,7 +133,7 @@ def task_descriptor_8(task):
             "-hw{hw:06.3f}"
             "-a_cm{a_cm:g}"
             "-an{n_coeff:06.3f}-bl{l_coeff:06.3f}-spWTmax{sp_weight_max:06.3f}"
-            "{mb_truncation}{mixed_parity_indicator}-Mj{Mj:03.1f}"
+            "{mb_truncation}-{parity_indicator}-Mj{M:03.1f}"
             "-its{max_iterations:d}-tol{tolerance:.1e}"
             "{natural_orbital_indicator}"
             )
@@ -145,14 +145,14 @@ def task_descriptor_8(task):
         mb_truncation = "-FCI"
     elif task["mb_truncation_mode"] is modes.ManyBodyTruncationMode.kWeightMax:
         mb_truncation = "-WTmax{mb_weight_max:06.3f}".format(**truncation_parameters)
-    mixed_parity_indicator = mcscript.utils.ifelse(truncation_parameters["parity"] == 0, "x", "")
+    parity_indicator = _parity_map[truncation_parameters["parity"]]
     coulomb_flag = int(task["use_coulomb"])
     natural_orbital_indicator = mcscript.utils.ifelse(task.get("natural_orbitals"), "-natorb", "")
 
     descriptor = template_string.format(
         coulomb_flag=coulomb_flag,
         mb_truncation=mb_truncation,
-        mixed_parity_indicator=mixed_parity_indicator,
+        parity_indicator=parity_indicator,
         natural_orbital_indicator=natural_orbital_indicator,
         **mcscript.utils.dict_union(task, truncation_parameters)
         )
@@ -178,7 +178,7 @@ def task_descriptor_9(task):
             "-hw{hw:06.3f}"
             "-a_cm{a_cm:g}"
             "-spWTmax{sp_weight_max:06.3f}"
-            "{mb_truncation}{parity_indicator}-Mj{Mj:03.1f}"
+            "{mb_truncation}{parity_indicator}-Mj{M:03.1f}"
             "-its{max_iterations:d}-tol{tolerance:.1e}"
             "{natural_orbital_indicator}"
             )
@@ -212,10 +212,12 @@ def task_descriptor_c1(task):
             - Currently support Nmax and triangular s.p. truncations.
             - Currently support FCI, Nmax, and WTmax m.b. truncations.
     """
-    # oscillator basis
+    # preprocess task dictionary
+    input.fill_default_values(task)
+
     template_string = (
         "Z{nuclide[0]}-N{nuclide[1]}"
-        "{sp_truncation:s}{mb_truncation:s}{mixed_parity_indicator}-Mj{Mj:03.1f}"
+        "{sp_truncation:s}{mb_truncation:s}{mixed_parity_indicator}-Mj{M:03.1f}"
     )
     if task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kNmax:
         sp_truncation = "-Nmax{Nmax:02d}".format(**task["truncation_parameters"])
