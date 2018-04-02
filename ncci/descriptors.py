@@ -16,7 +16,10 @@ University of Notre Dame
 import mcscript.exception
 import mcscript.utils
 
-from . import modes
+from . import (
+    input,
+    modes,
+    )
 
 
 _parity_map = {+1: "g0", -1: "g1", 0: "gx"}
@@ -33,6 +36,9 @@ def task_descriptor_7(task):
         - Adjust some field labels.
         - Add tolerance.
     """
+    # preprocess task dictionary
+    input.fill_default_values(task)
+
     if (
         task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kNmax
         and
@@ -57,7 +63,7 @@ def task_descriptor_7(task):
         fci_indicator = ""
     mixed_parity_indicator = mcscript.utils.ifelse(truncation_parameters["Nstep"] == 1, "x", "")
     coulomb_flag = int(task["use_coulomb"])
-    natural_orbital_indicator = mcscript.utils.ifelse(task.get("natural_orbitals"), "-natorb", "")
+    natural_orbital_indicator = mcscript.utils.ifelse(task["natural_orbitals"], "-natorb", "")
 
     descriptor = template_string.format(
         coulomb_flag=coulomb_flag,
@@ -75,6 +81,9 @@ def task_descriptor_7b(task):
 
         - Add Ncut field
     """
+    # preprocess task dictionary
+    input.fill_default_values(task)
+
     if (
         task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kNmax
         and
@@ -94,7 +103,7 @@ def task_descriptor_7b(task):
         raise mcscript.exception.ScriptError("mode not supported by task descriptor")
 
     truncation_parameters = task["truncation_parameters"]
-    Ncut = "{:s}{:02d}".format(*task.get("xform_truncation_int", truncation_parameters["Nmax"]))
+    Ncut = "{:s}{:02d}".format(*task["xform_truncation_int"])
     if task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kFCI:
         fci_indicator = "-fci"
     else:
@@ -120,6 +129,9 @@ def task_descriptor_8(task):
 
         General (triangular) truncation run descriptor.
     """
+    # preprocess task dictionary
+    input.fill_default_values(task)
+
     if (
             task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated)
             and
@@ -165,6 +177,9 @@ def task_descriptor_9(task):
 
         General truncation run descriptor for manual orbitals.
     """
+    # preprocess task dictionary
+    input.fill_default_values(task)
+
     if (
             task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated)
             and

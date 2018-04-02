@@ -11,7 +11,7 @@ import re
 
 import mcscript
 
-from . import modes, environ, utils
+from . import modes, environ, utils, input
 
 
 def generate_em(task, postfix=""):
@@ -21,6 +21,8 @@ def generate_em(task, postfix=""):
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
+    # preprocess task dictionary
+    input.fill_default_values(task)
 
     # accumulate em-gen input lines
     lines = []
@@ -31,7 +33,7 @@ def generate_em(task, postfix=""):
         "set-basis-scale-factor {:e}".format(utils.oscillator_length(task["hw"])),
         ]
 
-    for (operator_type, order) in task.get("ob_observables", []):
+    for (operator_type, order) in task["ob_observables"]:
         lines.append("define-radial-source {:s}".format(
             environ.radial_me_filename(postfix, operator_type, order)
             ))
@@ -83,6 +85,8 @@ def evaluate_ob_observables(task, postfix=""):
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
+    # preprocess task dictionary
+    input.fill_default_values(task)
 
     work_dir = "work{:s}".format(postfix)
 
@@ -101,7 +105,7 @@ def evaluate_ob_observables(task, postfix=""):
         ]
 
     # set up operators
-    for (operator_type, order) in task.get("ob_observables", []):
+    for (operator_type, order) in task["ob_observables"]:
         lines.append("define-radial-source {:s}".format(
             environ.radial_me_filename(postfix, operator_type, order)
             ))

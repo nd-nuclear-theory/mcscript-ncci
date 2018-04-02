@@ -1,0 +1,7 @@
+mb_weight_max
+Nmax
+Nstep
+Nv
+parity
+sp_filename
+sp_weight_max

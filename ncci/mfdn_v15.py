@@ -32,7 +32,7 @@ import collections
 
 import mcscript
 
-from . import modes, environ
+from . import modes, environ, input
 
 
 def set_up_Nmax_truncation(task, inputlist):
@@ -123,6 +123,9 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     Raises:
         mcscript.exception.ScriptError: if MFDn output not found
     """
+    # preprocess task dictionary
+    input.fill_default_values(task)
+
     # create work directory if it doesn't exist yet (-p)
     work_dir = "work{:s}".format(postfix)
     mcscript.call(["mkdir", "-p", work_dir])
@@ -157,8 +160,6 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         inputlist["neivals"] = int(task["eigenvectors"])
         inputlist["maxits"] = int(task["max_iterations"])
         inputlist["tol"] = float(task["tolerance"])
-        if task.get("reduce_solver_threads"):
-            inputlist["reduce_solver_threads"] = task["reduce_solver_threads"]
 
         # Hamiltonian input
         inputlist["TBMEfile"] = "tbme-H"
@@ -192,7 +193,7 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         obslist["max2K"] = int(2*task["obdme_multipolarity"])
 
         # construct transition observable input if reference states given
-        if task.get("obdme_reference_state_list") is not None:
+        if len(task["obdme_reference_state_list"]) > 0:
             # obdme: validate reference state list
             #
             # guard against pathetically common mistakes
@@ -212,6 +213,9 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             for (J, g_rel, i) in task["obdme_reference_state_list"]:
                 obslist["ref2J"].append(int(2*J))
                 obslist["refseq"].append(i)
+
+    inputlist_overrides = task.get("inputlist_overrides", {})
+    inputlist.update(inputlist_overrides)
 
     # generate MFDn input file
     mcscript.utils.write_namelist(
@@ -258,8 +262,11 @@ def extract_natural_orbitals(task, postfix=""):
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
+    # preprocess task dictionary
+    input.fill_default_values(task)
+
     # save OBDME files for next natural orbital iteration
-    if not task.get("natural_orbitals"):
+    if not task["natural_orbitals"]:
         raise mcscript.exception.ScriptError("natural orbitals not enabled")
 
     work_dir = "work{:s}".format(postfix)
@@ -298,6 +305,9 @@ def save_mfdn_output_out_only(task, postfix=""):
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
+    # preprocess task dictionary
+    input.fill_default_values(task)
+
     # save quick inspection copies of mfdn.{res,out}
     descriptor = task["metadata"]["descriptor"]
     print("Saving basic output files...")
@@ -327,6 +337,9 @@ def save_mfdn_output(task, postfix=""):
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
+    # preprocess task dictionary
+    input.fill_default_values(task)
+
     # save quick inspection copies of mfdn.{res,out}
     descriptor = task["metadata"]["descriptor"]
     work_dir = "work{:s}".format(postfix)
@@ -371,7 +384,7 @@ def save_mfdn_output(task, postfix=""):
             environ.radial_olap_coul_filename(postfix),
         ]
     # natural orbital information
-    if task.get("natural_orbitals"):
+    if task["natural_orbitals"]:
         archive_file_list += [
             environ.natorb_info_filename(postfix),
             environ.natorb_obdme_filename(postfix),
@@ -408,7 +421,7 @@ def save_mfdn_output(task, postfix=""):
     )
 
     # save wavefunctions (smwf files)
-    if task.get("save_wavefunctions"):
+    if task["save_wavefunctions"]:
         smwf_archive_file_list = glob.glob(work_dir+"/mfdn_smwf*")
         smwf_archive_file_list += glob.glob(work_dir+"/mfdn_MBgroups*")
         smwf_archive_filename = "{:s}-wf.tar".format(filename_prefix)
@@ -431,7 +444,7 @@ def save_mfdn_output(task, postfix=""):
                 "--target-directory={}".format(mcscript.task.results_dir)
             ]
         )
-        if task.get("save_wavefunctions"):
+        if task["save_wavefunctions"]:
             wavefunction_dir = os.path.join(mcscript.parameters.run.work_dir, "wavefunctions")
             mcscript.call(["mkdir", "-p", wavefunction_dir])
             mcscript.call(

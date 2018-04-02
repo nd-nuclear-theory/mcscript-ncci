@@ -7,12 +7,15 @@ University of Notre Dame
 - 10/18/17 (pjf): Use separate work directory for each postfix.
 """
 import os
-import glob
 import collections
 
 import mcscript
 
-from . import modes, environ
+from . import (
+    input,
+    environ,
+    modes,
+    )
 from .mfdn_v15 import truncation_setup_functions
 
 
@@ -27,6 +30,9 @@ def run_mfdn(task, postfix=""):
     Raises:
         mcscript.exception.ScriptError: if MFDn output not found
     """
+    # preprocess task dictionary
+    input.fill_default_values(task)
+
     # create work directory if it doesn't exist yet (-p)
     work_dir = "work{:s}".format(postfix)
     mcscript.call(["mkdir", "-p", work_dir])
@@ -59,7 +65,7 @@ def run_mfdn(task, postfix=""):
     obslist["max2K"] = int(2*task["obdme_multipolarity"])
 
     # construct transition observable input if reference states given
-    if task.get("obdme_reference_state_list") is not None:
+    if len(task["obdme_reference_state_list"]) > 0:
         # obdme: validate reference state list
         #
         # guard against pathetically common mistakes

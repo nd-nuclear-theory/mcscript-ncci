@@ -31,7 +31,7 @@ import os
 import mcscript
 import mcscript.exception
 
-from . import modes, environ
+from . import modes, environ, input
 
 
 def set_up_interaction_orbitals(task, postfix=""):
@@ -41,6 +41,9 @@ def set_up_interaction_orbitals(task, postfix=""):
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
+    # preprocess task dictionary
+    input.fill_default_values(task)
+
     # generate orbitals -- interaction bases
     mcscript.call(
         [
@@ -75,7 +78,7 @@ def set_up_orbitals_manual(task, postfix=""):
 
     truncation_parameters = task["truncation_parameters"]
     if not os.path.exists(truncation_parameters["sp_filename"]):
-        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), "filename")
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), truncation_parameters["sp_filename"])
     mcscript.call([
         "cp", "--verbose",
         truncation_parameters["sp_filename"],
@@ -144,6 +147,9 @@ def set_up_orbitals(task, postfix=""):
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
+    # preprocess task dictionary
+    input.fill_default_values(task)
+
     target_orbital_set_up_functions = {
         modes.SingleParticleTruncationMode.kManual: set_up_orbitals_manual,
         modes.SingleParticleTruncationMode.kNmax: set_up_orbitals_Nmax,
@@ -168,12 +174,11 @@ def set_up_natural_orbitals(task, source_postfix, target_postfix):
     Limitation: Currently only supports harmonic oscillator style
     truncation.
     """
-    # validate truncation mode -- no longer applicable
-    # if task["sp_truncation_mode"] is not modes.SingleParticleTruncationMode.kNmax:
-    #     raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(modes.SingleParticleTruncationMode.kNmax, **task))
+    # preprocess task dictionary
+    input.fill_default_values(task)
 
     # validate natural orbitals enabled
-    if not task.get("natural_orbitals"):
+    if not task["natural_orbitals"]:
         raise mcscript.exception.ScriptError("natural orbitals are not enabled")
 
     mcscript.call(
@@ -200,6 +205,9 @@ def set_up_radial_analytic(task, postfix=""):
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
+    # preprocess task dictionary
+    input.fill_default_values(task)
+
     # validate basis mode
     if (task["basis_mode"] not in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):  # no modes.BasisMode.kGeneric yet
         raise ValueError("invalid basis mode {basis_mode}".format(**task))
@@ -285,10 +293,7 @@ def set_up_radial_analytic(task, postfix=""):
                 mode=mcscript.CallMode.kSerial
             )
         else:
-            if task.get("hw_coul_rescaled") is None:
-                b_ratio = 1
-            else:
-                b_ratio = math.sqrt(task["hw_coul_rescaled"]/task["hw"])
+            b_ratio = math.sqrt(task["hw_coul_rescaled"]/task["hw"])
             mcscript.call(
                 [
                     environ.shell_filename("radial-gen"),
@@ -313,8 +318,11 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
         source_postfix (str): postfix for old basis
         target_postfix (str): postfix for new basis
     """
+    # preprocess task dictionary
+    input.fill_default_values(task)
+
     # validate natural orbitals enabled
-    if not task.get("natural_orbitals"):
+    if not task["natural_orbitals"]:
         raise mcscript.exception.ScriptError("natural orbitals are not enabled")
 
     # compose radial transform
@@ -391,6 +399,9 @@ def set_up_observable_radial_analytic(task, postfix=""):
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
+    # preprocess task dictionary
+    input.fill_default_values(task)
+
     # validate basis mode
     if (task["basis_mode"] not in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):  # no modes.BasisMode.kGeneric yet
         raise ValueError("invalid basis mode {basis_mode}".format(**task))
@@ -398,7 +409,7 @@ def set_up_observable_radial_analytic(task, postfix=""):
     # basis radial code -- expected by radial_utils codes
     basis_radial_code = "oscillator"  # TODO GENERALIZE: if not oscillator basis
 
-    for (operator_type, order) in task.get("ob_observables", []):
+    for (operator_type, order) in task["ob_observables"]:
         if operator_type == 'E':
             radial_power = order
         elif operator_type == 'M':
@@ -433,11 +444,14 @@ def set_up_observable_radial_natorb(task, source_postfix, target_postfix):
         source_postfix (str): postfix for old basis
         target_postfix (str): postfix for new basis
     """
+    # preprocess task dictionary
+    input.fill_default_values(task)
+
     # validate natural orbitals enabled
-    if not task.get("natural_orbitals"):
+    if not task["natural_orbitals"]:
         raise mcscript.exception.ScriptError("natural orbitals are not enabled")
 
-    for (operator_type, order) in task.get("ob_observables", []):
+    for (operator_type, order) in task["ob_observables"]:
         mcscript.call(
             [
                 environ.shell_filename("radial-xform"),

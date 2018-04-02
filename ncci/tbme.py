@@ -28,6 +28,7 @@ from . import (
     modes,
     environ,
     operators,
+    input,
 )
 
 
@@ -38,29 +39,24 @@ def generate_tbme(task, postfix=""):
         task (dict): as described in module docstring
         postfix (string, optional): identifier added to input filenames
     """
+    # preprocess task dictionary
+    input.fill_default_values(task)
+
     # extract parameters for convenience
     A = sum(task["nuclide"])
     a_cm = task["a_cm"]
     hw = task["hw"]
-    hw_cm = task.get("hw_cm")
-    if (hw_cm is None):
-        hw_cm = hw
+    hw_cm = task["hw_cm"]
     hw_coul = task["hw_coul"]
-    hw_coul_rescaled = task.get("hw_coul_rescaled")
-    if (hw_coul_rescaled is None):
-        hw_coul_rescaled = hw
-    xform_truncation_int = task.get("xform_truncation_int")
-    if (xform_truncation_int is None):
-        xform_truncation_int = task["truncation_int"]
-    xform_truncation_coul = task.get("xform_truncation_coul")
-    if (xform_truncation_coul is None):
-        xform_truncation_coul = task["truncation_coul"]
+    hw_coul_rescaled = task["hw_coul_rescaled"]
+    xform_truncation_int = task["xform_truncation_int"]
+    xform_truncation_coul = task["xform_truncation_coul"]
 
     # accumulate h2mixer targets
     targets = collections.OrderedDict()
 
     # target: Hamiltonian
-    if (task.get("hamiltonian")):
+    if task["hamiltonian"]:
         targets["tbme-H"] = task["hamiltonian"]
     else:
         targets["tbme-H"] = operators.Hamiltonian(
@@ -69,20 +65,18 @@ def generate_tbme(task, postfix=""):
         )
 
     # accumulate observables
-    if (task.get("tb_observables")):
-        for (basename, operator) in task["tb_observables"]:
-            targets[basename] = operator
+    targets.update(task["tb_observables"])
 
     # target: radius squared
-    if ("tbme-rrel2" not in targets.keys()):
+    if "tbme-rrel2" not in targets.keys():
         targets["tbme-rrel2"] = operators.rrel2(A, hw)
-    # target: Ncm
-    if ("tbme-Ncm" not in targets.keys()):
-        targets["tbme-Ncm"] = operators.Ncm(A, hw/hw_cm)
 
     # optional observable sets
     # Hamiltonian components
     if ("H-components" in task["observable_sets"]):
+        # target: Ncm
+        if ("tbme-Ncm" not in targets.keys()):
+            targets["tbme-Ncm"] = operators.Ncm(A, hw/hw_cm)
         # target: Trel (diagnostic)
         targets["tbme-Trel"] = operators.Trel(A, hw)
         # target: VNN (diagnostic)
@@ -112,7 +106,7 @@ def generate_tbme(task, postfix=""):
     lines.append("")
 
     # global mode definitions
-    target_truncation = task.get("target_truncation")
+    target_truncation = task["target_truncation"]
     if target_truncation is None:
         # automatic derivation
         truncation_parameters = task["truncation_parameters"]
@@ -127,6 +121,10 @@ def generate_tbme(task, postfix=""):
             elif task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kFCI:
                 N1_max = truncation_parameters["Nmax"]
                 target_weight_max = utils.weight_max_string(("ob", N1_max))
+            else:
+                raise mcscript.exception.ScriptError(
+                    "invalid mb_truncation_mode {}".format(task["mb_truncation_mode"])
+                )
         else:
             if task["mb_truncation_mode"] is modes.ManyBodyTruncationMode.kFCI:
                 w1_max = truncation_parameters["sp_weight_max"]
