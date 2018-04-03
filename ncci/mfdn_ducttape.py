@@ -7,7 +7,6 @@ University of Notre Dame
 - 10/18/17 (pjf): Use separate work directory for each postfix.
 """
 import os
-import glob
 import collections
 
 import mcscript

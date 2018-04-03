@@ -44,15 +44,15 @@ def shell_filename(name):
 
 def mfdn_filename(name):
     """Construct filename for MFDn executable."""
-    if os.path.isfile(name):
-        return name
+    if os.path.isfile(mcscript.utils.expand_path(name)):
+        return mcscript.utils.expand_path(name)
     return os.path.join(mcscript.parameters.run.install_dir, "mfdn", name)
 
 
 def interaction_filename(name):
     """Construct filename for interaction h2 file."""
-    if os.path.isfile(name):
-        return name
+    if os.path.isfile(mcscript.utils.expand_path(name)):
+        return mcscript.utils.expand_path(name)
     return mcscript.utils.search_in_subdirectories(data_dir_h2_list, interaction_run_list, name)
 
 

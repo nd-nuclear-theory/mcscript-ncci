@@ -69,20 +69,19 @@ def generate_tbme(task, postfix=""):
         )
 
     # accumulate observables
-    if (task.get("tb_observables")):
+    if task.get("tb_observables"):
         for (basename, operator) in task["tb_observables"]:
-            targets[basename] = operator
+            targets["tbme-{}".format(basename)] = operator
 
     # target: radius squared
-    if ("tbme-rrel2" not in targets.keys()):
+    if "tbme-rrel2" not in targets:
         targets["tbme-rrel2"] = operators.rrel2(A, hw)
-    # target: Ncm
-    if ("tbme-Ncm" not in targets.keys()):
-        targets["tbme-Ncm"] = operators.Ncm(A, hw/hw_cm)
 
     # optional observable sets
     # Hamiltonian components
-    if ("H-components" in task["observable_sets"]):
+    if "H-components" in task["observable_sets"]:
+        # target: Ncm
+        targets["tbme-Ncm"] = operators.Ncm(A, hw/hw_cm)
         # target: Trel (diagnostic)
         targets["tbme-Trel"] = operators.Trel(A, hw)
         # target: VNN (diagnostic)
@@ -92,13 +91,13 @@ def generate_tbme(task, postfix=""):
             targets["tbme-VC"] = operators.VC(hw_coul_rescaled/hw_coul)
     # squared angular momenta
     if ("am-sqr" in task["observable_sets"]):
-        targets["tbme-L"] = operators.L()
-        targets["tbme-Sp"] = operators.Sp()
-        targets["tbme-Sn"] = operators.Sn()
-        targets["tbme-S"] = operators.S()
-        targets["tbme-J"] = operators.J()
+        targets["tbme-L2"] = operators.L()
+        targets["tbme-Sp2"] = operators.Sp()
+        targets["tbme-Sn2"] = operators.Sn()
+        targets["tbme-S2"] = operators.S()
+        targets["tbme-J2"] = operators.J()
     if ("isospin" in task["observable_sets"]):
-        targets["tbme-T"] = operators.T()
+        targets["tbme-T2"] = operators.T()
 
     # get set of required sources
     required_sources = set()
@@ -127,6 +126,10 @@ def generate_tbme(task, postfix=""):
             elif task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kFCI:
                 N1_max = truncation_parameters["Nmax"]
                 target_weight_max = utils.weight_max_string(("ob", N1_max))
+            else:
+                raise mcscript.exception.ScriptError(
+                    "invalid mb_truncation_mode {}".format(task["mb_truncation_mode"])
+                )
         else:
             if task["mb_truncation_mode"] is modes.ManyBodyTruncationMode.kFCI:
                 w1_max = truncation_parameters["sp_weight_max"]
@@ -168,8 +171,8 @@ def generate_tbme(task, postfix=""):
 
     # sources: VNN
     if ("VNN" in required_sources):
-        if os.path.isfile(task["interaction"]):
-            VNN_filename = task["interaction"]
+        if os.path.isfile(mcscript.utils.expand_path(task["interaction"])):
+            VNN_filename = mcscript.utils.expand_path(task["interaction"])
         else:
             VNN_filename = environ.interaction_filename(
                 "{}-{}-{:g}.bin".format(
