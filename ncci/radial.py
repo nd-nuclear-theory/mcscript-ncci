@@ -74,11 +74,16 @@ def set_up_orbitals_manual(task, postfix=""):
         raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(modes.SingleParticleTruncationMode.kManual, **task))
 
     truncation_parameters = task["truncation_parameters"]
-    if not os.path.exists(truncation_parameters["sp_filename"]):
-        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), truncation_parameters["sp_filename"])
+    sp_filename = truncation_parameters.get("sp_filename")
+    if sp_filename is None:
+        raise mcscript.exception.ScriptError("sp_orbitals file must be provided")
+    else:
+        sp_filename = mcscript.utils.expand_path(sp_filename)
+        if not os.path.exists(sp_filename):
+            raise FileNotFoundError(sp_filename)
     mcscript.call([
         "cp", "--verbose",
-        truncation_parameters["sp_filename"],
+        sp_filename,
         environ.orbitals_filename(postfix)
         ])
 

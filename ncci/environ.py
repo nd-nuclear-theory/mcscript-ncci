@@ -49,11 +49,40 @@ def mfdn_filename(name):
     return os.path.join(mcscript.parameters.run.install_dir, "mfdn", name)
 
 
-def interaction_filename(name):
-    """Construct filename for interaction h2 file."""
-    if os.path.isfile(mcscript.utils.expand_path(name)):
-        return mcscript.utils.expand_path(name)
-    return mcscript.utils.search_in_subdirectories(data_dir_h2_list, interaction_run_list, name)
+def interaction_filename(interaction, truncation, hw):
+    """Construct filename for interaction h2 file.
+
+    Arguments:
+        interaction (str): interaction name
+        truncation (tuple): truncation tuple, e.g. ("tb", 10)
+        hw (float): hw of interaction
+
+    Returns:
+        (str): fully qualified path of interaction file
+
+    Raises:
+        mcscript.exception.ScriptError: if no suitable match is found
+    """
+    interaction_filename_patterns = [
+        "{}-{}-{:04.1f}.bin",
+        "{}-{}-{:g}.bin",
+        "{}-{}-{:04.1f}.dat",
+        "{}-{}-{:g}.dat",
+    ]
+    for filename_pattern in interaction_filename_patterns:
+        filename = filename_pattern.format(
+            interaction, mcscript.utils.dashify(truncation), hw
+        )
+        path = mcscript.utils.search_in_subdirectories(
+            data_dir_h2_list, interaction_run_list, filename,
+            fail_on_not_found=False
+            )
+        if path is not None:
+            return path
+
+    # no valid file found
+    raise mcscript.exception.ScriptError("no match on interaction filename")
+
 
 
 ################################################################

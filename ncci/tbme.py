@@ -170,17 +170,19 @@ def generate_tbme(task, postfix=""):
     lines.append("")
 
     # sources: VNN
-    if ("VNN" in required_sources):
-        if os.path.isfile(mcscript.utils.expand_path(task["interaction"])):
-            VNN_filename = mcscript.utils.expand_path(task["interaction"])
+    if "VNN" in required_sources:
+        VNN_filename = task.get("interaction_file")
+        if VNN_filename is not None:
+            VNN_filename = mcscript.utils.expand_path(VNN_filename)
+            if not os.path.isfile(VNN_filename):
+                raise FileNotFoundError(VNN_filename)
         else:
             VNN_filename = environ.interaction_filename(
-                "{}-{}-{:g}.bin".format(
-                    task["interaction"],
-                    mcscript.utils.dashify(task["truncation_int"]),
-                    task["hw_int"]
-                )
+                task["interaction"],
+                task["truncation_int"],
+                task["hw_int"]
             )
+
         if task["basis_mode"] is modes.BasisMode.kDirect:
             lines.append("define-source input VNN {VNN_filename}".format(VNN_filename=VNN_filename, **task))
         else:
@@ -196,14 +198,18 @@ def generate_tbme(task, postfix=""):
     #
     # Note: This is the "unscaled" Coulomb, still awaiting the scaling
     # factor from dilation.
-    if ("VC_unscaled" in required_sources):
-        VC_filename = environ.interaction_filename(
-            "{}-{}-{:g}.bin".format(
+    if "VC_unscaled" in required_sources:
+        VC_filename = task.get("coulomb_file")
+        if VC_filename is not None:
+            VC_filename = mcscript.utils.expand_path(VC_filename)
+            if not os.path.isfile(VC_filename):
+                raise FileNotFoundError(VC_filename)
+        else:
+            VC_filename = environ.interaction_filename(
                 "VC",
-                mcscript.utils.dashify(task["truncation_coul"]),
+                task["truncation_coul"],
                 task["hw_coul"]
             )
-        )
         if task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated):
             lines.append("define-source input VC_unscaled {VC_filename}".format(VC_filename=VC_filename, **task))
         else:

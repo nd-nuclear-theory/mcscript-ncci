@@ -48,11 +48,19 @@ University of Notre Dame
 ----------------------------------------------------------------
 ## input TBME parameters ##
 
+- `interaction_file`: `str`
+  - path to h2 file for input interaction
+  - shell expansions like `~` and `${VAR}` are supported
+
 - `truncation_int`: truncation tuple
   - input interaction TBME cutoff, as tuple `("ob"|"tb", N)`
 
 - `hw_int`: `float`
   - hw of basis for source interaction TBMEs
+
+- `coulomb_file`: `str`
+  - path to h2 file for input Coulomb interaction
+  - shell expansions like `~` and `${VAR}` are supported
 
 - `truncation_coul`: truncation tuple
   - input Coulomb TBME cutoff, as tuple `("ob"|"tb",N)`

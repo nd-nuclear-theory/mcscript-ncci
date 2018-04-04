@@ -163,11 +163,16 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     mcscript.utils.write_input(work_dir+"/mfdn.dat", input_lines=lines)
 
     # import partitioning file
-    if (task["partition_filename"] is not None):
-        if (not os.path.exists(task["partition_filename"])):
+    partition_filename = task.get("partition_filename")
+    if partition_filename is not None:
+        partition_filename = mcscript.utils.expand_path(partition_filename)
+        if not os.path.exists(partition_filename):
             raise mcscript.exception.ScriptError("partition file not found")
-        mcscript.call(["cp", "--verbose", task["partition_filename"], work_dir+"/mfdn_partitioning.info"])
-
+        mcscript.call([
+            "cp", "--verbose",
+            partition_filename,
+            os.path.join(work_dir, "mfdn_partitioning.info")
+            ])
     # enter work directory
     os.chdir(work_dir)
 
