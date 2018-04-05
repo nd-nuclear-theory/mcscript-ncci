@@ -163,9 +163,9 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         inputlist["TBMEfile"] = "tbme-H"
 
         # tbo: collect tbo names
-        obs_basename_list = ["tbme-rrel2"]
+        obs_basename_list = ["tbme-rrel2", "tbme-Ncm"]
         if "H-components" in task["observable_sets"]:
-            obs_basename_list += ["tbme-Trel", "tbme-Ncm", "tbme-VNN"]
+            obs_basename_list += ["tbme-Trel", "tbme-Tcm", "tbme-VNN"]
             if task["use_coulomb"]:
                 obs_basename_list += ["tbme-VC"]
         if "am-sqr" in task["observable_sets"]:

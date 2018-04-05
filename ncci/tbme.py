@@ -77,13 +77,17 @@ def generate_tbme(task, postfix=""):
     if "tbme-rrel2" not in targets:
         targets["tbme-rrel2"] = operators.rrel2(A, hw)
 
+    # target: Ncm
+    if "tbme-Ncm" not in targets:
+        targets["tbme-Ncm"] = operators.Ncm(A, hw/hw_cm)
+
     # optional observable sets
     # Hamiltonian components
     if "H-components" in task["observable_sets"]:
-        # target: Ncm
-        targets["tbme-Ncm"] = operators.Ncm(A, hw/hw_cm)
         # target: Trel (diagnostic)
         targets["tbme-Trel"] = operators.Trel(A, hw)
+        # target: Tcm (diagnostic)
+        targets["tbme-Tcm"] = operators.Tcm(A, hw)
         # target: VNN (diagnostic)
         targets["tbme-VNN"] = operators.VNN()
         # target: VC (diagnostic)
