@@ -123,7 +123,7 @@ def task_handler_oscillator_mfdn(task, postfix=""):
     mfdn_driver.run_mfdn(task, postfix=postfix)
 
     # save quick inspection results
-    save_mfdn_output_out_only(task, postfix=postfix)
+    mfdn_driver.save_mfdn_output_out_only(task, postfix=postfix)
 
 def task_handler_oscillator(task, postfix=""):
     """Task handler for basic oscillator run.
