@@ -14,6 +14,7 @@ University of Notre Dame
 - 09/25/17 (pjf): Add archive_handler_mfdn() and archive_handler_mfdn_hsi().
 - 10/11/17 (pjf): Break task handlers into serial/hybrid phases.
 - 10/18/17 (pjf): Call extract_natural_orbitals().
+- 04/23/18 (mac): Provide handler for MFDn phase of oscillator run.
 """
 import os
 import glob
@@ -95,17 +96,34 @@ def task_handler_post_run(task, postfix=""):
 ################################################################
 
 def task_handler_oscillator_pre(task, postfix=""):
-    """Task handler for serial components before MFDn run.
+    """Task handler for serial components before MFDn phase of basic oscillator run.
 
     Arguments:
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
+
     radial.set_up_interaction_orbitals(task, postfix=postfix)
     radial.set_up_orbitals(task, postfix=postfix)
     radial.set_up_radial_analytic(task, postfix=postfix)
     tbme.generate_tbme(task, postfix=postfix)
 
+def task_handler_oscillator_mfdn(task, postfix=""):
+    """Task handler for MFDn phase of basic oscillator run.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+
+    # run MFDn
+    mfdn_driver = task.get("mfdn_driver")
+    if mfdn_driver is None:
+        mfdn_driver = default_mfdn_driver
+    mfdn_driver.run_mfdn(task, postfix=postfix)
+
+    # save quick inspection results
+    save_mfdn_output_out_only(task, postfix=postfix)
 
 def task_handler_oscillator(task, postfix=""):
     """Task handler for basic oscillator run.
@@ -114,6 +132,7 @@ def task_handler_oscillator(task, postfix=""):
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
+
     mfdn_driver = task.get("mfdn_driver")
     if mfdn_driver is None:
         mfdn_driver = default_mfdn_driver
