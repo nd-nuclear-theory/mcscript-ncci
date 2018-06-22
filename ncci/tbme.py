@@ -45,6 +45,7 @@ def generate_tbme(task, postfix=""):
     hw_cm = task.get("hw_cm")
     if (hw_cm is None):
         hw_cm = hw
+    hw_int = task["hw_int"]
     hw_coul = task["hw_coul"]
     hw_coul_rescaled = task.get("hw_coul_rescaled")
     if (hw_coul_rescaled is None):
@@ -55,6 +56,13 @@ def generate_tbme(task, postfix=""):
     xform_truncation_coul = task.get("xform_truncation_coul")
     if (xform_truncation_coul is None):
         xform_truncation_coul = task["truncation_coul"]
+
+    # sanity check on hw
+    if (task["basis_mode"] is modes.BasisMode.kDirect) and (hw != hw_int):
+        raise mcscript.exception.ScriptError(
+            "Using basis mode {} but hw = {} and hw_int = {}".format(
+                task["basis_mode"], hw, hw_int
+            ))
 
     # accumulate h2mixer targets
     targets = collections.OrderedDict()
