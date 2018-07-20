@@ -213,8 +213,6 @@ def task_descriptor_c1(task):
             - Currently support Nmax and triangular s.p. truncations.
             - Currently support FCI, Nmax, and WTmax m.b. truncations.
     """
-    # preprocess task dictionary
-    input.fill_default_values(task)
 
     template_string = (
         "Z{nuclide[0]}-N{nuclide[1]}"
@@ -240,7 +238,7 @@ def task_descriptor_c1(task):
         sp_truncation=sp_truncation,
         mb_truncation=mb_truncation,
         mixed_parity_indicator=mixed_parity_indicator,
-        **task
+        **mcscript.utils.dict_union(task, truncation_parameters)
         )
 
     return descriptor
