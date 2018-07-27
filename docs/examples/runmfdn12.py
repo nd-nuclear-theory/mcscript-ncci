@@ -1,22 +1,16 @@
-""" runmfdn01.py
+""" runmfdn12.py
 
     See runmfdn.txt for description.
 
     Mark A. Caprio
     University of Notre Dame
 
-    - 12/14/16 (mac): Created.
-    - 12/29/16 (mac): Complete run.  Add full run list.
-    - 01/29/17 (pjf): Updated for new truncation_mode parameter.
-    - 06/03/17 (pjf): Updated for new scripting.
-    - 07/31/17 (pjf): Set MFDn driver module in task dictionary.
-    - 08/11/17 (pjf): Update for split single-particle and many-body truncation modes.
-    - 12/19/17 (pjf): Update for mfdn->ncci rename.
+    - 01/04/18 (pjf): Created, copied from runmfd09.
 """
 
 import mcscript
 import ncci
-import ncci.mfdn_v14
+import ncci.mfdn_v15
 
 # initialize mcscript
 mcscript.init()
@@ -61,12 +55,13 @@ task = {
     "target_truncation": None,
 
     # traditional oscillator many-body truncation
-    "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
-    "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
+    "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kManual,
+    "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kWeightMax,
     "truncation_parameters": {
-        "Nv": 1,
-        "Nmax": 2,
-        "Nstep": 2,
+        "sp_filename": "/home/pjfasano/tmp/Nmax20-orbitals.dat",
+        "sp_weight_max": 20,
+        "mb_weight_max": 2.1,
+        "parity": +1,
         "M": 0,
         },
 
@@ -84,14 +79,13 @@ task = {
     "save_obdme": True,
 
     # two-body observables
-    ## "observable_sets": ["H-components","am-sqr","isospin"],
+    ## "observable_sets": ["H-components","am-sqr"],
     "observable_sets": ["H-components"],
-    "tb_observables": [],
 
     # version parameters
-    "h2_format": 0,
-    "mfdn_executable": "v14-beta06/xmfdn-h2-lan",
-    "mfdn_driver": ncci.mfdn_v14,
+    "h2_format": 15099,
+    "mfdn_executable": "v15-beta00/xmfdn-h2-lan",
+    "mfdn_driver": ncci.mfdn_v15,
 
 }
 
@@ -101,15 +95,15 @@ task = {
 
 # add task descriptor metadata field (needed for filenames)
 task["metadata"] = {
-    "descriptor": ncci.descriptors.task_descriptor_7(task)
+    "descriptor": ncci.descriptors.task_descriptor_9(task)
     }
 
 ncci.radial.set_up_interaction_orbitals(task)
 ncci.radial.set_up_orbitals(task)
 ncci.radial.set_up_radial_analytic(task)
 ncci.tbme.generate_tbme(task)
-ncci.mfdn_v14.run_mfdn(task)
-ncci.mfdn_v14.save_mfdn_output(task)
+ncci.mfdn_v15.run_mfdn(task)
+ncci.mfdn_v15.save_mfdn_output(task)
 
 ##################################################################
 # task control

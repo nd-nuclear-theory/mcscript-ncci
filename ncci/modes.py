@@ -13,6 +13,7 @@ University of Notre Dame
 - 9/12/17 (mac): Put mfdn executable filename under common mcscript install directory.
 - 09/12/17 (pjf): Split config.py -> mode.py + environ.py.
 - 09/27/17 (pjf): Add MFDnRunMode options for counting-only modes.
+- 01/04/18 (pjf): Add MFDnRunMode kManual for user-provided orbital file.
 """
 
 import enum
@@ -63,6 +64,13 @@ class BasisMode(enum.Enum):
 class SingleParticleTruncationMode(enum.Enum):
     """General truncation modes for single-particle basis
 
+    kManual:
+        - manually provided orbital file
+        - compatible with MFDn v15+
+        - "truncation_parameters" (dict) must contain:
+            - "sp_filename" (str): full path to orbital file
+            - "sp_weight_max" (float): maximum weight for single-particle orbitals
+
     kNmax:
         - traditional Nmax truncation; weight is (2*n + l)
         - compatible with MFDn v14+
@@ -84,6 +92,7 @@ class SingleParticleTruncationMode(enum.Enum):
 
     """
 
+    kManual = 0
     kNmax = 1
     kTriangular = 2
 
@@ -100,6 +109,7 @@ class ManyBodyTruncationMode(enum.Enum):
             - "Nv" (int): N of valence shell (for use in truncation)
             - "Nmax" (int): many-body excitation cutoff
             - "Nstep" (int): Nstep (2 for single parity, 1 for mixed parity)
+            - "M" (float): M-scheme angular momentum projection value
 
 
     kWeightMax:
@@ -107,6 +117,7 @@ class ManyBodyTruncationMode(enum.Enum):
         - "truncation_parameters" (dict) must contain:
             - "mb_weight_max" (float): maximum weight for many-body states
             - "parity" (int): absolute parity for run (+1, 0, or -1)
+            - "M" (float): M-scheme angular momentum projection value
 
 
     kFCI:
@@ -114,6 +125,7 @@ class ManyBodyTruncationMode(enum.Enum):
         - many-body basis constrained only by single-particle basis
         - "truncation_parameters" (dict) must contain:
             - "parity" (int): absolute parity for run (+1, 0, or -1)
+            - "M" (float): M-scheme angular momentum projection value
     """
 
     kNmax = 1

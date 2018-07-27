@@ -45,6 +45,7 @@ def generate_tbme(task, postfix=""):
     hw_cm = task.get("hw_cm")
     if (hw_cm is None):
         hw_cm = hw
+    hw_int = task["hw_int"]
     hw_coul = task["hw_coul"]
     hw_coul_rescaled = task.get("hw_coul_rescaled")
     if (hw_coul_rescaled is None):
@@ -55,6 +56,13 @@ def generate_tbme(task, postfix=""):
     xform_truncation_coul = task.get("xform_truncation_coul")
     if (xform_truncation_coul is None):
         xform_truncation_coul = task["truncation_coul"]
+
+    # sanity check on hw
+    if (task["basis_mode"] is modes.BasisMode.kDirect) and (hw != hw_int):
+        raise mcscript.exception.ScriptError(
+            "Using basis mode {} but hw = {} and hw_int = {}".format(
+                task["basis_mode"], hw, hw_int
+            ))
 
     # accumulate h2mixer targets
     targets = collections.OrderedDict()
@@ -69,22 +77,25 @@ def generate_tbme(task, postfix=""):
         )
 
     # accumulate observables
-    if (task.get("tb_observables")):
+    if task.get("tb_observables"):
         for (basename, operator) in task["tb_observables"]:
-            targets[basename] = operator
+            targets["tbme-{}".format(basename)] = operator
 
     # target: radius squared
-    if ("tbme-rrel2" not in targets.keys()):
+    if "tbme-rrel2" not in targets:
         targets["tbme-rrel2"] = operators.rrel2(A, hw)
+
     # target: Ncm
-    if ("tbme-Ncm" not in targets.keys()):
+    if "tbme-Ncm" not in targets:
         targets["tbme-Ncm"] = operators.Ncm(A, hw/hw_cm)
 
     # optional observable sets
     # Hamiltonian components
-    if ("H-components" in task["observable_sets"]):
+    if "H-components" in task["observable_sets"]:
         # target: Trel (diagnostic)
         targets["tbme-Trel"] = operators.Trel(A, hw)
+        # target: Tcm (diagnostic)
+        targets["tbme-Tcm"] = operators.Tcm(A, hw)
         # target: VNN (diagnostic)
         targets["tbme-VNN"] = operators.VNN()
         # target: VC (diagnostic)
@@ -92,13 +103,13 @@ def generate_tbme(task, postfix=""):
             targets["tbme-VC"] = operators.VC(hw_coul_rescaled/hw_coul)
     # squared angular momenta
     if ("am-sqr" in task["observable_sets"]):
-        targets["tbme-L"] = operators.L()
-        targets["tbme-Sp"] = operators.Sp()
-        targets["tbme-Sn"] = operators.Sn()
-        targets["tbme-S"] = operators.S()
-        targets["tbme-J"] = operators.J()
+        targets["tbme-L2"] = operators.L()
+        targets["tbme-Sp2"] = operators.Sp()
+        targets["tbme-Sn2"] = operators.Sn()
+        targets["tbme-S2"] = operators.S()
+        targets["tbme-J2"] = operators.J()
     if ("isospin" in task["observable_sets"]):
-        targets["tbme-T"] = operators.T()
+        targets["tbme-T2"] = operators.T()
 
     # get set of required sources
     required_sources = set()
@@ -127,13 +138,17 @@ def generate_tbme(task, postfix=""):
             elif task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kFCI:
                 N1_max = truncation_parameters["Nmax"]
                 target_weight_max = utils.weight_max_string(("ob", N1_max))
+            else:
+                raise mcscript.exception.ScriptError(
+                    "invalid mb_truncation_mode {}".format(task["mb_truncation_mode"])
+                )
         else:
             if task["mb_truncation_mode"] is modes.ManyBodyTruncationMode.kFCI:
                 w1_max = truncation_parameters["sp_weight_max"]
                 target_weight_max = utils.weight_max_string(("ob", w1_max))
             else:
                 w1_max = truncation_parameters["sp_weight_max"]
-                w2_max = truncation_parameters["mb_weight_max"]  # TODO this is probably too large
+                w2_max = min(truncation_parameters["mb_weight_max"], 2*truncation_parameters["sp_weight_max"])  # TODO this is probably too large
                 target_weight_max = utils.weight_max_string((w1_max, w2_max))
     else:
         # given value
@@ -167,17 +182,19 @@ def generate_tbme(task, postfix=""):
     lines.append("")
 
     # sources: VNN
-    if ("VNN" in required_sources):
-        if os.path.isfile(task["interaction"]):
-            VNN_filename = task["interaction"]
+    if "VNN" in required_sources:
+        VNN_filename = task.get("interaction_file")
+        if VNN_filename is not None:
+            VNN_filename = mcscript.utils.expand_path(VNN_filename)
+            if not os.path.isfile(VNN_filename):
+                raise FileNotFoundError(VNN_filename)
         else:
             VNN_filename = environ.interaction_filename(
-                "{}-{}-{:g}.bin".format(
-                    task["interaction"],
-                    mcscript.utils.dashify(task["truncation_int"]),
-                    task["hw_int"]
-                )
+                task["interaction"],
+                task["truncation_int"],
+                task["hw_int"]
             )
+
         if task["basis_mode"] is modes.BasisMode.kDirect:
             lines.append("define-source input VNN {VNN_filename}".format(VNN_filename=VNN_filename, **task))
         else:
@@ -193,14 +210,18 @@ def generate_tbme(task, postfix=""):
     #
     # Note: This is the "unscaled" Coulomb, still awaiting the scaling
     # factor from dilation.
-    if ("VC_unscaled" in required_sources):
-        VC_filename = environ.interaction_filename(
-            "{}-{}-{:g}.bin".format(
+    if "VC_unscaled" in required_sources:
+        VC_filename = task.get("coulomb_file")
+        if VC_filename is not None:
+            VC_filename = mcscript.utils.expand_path(VC_filename)
+            if not os.path.isfile(VC_filename):
+                raise FileNotFoundError(VC_filename)
+        else:
+            VC_filename = environ.interaction_filename(
                 "VC",
-                mcscript.utils.dashify(task["truncation_coul"]),
+                task["truncation_coul"],
                 task["hw_coul"]
             )
-        )
         if task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated):
             lines.append("define-source input VC_unscaled {VC_filename}".format(VC_filename=VC_filename, **task))
         else:

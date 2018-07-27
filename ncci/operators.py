@@ -178,6 +178,21 @@ def Trel(A, hw, **kwargs):
     out += (-1/A*hw) * Vk1k2()
     return out
 
+def Tcm(A, hw, **kwargs):
+    """Center-of-mass kinetic energy operator.
+
+    Arguments:
+        A (int): mass number
+        hw (float): hw of basis
+
+    Returns:
+        CoefficientDict containing coefficients for Tcm operator.
+    """
+    out = mcscript.utils.CoefficientDict()
+    out += (hw/(2*A)) * Uksqr()
+    out += (hw/A) * Vk1k2()
+    return out
+
 
 ################################################################
 # standard Hamiltonian

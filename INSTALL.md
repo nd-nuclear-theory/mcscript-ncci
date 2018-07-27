@@ -9,19 +9,28 @@ Prerequisites: `mcscript`, `shell`
   % cd ~/code
   ~~~~~~~~~~~~~~~~
 
-  Clone the shell repository and all submodules.  In the following,
-  replace "netid" with your ND NetID:
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  % git clone ssh://<netid>@crcfe01.crc.nd.edu/afs/crc.nd.edu/group/nuclthy/git/mcscript-ncci.git
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  Or, from the secondary (public) repository on github:
+  Clone the `mcscript-ncci` repository and all submodules.
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   % git clone https://github.com/nd-nuclear-theory/mcscript-ncci.git
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  Then change your working directory (cd) to the project directory for
-  all the following steps.
+  Change your working directory to the repository for the following steps:
+  ~~~~~~~~~~~~~~~~
+  % cd mcscript
+  ~~~~~~~~~~~~~~~~
+
+  If you want the bleeding-edge, potentially broken version, check out the
+  `develop` branch:
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  % git checkout -t origin/develop
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Setup the package in your `PYTHONPATH` by running `pip` (or `pip3` on Debian):
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  % pip install --user --editable .
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  This will ***fail*** if you have not already installed `mcscript`. If this
+  happens, go back and ensure that `mcscript` has been installed successfully.
 
   a. Subsequently updating source
   ~~~~~~~~~~~~~~~~
@@ -30,20 +39,23 @@ Prerequisites: `mcscript`, `shell`
 
 # 2. Environment Configuration
   `mcscript-ncci` requires environment variables to find interaction files.
+  TBME files are expected to live in subdirectories of `NCCI_DATA_DIR_H2`, and
+  follow the naming convention:
+  ```
+  <interaction_group>/<interaction name>-<ob|tb>-<N1bmax|N2bmax>-<hw>.bin
+  ```
 
   #### @NDCRC: ####
   `.cshrc`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
   setenv NCCI_DATA_DIR_H2 "/afs/crc.nd.edu/group/nuclthy/data/h2"
-  setenv PYTHONPATH ${HOME}/code/mcscript-ncci:${PYTHONPATH}
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   `.bashrc` or `.bash_profile`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
   export NCCI_DATA_DIR_H2="/afs/crc.nd.edu/group/nuclthy/data/h2"
-  export PYTHONPATH="${HOME}/code/mcscript-ncci:${PYTHONPATH}"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   #### @NERSC: ####
@@ -51,12 +63,10 @@ Prerequisites: `mcscript`, `shell`
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
   setenv NCCI_DATA_DIR_H2 "/project/projectdirs/m2032/data/h2"
-  setenv PYTHONPATH ${SHELL_PROJECT_DIR}/script:${PYTHONPATH}
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   `.bashrc` or `.bash_profile`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
   export NCCI_DATA_DIR_H2="/project/projectdirs/m2032/data/h2"
-  export PYTHONPATH="${HOME}/code/mcscript-ncci:${PYTHONPATH}"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

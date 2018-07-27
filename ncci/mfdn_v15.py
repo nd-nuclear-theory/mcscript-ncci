@@ -24,6 +24,8 @@ University of Notre Dame
   + Use separate work directory for each postfix.
   + Factor out extract_natural_orbitals().
 - 10/25/17 (pjf): Rename "observables" to "tb_observables".
+- 02/11/18 (pjf): Correctly archive mfdn_partitioning.info.
+- 07/23/18 (pjf): Archive partitioning with wave functions.
 """
 import os
 import glob
@@ -56,6 +58,7 @@ def set_up_Nmax_truncation(task, inputlist):
         inputlist["Nmin"] = 1
     inputlist["Nmax"] = int(truncation_parameters["Nmax"])
     inputlist["deltaN"] = int(truncation_parameters["Nstep"])
+    inputlist["TwoMj"] = int(2*truncation_parameters["M"])
 
 
 def set_up_WeightMax_truncation(task, inputlist):
@@ -73,6 +76,7 @@ def set_up_WeightMax_truncation(task, inputlist):
 
     inputlist["WTmax"] = truncation_parameters["mb_weight_max"]
     inputlist["parity"] = truncation_parameters["parity"]
+    inputlist["TwoMj"] = int(2*truncation_parameters["M"])
 
 
 def set_up_FCI_truncation(task, inputlist):
@@ -98,6 +102,7 @@ def set_up_FCI_truncation(task, inputlist):
 
     inputlist["WTmax"] = sum(task["nuclide"])*max_sp_weight
     inputlist["parity"] = int(parity)
+    inputlist["TwoMj"] = int(2*truncation_parameters["M"])
 
 
 truncation_setup_functions = {
@@ -133,9 +138,6 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     # nucleus
     inputlist["Nprotons"], inputlist["Nneutrons"] = task["nuclide"]
 
-    # Mj
-    inputlist["TwoMj"] = int(2*task["Mj"])
-
     # single-particle orbitals
     inputlist["orbitalfile"] = environ.orbitals_filename(postfix)
     mcscript.call([
@@ -162,24 +164,24 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         inputlist["TBMEfile"] = "tbme-H"
 
         # tbo: collect tbo names
-        obs_basename_list = ["tbme-rrel2"]
-        if ("H-components" in task["observable_sets"]):
-            obs_basename_list += ["tbme-Trel", "tbme-Ncm", "tbme-VNN"]
-            if (task["use_coulomb"]):
+        obs_basename_list = ["tbme-rrel2", "tbme-Ncm"]
+        if "H-components" in task["observable_sets"]:
+            obs_basename_list += ["tbme-Trel", "tbme-Tcm", "tbme-VNN"]
+            if task["use_coulomb"]:
                 obs_basename_list += ["tbme-VC"]
-        if ("am-sqr" in task["observable_sets"]):
-            obs_basename_list += ["tbme-L", "tbme-Sp", "tbme-Sn", "tbme-S", "tbme-J"]
-        if ("isospin" in task["observable_sets"]):
-            obs_basename_list += ["tbme-T"]
-        if ("tb_observables" in task):
-            obs_basename_list += [basename for (basename, operator) in task["tb_observables"]]
+        if "am-sqr" in task["observable_sets"]:
+            obs_basename_list += ["tbme-L2", "tbme-Sp2", "tbme-Sn2", "tbme-S2", "tbme-J2"]
+        if "isospin" in task["observable_sets"]:
+            obs_basename_list += ["tbme-T2"]
+        if "tb_observables" in task:
+            obs_basename_list += ["tbme-{}".format(basename) for (basename, operator) in task["tb_observables"]]
 
         # tbo: log tbo names in separate file to aid future data analysis
         mcscript.utils.write_input("tbo_names{:s}.dat".format(postfix), input_lines=obs_basename_list)
 
         # tbo: count number of observables
         num_obs = len(obs_basename_list)
-        if (num_obs > 32):
+        if num_obs > 32:
             raise mcscript.exception.ScriptError("Too many observables for MFDn v15")
 
         inputlist["numTBops"] = num_obs
@@ -218,12 +220,14 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     )
 
     # import partitioning file
-    if (task["partition_filename"] is not None):
-        if (not os.path.exists(task["partition_filename"])):
+    partition_filename = task.get("partition_filename")
+    if partition_filename is not None:
+        partition_filename = mcscript.utils.expand_path(partition_filename)
+        if not os.path.exists(partition_filename):
             raise mcscript.exception.ScriptError("partition file not found")
         mcscript.call([
             "cp", "--verbose",
-            task["partition_filename"],
+            partition_filename,
             os.path.join(work_dir, "mfdn_partitioning.info")
             ])
 
@@ -383,6 +387,9 @@ def save_mfdn_output(task, postfix=""):
     ]
     if os.path.isfile(work_dir+"/mfdn_sp_orbitals.info"):
         archive_file_list += [work_dir+"/mfdn_sp_orbitals.info"]
+    # partitioning file
+    if os.path.isfile(work_dir+"/mfdn_partitioning.info"):
+        archive_file_list += [work_dir+"/mfdn_partitioning.info"]
     # renamed versions
     archive_file_list += [out_filename, res_filename]
     # MFDN obdme
@@ -406,6 +413,7 @@ def save_mfdn_output(task, postfix=""):
     if task.get("save_wavefunctions"):
         smwf_archive_file_list = glob.glob(work_dir+"/mfdn_smwf*")
         smwf_archive_file_list += glob.glob(work_dir+"/mfdn_MBgroups*")
+        smwf_archive_file_list += glob.glob(work_dir+"/mfdn_partitioning.*")
         smwf_archive_filename = "{:s}-wf.tar".format(filename_prefix)
         mcscript.call(
             [

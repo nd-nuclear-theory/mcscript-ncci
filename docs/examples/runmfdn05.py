@@ -48,7 +48,7 @@ Nmax_list = mcscript.utils.value_range(*Nmax_range)
 # interactions
 interaction_coulomb_truncation_list = [
     ("JISP16", True, ("tb", 20)),
-    ("N2LOopt500", False, ("tb", 20))
+    # ("N2LOopt500", False, ("tb", 20))
 ]
 
 # General recommendations for iteration order on parameters under old
@@ -94,7 +94,7 @@ task_list = [
 
         # basis parameters
         "basis_mode": ncci.modes.BasisMode.kDirect,
-        "hw": 20.,
+        "hw": hw,
 
         # transformation parameters
         "xform_truncation_int": None,
@@ -106,18 +106,19 @@ task_list = [
         "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
         "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
         "truncation_parameters": {
+            "M": 0,
             "Nv": 0,
             "Nmax": Nmax,
             "Nstep": 2,
             },
 
         # diagonalization parameters
-        "Mj": 0,
         "eigenvectors": 5,
         "initial_vector": -2,
         "max_iterations": 500,
         "tolerance": 1e-6,
         "partition_filename": None,
+        "save_wavefunctions": True,
 
         # obdme parameters
         ## "hw_for_trans": 20,
@@ -145,7 +146,7 @@ task_list = [
 ##################################################################
 
 def task_pool(current_task):
-    pool = "Nmax{truncation_parameters[Nmax]:02d}-Mj{Mj:3.1f}".format(**current_task)
+    pool = "Nmax{Nmax:02d}-Mj{M:3.1f}".format(**current_task["truncation_parameters"])
     return pool
 
 
@@ -166,7 +167,7 @@ mcscript.task.init(
     task_mask=task_mask,
     phase_handler_list=[ncci.handlers.task_handler_oscillator],
     # Note: change to mcscript.task.archive_handler_hsi for tape backup
-    archive_phase_handler_list=[mcscript.task.archive_handler_generic]
+    archive_phase_handler_list=[ncci.handlers.archive_handler_mfdn_hsi]
     )
 
 
