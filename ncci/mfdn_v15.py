@@ -25,6 +25,7 @@ University of Notre Dame
   + Factor out extract_natural_orbitals().
 - 10/25/17 (pjf): Rename "observables" to "tb_observables".
 - 02/11/18 (pjf): Correctly archive mfdn_partitioning.info.
+- 07/23/18 (pjf): Archive partitioning with wave functions.
 """
 import os
 import glob
@@ -412,6 +413,7 @@ def save_mfdn_output(task, postfix=""):
     if task.get("save_wavefunctions"):
         smwf_archive_file_list = glob.glob(work_dir+"/mfdn_smwf*")
         smwf_archive_file_list += glob.glob(work_dir+"/mfdn_MBgroups*")
+        smwf_archive_file_list += glob.glob(work_dir+"/mfdn_partitioning.*")
         smwf_archive_filename = "{:s}-wf.tar".format(filename_prefix)
         mcscript.call(
             [
