@@ -15,9 +15,9 @@ Prerequisites: `mcscript`, `shell`
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   Change your working directory to the repository for the following steps:
-  ~~~~~~~~~~~~~~~~
-  % cd mcscript
-  ~~~~~~~~~~~~~~~~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  % cd mcscript-ncci
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   If you want the bleeding-edge, potentially broken version, check out the
   `develop` branch:

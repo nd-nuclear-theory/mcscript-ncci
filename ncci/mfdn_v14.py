@@ -360,7 +360,7 @@ def save_mfdn_output(task, postfix=""):
         smwf_archive_filename = "{:s}-wf.tar".format(filename_prefix)
         mcscript.call(
             [
-                "tar", "zcvf", smwf_archive_filename,
+                "tar", "cvf", smwf_archive_filename,
                 "--transform=s,{:s}/,,".format(work_dir),
                 "--transform=s,^,{:s}/{:s}{:s}/,".format(mcscript.parameters.run.name, descriptor, postfix),
                 "--show-transformed"
