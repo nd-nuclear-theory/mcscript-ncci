@@ -26,6 +26,7 @@ University of Notre Dame
 - 10/25/17 (pjf): Rename "observables" to "tb_observables".
 - 02/11/18 (pjf): Correctly archive mfdn_partitioning.info.
 - 07/23/18 (pjf): Archive partitioning with wave functions.
+- 12/17/18 (pjf): Add "mfdn_inputlist" as pass-through override.
 """
 import os
 import glob
@@ -212,6 +213,9 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             for (J, g_rel, i) in task["obdme_reference_state_list"]:
                 obslist["ref2J"].append(int(2*J))
                 obslist["refseq"].append(i)
+
+    # manual override inputlist
+    inputlist.update(task.get("mfdn_inputlist", {}))
 
     # generate MFDn input file
     mcscript.utils.write_namelist(
