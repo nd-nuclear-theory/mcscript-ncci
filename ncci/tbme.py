@@ -175,6 +175,16 @@ def generate_tbme(task, postfix=""):
     lines.append("define-pn-overlaps {}".format(pn_olap_me_filename))
     lines.append("")
 
+    # sources: user provided
+    additional_sources = set(task.get("operator_sources", {}).keys())
+    for source in sorted(additional_sources & required_sources):
+        if task["basis_mode"] is not modes.BasisMode.kDirect:
+            raise Warning("")
+        source_filename = task["operator_sources"][source]
+        lines.append("define-source input {source} {source_filename}".format(
+            source=source, source_filename=source_filename, **task
+            ))
+
     # sources: h2mixer built-ins
     builtin_sources = (operators.kinematic_operator_set | operators.angular_momentum_operator_set | operators.isospin_operator_set)
     for source in sorted(builtin_sources & required_sources):

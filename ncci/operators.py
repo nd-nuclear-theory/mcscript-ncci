@@ -13,6 +13,56 @@ from . import utils
 
 
 ################################################################
+# two-body operator representations
+################################################################
+k_h2mixer_builtin_operators = [
+    ""
+]
+
+class TwoBodyOperatorSource(object):
+    """Represents a two-body operator source channel.
+    """
+    _id = ""
+    _xform_filename = None
+    _xform_truncation = None
+    _filename = None
+
+    def __init__(self, identifier="", xform_filename=None, xform_truncation=None, filename=None):
+        self._id = identifier
+        self._xform_filename = xform_filename
+        self._xform_truncation = xform_truncation
+        self._filename = filename
+        super().__init__()
+
+    def get_h2mixer_line(self):
+        """Construct h2mixer input line."""
+        if (self._filename is not None):
+            tbme_filename = mcscript.utils.expand_path(self._filename)
+            if (self._xform_filename is not None and self._xform_truncation is not None):
+                xform_weight_max = utils.weight_max_string(self._xform_truncation)
+                line = ("define-source xform {id} {tbme_filename} {xform_weight_max} {xform_filename}".format(
+                    id=self._id,
+                    tbme_filename=tbme_filename,
+                    xform_weight_max=xform_weight_max,
+                    xform_filename=self._xform_filename
+                    ))
+            else:
+                line = ("define-source input {id} {tbme_filename}".format(
+                    id=self._id, tbme_filename=tbme_filename
+                    ))
+        return line
+
+
+
+class TwoBodyOperator(mcscript.utils.CoefficientDict):
+    """Represents a two-body operator target channel.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+
+################################################################
 # identity operator
 ################################################################
 
