@@ -17,6 +17,7 @@ University of Notre Dame
 - 09/22/17 (pjf): Take "observables" as list of tuples instead of dict.
 - 10/18/17 (pjf): Use separate work directory for each postfix.
 - 10/25/17 (pjf): Rename "observables" to "tb_observables".
+- 03/15/19 (pjf): Rough in support for arbitrary two-body operators.
 """
 import collections
 import os
@@ -79,7 +80,7 @@ def generate_tbme(task, postfix=""):
     # accumulate observables
     if task.get("tb_observables"):
         for (basename, operator) in task["tb_observables"]:
-            targets["tbme-{}".format(basename)] = operator
+            targets["tbme-{}".format(basename)] = operators.TwoBodyOperator(operator)
 
     # target: radius squared
     if "tbme-rrel2" not in targets:
@@ -103,13 +104,13 @@ def generate_tbme(task, postfix=""):
             targets["tbme-VC"] = operators.VC(hw_coul_rescaled/hw_coul)
     # squared angular momenta
     if ("am-sqr" in task["observable_sets"]):
-        targets["tbme-L2"] = operators.L()
-        targets["tbme-Sp2"] = operators.Sp()
-        targets["tbme-Sn2"] = operators.Sn()
-        targets["tbme-S2"] = operators.S()
-        targets["tbme-J2"] = operators.J()
+        targets["tbme-L2"] = operators.L2()
+        targets["tbme-Sp2"] = operators.Sp2()
+        targets["tbme-Sn2"] = operators.Sn2()
+        targets["tbme-S2"] = operators.S2()
+        targets["tbme-J2"] = operators.J2()
     if ("isospin" in task["observable_sets"]):
-        targets["tbme-T2"] = operators.T()
+        targets["tbme-T2"] = operators.T2()
 
     # get set of required sources
     required_sources = set()
@@ -175,30 +176,16 @@ def generate_tbme(task, postfix=""):
     lines.append("define-pn-overlaps {}".format(pn_olap_me_filename))
     lines.append("")
 
-    # sources: user provided
-    additional_sources = set(task.get("operator_sources", {}).keys())
-    for source in sorted(additional_sources & required_sources):
-        if task["basis_mode"] is not modes.BasisMode.kDirect:
-            raise Warning("")
-        source_filename = task["operator_sources"][source]
-        lines.append("define-source input {source} {source_filename}".format(
-            source=source, source_filename=source_filename, **task
-            ))
-
     # sources: h2mixer built-ins
-    builtin_sources = (operators.kinematic_operator_set | operators.angular_momentum_operator_set | operators.isospin_operator_set)
-    for source in sorted(builtin_sources & required_sources):
-        lines.append("define-source operator " + source)
-    lines.append("")
+    tbme_sources = {}
+    builtin_sources = operators.k_h2mixer_builtin_operators
+    for source in sorted((builtin_sources & required_sources)):
+        tbme_sources[source] = operators.TwoBodyOperatorSource()
 
     # sources: VNN
     if "VNN" in required_sources:
         VNN_filename = task.get("interaction_file")
-        if VNN_filename is not None:
-            VNN_filename = mcscript.utils.expand_path(VNN_filename)
-            if not os.path.isfile(VNN_filename):
-                raise FileNotFoundError(VNN_filename)
-        else:
+        if VNN_filename is None:
             VNN_filename = environ.interaction_filename(
                 task["interaction"],
                 task["truncation_int"],
@@ -206,15 +193,13 @@ def generate_tbme(task, postfix=""):
             )
 
         if task["basis_mode"] is modes.BasisMode.kDirect:
-            lines.append("define-source input VNN {VNN_filename}".format(VNN_filename=VNN_filename, **task))
+            tbme_sources["VNN"] = operators.TwoBodyOperatorSource(filename=VNN_filename)
         else:
-            xform_weight_max_int = utils.weight_max_string(xform_truncation_int)
-            lines.append("define-source xform VNN {VNN_filename} {xform_weight_max_int} {radial_olap_int_filename}".format(
-                VNN_filename=VNN_filename,
-                xform_weight_max_int=xform_weight_max_int,
-                radial_olap_int_filename=environ.radial_olap_int_filename(postfix),
-                **task
-            ))
+            tbme_sources["VNN"] = operators.TwoBodyOperatorSource(
+                filename=VNN_filename,
+                xform_filename=environ.radial_olap_int_filename(postfix),
+                xform_truncation=xform_truncation_int
+            )
 
     # sources: Coulomb
     #
@@ -222,26 +207,31 @@ def generate_tbme(task, postfix=""):
     # factor from dilation.
     if "VC_unscaled" in required_sources:
         VC_filename = task.get("coulomb_file")
-        if VC_filename is not None:
-            VC_filename = mcscript.utils.expand_path(VC_filename)
-            if not os.path.isfile(VC_filename):
-                raise FileNotFoundError(VC_filename)
-        else:
+        if VC_filename is None:
             VC_filename = environ.interaction_filename(
                 "VC",
                 task["truncation_coul"],
                 task["hw_coul"]
             )
         if task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated):
-            lines.append("define-source input VC_unscaled {VC_filename}".format(VC_filename=VC_filename, **task))
+            tbme_sources["VC_unscaled"] = operators.TwoBodyOperatorSource(filename=VC_filename)
         else:
-            xform_weight_max_coul = utils.weight_max_string(xform_truncation_coul)
-            lines.append("define-source xform VC_unscaled {VC_filename} {xform_weight_max_coul} {radial_olap_coul_filename}".format(
-                VC_filename=VC_filename,
-                xform_weight_max_coul=xform_weight_max_coul,
-                radial_olap_coul_filename=environ.radial_olap_coul_filename(postfix),
-                **task
-            ))
+            tbme_sources["VC_unscaled"] = operators.TwoBodyOperatorSource(
+                filename=VC_filename,
+                xform_filename=environ.radial_olap_coul_filename(postfix),
+                xform_truncation=xform_truncation_coul
+            )
+
+    # sources: override with user-provided
+    user_tbme_sources = task.get("tbme_sources")
+    if (user_tbme_sources is not None):
+        for (id, source) in user_tbme_sources:
+            tbme_sources[id] = source
+
+    # sources: generate h2mixer input
+    for id in sorted(required_sources):
+        lines.append(tbme_sources[id].get_h2mixer_line(id))
+
 
     lines.append("")
 

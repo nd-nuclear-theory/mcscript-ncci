@@ -132,3 +132,14 @@ runmfdn12: manual orbital direct run with MFDn v15
     Usage: qsubm --here mfdn12
 
     We use tb-10 as the smallest available set of files.
+
+runmfdn13: harmonic oscillator direct run with MFDn v15, plus custom input TBO
+
+    4He Nmax02 hw20 (direct)
+
+    Interaction: run0164-JISP16-tb-10
+
+    Usage: qsubm --here mfdn13
+
+    Requires files tbme-CSp3R-U.bin and tbme-CSp3R-V.bin to exist in ${NCCI_DATA_DIR_H2}/symplectic-casimir/
+

@@ -1,12 +1,14 @@
 """operators.py -- define two-body operators for h2mixer input
 
-    - 2/18/17 (pjf): Created.
-    - 5/24/17 (pjf):
+    - 02/18/17 (pjf): Created.
+    - 05/24/17 (pjf):
       + Fixed VC scaling.
       + Added comments explaining scaling.
     - 09/20/17 (pjf): Add isospin operators.
+    - 03/15/19 (pjf): Rough in source and channel data structures.
 """
 import math
+import os
 
 import mcscript.utils
 from . import utils
@@ -15,41 +17,55 @@ from . import utils
 ################################################################
 # two-body operator representations
 ################################################################
-k_h2mixer_builtin_operators = [
-    ""
-]
+k_h2mixer_builtin_operators = {
+    "identity", "Ursqr", "Vr1r2", "Uksqr", "Vk1k2",
+    "L", "Sp", "Sn", "S", "J",
+    "T", "Tz"
+}
 
 class TwoBodyOperatorSource(object):
     """Represents a two-body operator source channel.
     """
-    _id = ""
     _xform_filename = None
     _xform_truncation = None
     _filename = None
 
-    def __init__(self, identifier="", xform_filename=None, xform_truncation=None, filename=None):
-        self._id = identifier
+    def __init__(self, filename=None, xform_filename=None, xform_truncation=None):
         self._xform_filename = xform_filename
         self._xform_truncation = xform_truncation
         self._filename = filename
         super().__init__()
 
-    def get_h2mixer_line(self):
-        """Construct h2mixer input line."""
-        if (self._filename is not None):
+    def get_h2mixer_line(self, id):
+        """Construct h2mixer input line.
+
+        Returns: (str) h2mixer input line
+        """
+        if self._filename is not None:
+            if id in k_h2mixer_builtin_operators:
+                raise Warning("overriding builtin operator {id} with {tbme_filename}".format(
+                    id=id,
+                    tbme_filename=tbme_filename
+                ))
             tbme_filename = mcscript.utils.expand_path(self._filename)
-            if (self._xform_filename is not None and self._xform_truncation is not None):
+            if not os.path.isfile(tbme_filename):
+                raise FileNotFoundError(tbme_filename)
+            if (self._xform_filename is not None) and (self._xform_truncation is not None):
                 xform_weight_max = utils.weight_max_string(self._xform_truncation)
                 line = ("define-source xform {id} {tbme_filename} {xform_weight_max} {xform_filename}".format(
-                    id=self._id,
+                    id=id,
                     tbme_filename=tbme_filename,
                     xform_weight_max=xform_weight_max,
                     xform_filename=self._xform_filename
                     ))
             else:
                 line = ("define-source input {id} {tbme_filename}".format(
-                    id=self._id, tbme_filename=tbme_filename
+                    id=id, tbme_filename=tbme_filename
                     ))
+        elif id in k_h2mixer_builtin_operators:
+            line = ("define-source operator {id}".format(id=id))
+        else:
+            raise mcscript.exception.ScriptError("unknown two-body operator {id}".format(id=id))
         return line
 
 
@@ -67,7 +83,7 @@ class TwoBodyOperator(mcscript.utils.CoefficientDict):
 ################################################################
 
 def identity():
-    return mcscript.utils.CoefficientDict(identity=1.)
+    return TwoBodyOperator(identity=1.)
 
 
 ################################################################
@@ -79,16 +95,16 @@ kinematic_operator_set = {
 }
 
 def Ursqr():
-    return mcscript.utils.CoefficientDict(Ursqr=1.)
+    return TwoBodyOperator(Ursqr=1.)
 
 def Vr1r2():
-    return mcscript.utils.CoefficientDict(Vr1r2=1.)
+    return TwoBodyOperator(Vr1r2=1.)
 
 def Uksqr():
-    return mcscript.utils.CoefficientDict(Uksqr=1.)
+    return TwoBodyOperator(Uksqr=1.)
 
 def Vk1k2():
-    return mcscript.utils.CoefficientDict(Vk1k2=1.)
+    return TwoBodyOperator(Vk1k2=1.)
 
 
 ################################################################
@@ -99,20 +115,20 @@ angular_momentum_operator_set = {
     "L", "Sp", "Sn", "S", "J"
 }
 
-def L():
-    return mcscript.utils.CoefficientDict(L=1.)
+def L2():
+    return TwoBodyOperator(L=1.)
 
-def Sp():
-    return mcscript.utils.CoefficientDict(Sp=1.)
+def Sp2():
+    return TwoBodyOperator(Sp=1.)
 
-def Sn():
-    return mcscript.utils.CoefficientDict(Sn=1.)
+def Sn2():
+    return TwoBodyOperator(Sn=1.)
 
-def S():
-    return mcscript.utils.CoefficientDict(S=1.)
+def S2():
+    return TwoBodyOperator(S=1.)
 
-def J():
-    return mcscript.utils.CoefficientDict(J=1.)
+def J2():
+    return TwoBodyOperator(J=1.)
 
 
 ################################################################
@@ -123,11 +139,11 @@ isospin_operator_set = {
     "T", "Tz"
 }
 
-def T():
-    return mcscript.utils.CoefficientDict(T=1.)
+def T2():
+    return TwoBodyOperator(T=1.)
 
 def Tz():
-    return mcscript.utils.CoefficientDict(Tz=1.)
+    return TwoBodyOperator(Tz=1.)
 
 
 ################################################################
@@ -135,10 +151,10 @@ def Tz():
 ################################################################
 
 def VNN():
-    return mcscript.utils.CoefficientDict(VNN=1.)
+    return TwoBodyOperator(VNN=1.)
 
 def VC_unscaled():
-    return mcscript.utils.CoefficientDict(VC_unscaled=1.)
+    return TwoBodyOperator(VC_unscaled=1.)
 
 def VC(bsqr_coul=1.0):
     """Coulomb interaction operator.
@@ -163,7 +179,7 @@ def rrel2(A, hw, **kwargs):
     Returns:
         CoefficientDict containing coefficients for rrel2 operator.
     """
-    out = mcscript.utils.CoefficientDict()
+    out = TwoBodyOperator()
     out += ((A-1)*(utils.oscillator_length(hw)/A)**2) * Ursqr()
     out += (-2*(utils.oscillator_length(hw)/A)**2) * Vr1r2()
     return out
@@ -178,7 +194,7 @@ def Ncm(A, bsqr, **kwargs):
     Returns:
         CoefficientDict containing coefficients for Ncm operator.
     """
-    out = mcscript.utils.CoefficientDict()
+    out = TwoBodyOperator()
     out += (1/(2*A*bsqr)) * Ursqr()
     out += (1/(A*bsqr)) * Vr1r2()
     out += ((1/(2*A))*bsqr) * Uksqr()
@@ -196,7 +212,7 @@ def Ntotal(A, bsqr, **kwargs):
     Returns:
         CoefficientDict containing coefficients for N operator.
     """
-    out = mcscript.utils.CoefficientDict()
+    out = TwoBodyOperator()
     out += (1/(2*bsqr)) * Ursqr()
     out += ((1/2)*bsqr) * Uksqr()
     out += (-3/2*A) * identity()
@@ -223,7 +239,7 @@ def Trel(A, hw, **kwargs):
     Returns:
         CoefficientDict containing coefficients for Trel operator.
     """
-    out = mcscript.utils.CoefficientDict()
+    out = TwoBodyOperator()
     out += ((A-1)/(2*A)*hw) * Uksqr()
     out += (-1/A*hw) * Vk1k2()
     return out
@@ -238,7 +254,7 @@ def Tcm(A, hw, **kwargs):
     Returns:
         CoefficientDict containing coefficients for Tcm operator.
     """
-    out = mcscript.utils.CoefficientDict()
+    out = TwoBodyOperator()
     out += (hw/(2*A)) * Uksqr()
     out += (hw/A) * Vk1k2()
     return out
@@ -265,5 +281,5 @@ def Hamiltonian(A, hw, a_cm, bsqr_intr=1.0, use_coulomb=True, bsqr_coul=1.0, **k
     if use_coulomb:
         coulomb_interaction = VC(bsqr_coul)
     else:
-        coulomb_interaction = mcscript.utils.CoefficientDict()
+        coulomb_interaction = TwoBodyOperator()
     return (kinetic_energy + interaction + coulomb_interaction + lawson_term)

@@ -1,15 +1,11 @@
-""" runmfdn07.py
+""" runmfdn13.py
 
     See runmfdn.txt for description.
 
-    Mark A. Caprio
+    Patrick J. Fasano, Mark A. Caprio
     University of Notre Dame
 
-    - 06/08/17 (pjf): Created, copied from runmfd01; switch to MFDn v15.
-    - 07/31/17 (pjf): Set MFDn driver module in task dictionary.
-    - 08/11/17 (pjf): Update for split single-particle and many-body truncation modes.
-    - 09/24/17 (pjf): Save wavefunctions.
-    - 12/19/17 (pjf): Update for mfdn->ncci rename.
+    - 03/15/19 (pjf): Created, copied from runmfd07.
 """
 
 import mcscript
@@ -85,8 +81,23 @@ task = {
 
     # two-body observables
     ## "observable_sets": ["H-components","am-sqr"],
-    "observable_sets": ["H-components"],
-    "tb_observables": [],
+    "observable_sets": ["H-components", "am-sqr"],
+    "tb_observables": [
+        ("CSp3R", ncci.operators.TwoBodyOperator({"CSp3R-U": 0.5, "CSp3R-V": 1.0}))
+        ],
+    # two-body sources
+    "tbme_sources": [
+        ("CSp3R-U",
+            ncci.operators.TwoBodyOperatorSource(
+                filename="${NCCI_DATA_DIR_H2}/symplectic-casimir/tbme-CSp3R-U.bin"
+            )
+        ),
+        ("CSp3R-V",
+            ncci.operators.TwoBodyOperatorSource(
+                filename="${NCCI_DATA_DIR_H2}/symplectic-casimir/tbme-CSp3R-V.bin"
+            )
+        ),
+    ],
 
     # wavefunction storage
     "save_wavefunctions": True,
