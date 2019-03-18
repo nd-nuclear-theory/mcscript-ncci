@@ -27,6 +27,7 @@ University of Notre Dame
 - 02/11/18 (pjf): Correctly archive mfdn_partitioning.info.
 - 07/23/18 (pjf): Archive partitioning with wave functions.
 - 12/17/18 (pjf): Add "mfdn_inputlist" as pass-through override.
+- 03/18/19 (pjf): Add "calculate_obdme" as flag to enable/disable OBDME calculation.
 """
 import os
 import glob
@@ -189,8 +190,9 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         obslist["TBMEoperators"] = obs_basename_list
 
         # obdme: parameters
-        inputlist["obdme"] = True
-        obslist["max2K"] = int(2*task["obdme_multipolarity"])
+        inputlist["obdme"] = task.get("calculate_obdme", True)
+        if task.get("obdme_multipolarity") is not None:
+            obslist["max2K"] = int(2*task["obdme_multipolarity"])
 
         # construct transition observable input if reference states given
         if task.get("obdme_reference_state_list") is not None:
