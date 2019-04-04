@@ -167,16 +167,17 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
 
         # tbo: collect tbo names
         obs_basename_list = ["tbme-rrel2", "tbme-Ncm"]
-        if "H-components" in task["observable_sets"]:
+        observable_sets = task.get("observable_sets", [])
+        if "H-components" in observable_sets:
             obs_basename_list += ["tbme-Trel", "tbme-Tcm", "tbme-VNN"]
-            if task["use_coulomb"]:
+            if task.get("use_coulomb"):
                 obs_basename_list += ["tbme-VC"]
-        if "am-sqr" in task["observable_sets"]:
+        if "am-sqr" in observable_sets:
             obs_basename_list += ["tbme-L2", "tbme-Sp2", "tbme-Sn2", "tbme-S2", "tbme-J2"]
-        if "isospin" in task["observable_sets"]:
+        if "isospin" in observable_sets:
             obs_basename_list += ["tbme-T2"]
-        if "tb_observables" in task:
-            obs_basename_list += ["tbme-{}".format(basename) for (basename, operator) in task["tb_observables"]]
+        tb_observables = task.get("tb_observables", [])
+        obs_basename_list += ["tbme-{}".format(basename) for (basename, operator) in tb_observables]
 
         # tbo: log tbo names in separate file to aid future data analysis
         mcscript.utils.write_input("tbo_names{:s}.dat".format(postfix), input_lines=obs_basename_list)

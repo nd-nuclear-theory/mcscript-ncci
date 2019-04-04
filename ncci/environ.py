@@ -18,6 +18,7 @@ University of Notre Dame
     globals.
 - 12/21/17 (pjf): Allow absolute paths for MFDn and interaction filenames.
 - 02/21/19 (mac): Support search for "interaction" file with no hw.
+- 04/04/19 (pjf): Add operator_dir_list for operator TBME input file search support.
 """
 
 import os
@@ -36,6 +37,9 @@ data_dir_h2_list = os.environ.get("NCCI_DATA_DIR_H2").split(":")
 
 interaction_run_list = []
 # subdirectories for interaction tbme files (to be set by calling run script)
+
+operator_dir_list = []
+# subdirectories for operator tbme files (to be set by calling run script)
 
 
 def shell_filename(name):

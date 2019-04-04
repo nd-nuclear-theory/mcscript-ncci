@@ -29,6 +29,10 @@ ncci.environ.interaction_run_list = [
     "runvc0083-Daejeon16-ob-13"
 ]
 
+ncci.environ.operator_dir_list = [
+    "symplectic-casimir"
+]
+
 task = {
     # nuclide parameters
     "nuclide": (2, 2),
@@ -59,7 +63,7 @@ task = {
     "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
     "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
     "truncation_parameters": {
-        "M": 0.5,
+        "M": 0.0,
         "Nv": 0,
         "Nmax": 6,
         "Nstep": 2,
@@ -75,7 +79,7 @@ task = {
     # obdme parameters
     ## "hw_for_trans": 20,
     "obdme_multipolarity": 2,
-    "obdme_reference_state_list": [(0.5, 0, 1)],
+    "obdme_reference_state_list": [(0.0, 0, 1)],
     "save_obdme": True,
     "ob_observables": [('M', 1), ('E', 2)],
 
@@ -83,20 +87,12 @@ task = {
     ## "observable_sets": ["H-components","am-sqr"],
     "observable_sets": ["H-components", "am-sqr"],
     "tb_observables": [
-        ("CSp3R", ncci.operators.TwoBodyOperator({"CSp3R-U": 0.5, "CSp3R-V": 1.0}))
+        ("CSp3R", {"CSp3R-U": 0.5, "CSp3R-V": 1.0})
         ],
     # two-body sources
     "tbme_sources": [
-        ("CSp3R-U",
-            ncci.operators.TwoBodyOperatorSource(
-                filename="${NCCI_DATA_DIR_H2}/symplectic-casimir/tbme-CSp3R-U.bin"
-            )
-        ),
-        ("CSp3R-V",
-            ncci.operators.TwoBodyOperatorSource(
-                filename="${NCCI_DATA_DIR_H2}/symplectic-casimir/tbme-CSp3R-V.bin"
-            )
-        ),
+        ("CSp3R-U", {"filename": "tbme-CSp3R-U.bin"}),
+        ("CSp3R-V", {"filename": "tbme-CSp3R-V.bin"}),
     ],
 
     # wavefunction storage

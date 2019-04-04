@@ -18,6 +18,7 @@ University of Notre Dame
 - 10/18/17 (pjf): Use separate work directory for each postfix.
 - 10/25/17 (pjf): Rename "observables" to "tb_observables".
 - 03/15/19 (pjf): Rough in support for arbitrary two-body operators.
+- 04/04/19 (pjf): Polish arbitrary two-body operator support.
 """
 import collections
 import os
@@ -30,6 +31,62 @@ from . import (
     environ,
     operators,
 )
+
+k_h2mixer_builtin_operators = {
+    "identity", "Ursqr", "Vr1r2", "Uksqr", "Vk1k2",
+    "L", "Sp", "Sn", "S", "J",
+    "T", "Tz"
+}
+
+def generate_h2mixer_source_line(identifier, parameters):
+    """Generate input line for h2mixer source channel.
+
+    Arguments:
+        identifier (str): parameters for input line (id, parameters)
+        parameters (dict): specification for input file
+            {"filename": (str), "xform_filename": (str), "xform_truncation": (str)}
+
+    Returns:
+        (str) newline-terminated h2mixer input line
+    """
+    filename = parameters.get("filename")
+    xform_filename = parameters.get("xform_filename")
+    xform_truncation = parameters.get("xform_truncation")
+    if filename is not None:
+        tbme_filename = mcscript.utils.expand_path(filename)
+        if not os.path.isfile(tbme_filename):
+            tbme_filename = mcscript.utils.search_in_subdirectories(
+                environ.data_dir_h2_list, environ.operator_dir_list,
+                filename, fail_on_not_found=True
+                )
+
+        if identifier in k_h2mixer_builtin_operators:
+            raise Warning(
+                "overriding builtin operator {id} with {tbme_filename}".format(
+                    id=identifier,
+                    tbme_filename=tbme_filename
+                    )
+                )
+        if (xform_filename is not None) and (xform_truncation is not None):
+            xform_weight_max = utils.weight_max_string(xform_truncation)
+            line = ("define-source xform {id} {tbme_filename} {xform_weight_max} {xform_filename}".format(
+                id=identifier,
+                tbme_filename=tbme_filename,
+                xform_weight_max=xform_weight_max,
+                xform_filename=xform_filename
+                ))
+        else:
+            line = ("define-source input {id} {tbme_filename}".format(
+                id=identifier, tbme_filename=tbme_filename
+                ))
+    elif identifier in k_h2mixer_builtin_operators:
+        line = ("define-source operator {id}".format(id=identifier))
+    else:
+        raise mcscript.exception.ScriptError(
+            "unknown two-body operator {id}".format(id=identifier)
+            )
+    return line
+
 
 
 def generate_tbme(task, postfix=""):
@@ -80,7 +137,7 @@ def generate_tbme(task, postfix=""):
     # accumulate observables
     if task.get("tb_observables"):
         for (basename, operator) in task["tb_observables"]:
-            targets["tbme-{}".format(basename)] = operators.TwoBodyOperator(operator)
+            targets["tbme-{}".format(basename)] = mcscript.utils.CoefficientDict(operator)
 
     # target: radius squared
     if "tbme-rrel2" not in targets:
@@ -178,9 +235,9 @@ def generate_tbme(task, postfix=""):
 
     # sources: h2mixer built-ins
     tbme_sources = {}
-    builtin_sources = operators.k_h2mixer_builtin_operators
+    builtin_sources = k_h2mixer_builtin_operators
     for source in sorted((builtin_sources & required_sources)):
-        tbme_sources[source] = operators.TwoBodyOperatorSource()
+        tbme_sources[source] = dict()
 
     # sources: VNN
     if "VNN" in required_sources:
@@ -193,9 +250,9 @@ def generate_tbme(task, postfix=""):
             )
 
         if task["basis_mode"] is modes.BasisMode.kDirect:
-            tbme_sources["VNN"] = operators.TwoBodyOperatorSource(filename=VNN_filename)
+            tbme_sources["VNN"] = dict(filename=VNN_filename)
         else:
-            tbme_sources["VNN"] = operators.TwoBodyOperatorSource(
+            tbme_sources["VNN"] = dict(
                 filename=VNN_filename,
                 xform_filename=environ.radial_olap_int_filename(postfix),
                 xform_truncation=xform_truncation_int
@@ -214,9 +271,9 @@ def generate_tbme(task, postfix=""):
                 task["hw_coul"]
             )
         if task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated):
-            tbme_sources["VC_unscaled"] = operators.TwoBodyOperatorSource(filename=VC_filename)
+            tbme_sources["VC_unscaled"] = dict(filename=VC_filename)
         else:
-            tbme_sources["VC_unscaled"] = operators.TwoBodyOperatorSource(
+            tbme_sources["VC_unscaled"] = dict(
                 filename=VC_filename,
                 xform_filename=environ.radial_olap_coul_filename(postfix),
                 xform_truncation=xform_truncation_coul
@@ -229,9 +286,8 @@ def generate_tbme(task, postfix=""):
             tbme_sources[id] = source
 
     # sources: generate h2mixer input
-    for id in sorted(required_sources):
-        lines.append(tbme_sources[id].get_h2mixer_line(id))
-
+    for id_ in sorted(required_sources):
+        lines.append(generate_h2mixer_source_line(id_, tbme_sources[id_]))
 
     lines.append("")
 
