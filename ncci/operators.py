@@ -1,12 +1,16 @@
 """operators.py -- define two-body operators for h2mixer input
 
-    - 2/18/17 (pjf): Created.
-    - 5/24/17 (pjf):
+    - 02/18/17 (pjf): Created.
+    - 05/24/17 (pjf):
       + Fixed VC scaling.
       + Added comments explaining scaling.
     - 09/20/17 (pjf): Add isospin operators.
+    - 03/15/19 (pjf): Rough in source and channel data structures.
+    - 04/04/19 (pjf): Remove data structures; replace with dictionary
+        in tbme.py.
 """
 import math
+import os
 
 import mcscript.utils
 from . import utils
@@ -49,19 +53,19 @@ angular_momentum_operator_set = {
     "L", "Sp", "Sn", "S", "J"
 }
 
-def L():
+def L2():
     return mcscript.utils.CoefficientDict(L=1.)
 
-def Sp():
+def Sp2():
     return mcscript.utils.CoefficientDict(Sp=1.)
 
-def Sn():
+def Sn2():
     return mcscript.utils.CoefficientDict(Sn=1.)
 
-def S():
+def S2():
     return mcscript.utils.CoefficientDict(S=1.)
 
-def J():
+def J2():
     return mcscript.utils.CoefficientDict(J=1.)
 
 
@@ -73,7 +77,7 @@ isospin_operator_set = {
     "T", "Tz"
 }
 
-def T():
+def T2():
     return mcscript.utils.CoefficientDict(T=1.)
 
 def Tz():

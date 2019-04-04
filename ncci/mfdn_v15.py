@@ -26,6 +26,8 @@ University of Notre Dame
 - 10/25/17 (pjf): Rename "observables" to "tb_observables".
 - 02/11/18 (pjf): Correctly archive mfdn_partitioning.info.
 - 07/23/18 (pjf): Archive partitioning with wave functions.
+- 12/17/18 (pjf): Add "mfdn_inputlist" as pass-through override.
+- 03/18/19 (pjf): Add "calculate_obdme" as flag to enable/disable OBDME calculation.
 """
 import os
 import glob
@@ -165,16 +167,17 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
 
         # tbo: collect tbo names
         obs_basename_list = ["tbme-rrel2", "tbme-Ncm"]
-        if "H-components" in task["observable_sets"]:
+        observable_sets = task.get("observable_sets", [])
+        if "H-components" in observable_sets:
             obs_basename_list += ["tbme-Trel", "tbme-Tcm", "tbme-VNN"]
-            if task["use_coulomb"]:
+            if task.get("use_coulomb"):
                 obs_basename_list += ["tbme-VC"]
-        if "am-sqr" in task["observable_sets"]:
+        if "am-sqr" in observable_sets:
             obs_basename_list += ["tbme-L2", "tbme-Sp2", "tbme-Sn2", "tbme-S2", "tbme-J2"]
-        if "isospin" in task["observable_sets"]:
+        if "isospin" in observable_sets:
             obs_basename_list += ["tbme-T2"]
-        if "tb_observables" in task:
-            obs_basename_list += ["tbme-{}".format(basename) for (basename, operator) in task["tb_observables"]]
+        tb_observables = task.get("tb_observables", [])
+        obs_basename_list += ["tbme-{}".format(basename) for (basename, operator) in tb_observables]
 
         # tbo: log tbo names in separate file to aid future data analysis
         mcscript.utils.write_input("tbo_names{:s}.dat".format(postfix), input_lines=obs_basename_list)
@@ -188,8 +191,9 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         obslist["TBMEoperators"] = obs_basename_list
 
         # obdme: parameters
-        inputlist["obdme"] = True
-        obslist["max2K"] = int(2*task["obdme_multipolarity"])
+        inputlist["obdme"] = task.get("calculate_obdme", True)
+        if task.get("obdme_multipolarity") is not None:
+            obslist["max2K"] = int(2*task["obdme_multipolarity"])
 
         # construct transition observable input if reference states given
         if task.get("obdme_reference_state_list") is not None:
@@ -212,6 +216,9 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             for (J, g_rel, i) in task["obdme_reference_state_list"]:
                 obslist["ref2J"].append(int(2*J))
                 obslist["refseq"].append(i)
+
+    # manual override inputlist
+    inputlist.update(task.get("mfdn_inputlist", {}))
 
     # generate MFDn input file
     mcscript.utils.write_namelist(

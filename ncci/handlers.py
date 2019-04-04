@@ -15,6 +15,7 @@ University of Notre Dame
 - 10/11/17 (pjf): Break task handlers into serial/hybrid phases.
 - 10/18/17 (pjf): Call extract_natural_orbitals().
 - 04/23/18 (mac): Provide handler for MFDn phase of oscillator run.
+- 10/17/18 (mac): Remove deprecated results-only archive handler.
 """
 import os
 import glob
@@ -238,11 +239,12 @@ def task_handler_natorb(task):
 
 def archive_handler_mfdn():
     """Generate archives for MFDn results and MFDn wavefunctions."""
-    # first, generate usual archive for results directory and copy to tape
+
+    # generate usual archive for results directory
     archive_filename = mcscript.task.archive_handler_generic(
         include_results=True)
 
-    # next, generate wavefunction archive and copy to tape separately
+    # generate wave function archive
     wavefunction_archive_filename = None
     wavefunction_dir = os.path.join(
         mcscript.parameters.run.work_dir, "wavefunctions")
@@ -276,41 +278,11 @@ def archive_handler_mfdn():
 
 def archive_handler_mfdn_hsi():
     """Generate archives for MFDn and save to tape."""
+
+    # generate archives
     (archive_filename, wavefunction_archive_filename) = archive_handler_mfdn()
+
+    # save to tape
     mcscript.task.archive_handler_hsi(archive_filename)
     if wavefunction_archive_filename:
         mcscript.task.archive_handler_hsi(wavefunction_archive_filename)
-
-
-def archive_handler_mfdn_res_only(task):
-    """ Generate summary archive of MFDn results files.
-
-    TODO: Update and test.
-    """
-    # write current toc
-    toc_filename = mcscript.task.write_current_toc()
-
-    # make archive -- results
-    archive_filename = os.path.join(
-        mcscript.task.archive_dir,
-        "%s-results-%s.tgz" % (mcscript.parameters.run.name,
-                               mcscript.date_tag())
-    )
-    # store toc -- TODO once restructure subdirectories in tar file
-    # mcscript.call(
-    ##     ["tar", "zcvf", archive_filename, toc_filename]
-    # )
-    os.chdir(mcscript.task.results_dir)
-    result_files = glob.glob("*.res")
-    result_files += glob.glob("*.out")
-    result_files += glob.glob("*-emcalc-*.dat")
-    mcscript.call(
-        ["tar", "-zcvf", archive_filename] + result_files,
-        cwd=mcscript.task.results_dir
-    )
-
-    # copy archive out to home results archive directory
-    mcscript.call(
-        ["cp", "-v", archive_filename, "-t", ncsm_config.data_dir_results_archive],
-        cwd=mcscript.task.results_dir
-    )

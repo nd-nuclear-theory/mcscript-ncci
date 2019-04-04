@@ -1,15 +1,11 @@
-""" runmfdn07.py
+""" runmfdn13.py
 
     See runmfdn.txt for description.
 
-    Mark A. Caprio
+    Patrick J. Fasano, Mark A. Caprio
     University of Notre Dame
 
-    - 06/08/17 (pjf): Created, copied from runmfd01; switch to MFDn v15.
-    - 07/31/17 (pjf): Set MFDn driver module in task dictionary.
-    - 08/11/17 (pjf): Update for split single-particle and many-body truncation modes.
-    - 09/24/17 (pjf): Save wavefunctions.
-    - 12/19/17 (pjf): Update for mfdn->ncci rename.
+    - 03/15/19 (pjf): Created, copied from runmfd07.
 """
 
 import mcscript
@@ -31,6 +27,10 @@ ncci.environ.interaction_run_list = [
     "run0164-JISP16-tb-20",
     "run0306-N2LOopt500",  # up to tb-20
     "runvc0083-Daejeon16-ob-13"
+]
+
+ncci.environ.operator_dir_list = [
+    "symplectic-casimir"
 ]
 
 task = {
@@ -63,7 +63,7 @@ task = {
     "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
     "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
     "truncation_parameters": {
-        "M": 0.5,
+        "M": 0.0,
         "Nv": 0,
         "Nmax": 6,
         "Nstep": 2,
@@ -79,14 +79,21 @@ task = {
     # obdme parameters
     ## "hw_for_trans": 20,
     "obdme_multipolarity": 2,
-    "obdme_reference_state_list": [(0.5, 0, 1)],
+    "obdme_reference_state_list": [(0.0, 0, 1)],
     "save_obdme": True,
     "ob_observables": [('M', 1), ('E', 2)],
 
     # two-body observables
     ## "observable_sets": ["H-components","am-sqr"],
-    "observable_sets": ["H-components"],
-    "tb_observables": [],
+    "observable_sets": ["H-components", "am-sqr"],
+    "tb_observables": [
+        ("CSp3R", {"CSp3R-U": 0.5, "CSp3R-V": 1.0})
+        ],
+    # two-body sources
+    "tbme_sources": [
+        ("CSp3R-U", {"filename": "tbme-CSp3R-U.bin"}),
+        ("CSp3R-V", {"filename": "tbme-CSp3R-V.bin"}),
+    ],
 
     # wavefunction storage
     "save_wavefunctions": True,

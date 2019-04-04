@@ -17,6 +17,8 @@ University of Notre Dame
 - 12/20/17 (pjf): Remove singleton layer of indirection and make methods module
     globals.
 - 12/21/17 (pjf): Allow absolute paths for MFDn and interaction filenames.
+- 02/21/19 (mac): Support search for "interaction" file with no hw.
+- 04/04/19 (pjf): Add operator_dir_list for operator TBME input file search support.
 """
 
 import os
@@ -35,6 +37,9 @@ data_dir_h2_list = os.environ.get("NCCI_DATA_DIR_H2").split(":")
 
 interaction_run_list = []
 # subdirectories for interaction tbme files (to be set by calling run script)
+
+operator_dir_list = []
+# subdirectories for operator tbme files (to be set by calling run script)
 
 
 def shell_filename(name):
@@ -55,7 +60,7 @@ def interaction_filename(interaction, truncation, hw):
     Arguments:
         interaction (str): interaction name
         truncation (tuple): truncation tuple, e.g. ("tb", 10)
-        hw (float): hw of interaction
+        hw (float): hw of interaction (or None)
 
     Returns:
         (str): fully qualified path of interaction file
@@ -63,12 +68,19 @@ def interaction_filename(interaction, truncation, hw):
     Raises:
         mcscript.exception.ScriptError: if no suitable match is found
     """
-    interaction_filename_patterns = [
-        "{}-{}-{:04.1f}.bin",
-        "{}-{}-{:g}.bin",
-        "{}-{}-{:04.1f}.dat",
-        "{}-{}-{:g}.dat",
-    ]
+    if (hw is None):
+        # for special operator files
+        interaction_filename_patterns = [
+            "{}-{}.bin",
+            "{}-{}.dat"
+        ]
+    else:
+        interaction_filename_patterns = [
+            "{}-{}-{:04.1f}.bin",
+            "{}-{}-{:g}.bin",
+            "{}-{}-{:04.1f}.dat",
+            "{}-{}-{:g}.dat",
+        ]
     for filename_pattern in interaction_filename_patterns:
         filename = filename_pattern.format(
             interaction, mcscript.utils.dashify(truncation), hw
