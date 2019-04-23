@@ -12,6 +12,7 @@ University of Notre Dame
 - 09/12/17 (pjf): Update for config -> modes + environ split.
 - 10/04/17 (pjf): Add counting-only descriptor.
 - 01/04/18 (pjf): Add task_descriptor_9 for manual orbitals.
+- 04/23/19 (pjf): Make task_descriptor_c1 use two-digit Z and N fields.
 """
 import mcscript.exception
 import mcscript.utils
@@ -215,7 +216,7 @@ def task_descriptor_c1(task):
     """
 
     template_string = (
-        "Z{nuclide[0]}-N{nuclide[1]}"
+        "Z{nuclide[0]:02d}-N{nuclide[1]:02d}"
         "{sp_truncation:s}{mb_truncation:s}{mixed_parity_indicator}-Mj{M:03.1f}"
     )
     if task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kNmax:
