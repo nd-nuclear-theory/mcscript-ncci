@@ -23,6 +23,7 @@ University of Notre Dame
   + Update for new --xform option of radial-gen.
 - 10/25/17 (pjf): Add radial generation for electromagnetic observables.
 - 01/04/18 (pjf): Add support for manual orbital files.
+- 04/23/19 (pjf): Allow override for Nmax_orb.
 """
 import errno
 import math
@@ -101,7 +102,9 @@ def set_up_orbitals_Nmax(task, postfix=""):
 
     # generate orbitals -- target basis
     truncation_parameters = task["truncation_parameters"]
-    if task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kNmax:
+    if truncation_parameters.get("Nmax_orb") is not None:
+        Nmax_orb = truncation_parameters["Nmax_orb"]
+    elif task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kNmax:
         Nmax_orb = truncation_parameters["Nmax"] + truncation_parameters["Nv"]
     elif task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kFCI:
         Nmax_orb = truncation_parameters["Nmax"]
