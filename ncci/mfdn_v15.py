@@ -28,6 +28,7 @@ University of Notre Dame
 - 07/23/18 (pjf): Archive partitioning with wave functions.
 - 12/17/18 (pjf): Add "mfdn_inputlist" as pass-through override.
 - 03/18/19 (pjf): Add "calculate_obdme" as flag to enable/disable OBDME calculation.
+- 04/24/19 (pjf): Add extract_mfdn_output() to resume from archives.
 """
 import os
 import glob
@@ -390,8 +391,9 @@ def save_mfdn_output(task, postfix=""):
     # MFDn output
     archive_file_list += [
         work_dir+"/mfdn.input", work_dir+"/mfdn.out", work_dir+"/mfdn.res",
-        work_dir+"/mfdn_partitioning.generated"
     ]
+    if os.path.isfile(work_dir+"/mfdn_partitioning.generated"):
+        archive_file_list += [work_dir+"/mfdn_partitioning.generated"]
     if os.path.isfile(work_dir+"/mfdn_sp_orbitals.info"):
         archive_file_list += [work_dir+"/mfdn_sp_orbitals.info"]
     # partitioning file
@@ -464,3 +466,74 @@ def cleanup_mfdn_workdir(task, postfix=""):
     # cleanup of wave function files
     scratch_file_list = glob.glob("work{:s}/*".format(postfix))
     mcscript.call(["rm", "-vf"] + scratch_file_list)
+
+
+def extract_mfdn_output(
+        task,
+        results_dir=None,
+        run_name=None,
+        descriptor=None,
+        postfix=""
+):
+    """Extract task directory from output archive.
+
+    Arguments:
+        task (dict): as described in module docstring
+        results_dir (str, optional): location where results archives can be found;
+            defaults to current run results directory
+        run_name (str, optional): run name for archive; defaults to current run name
+        descriptor (str, optional): descriptor for archive; defaults to current
+            descriptor
+        postfix (str, optional): postfix for archive; defaults to empty string
+    """
+    # get defaults
+    if results_dir is None:
+        results_dir = mcscript.task.results_dir
+    if run_name is None:
+        run_name = mcscript.parameters.run.name
+    if descriptor is None:
+        descriptor = task["metadata"]["descriptor"]
+
+    # expand results directory path
+    results_dir = mcscript.utils.expand_path(results_dir)
+
+    # construct archive path
+    filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(run_name, descriptor, postfix)
+    archive_filename = "{:s}.tgz".format(filename_prefix)
+    archive_path = os.path.join(results_dir, archive_filename)
+
+    # extract archive
+    mcscript.call(
+        [
+            "tar", "zxvf", archive_path,
+        ]
+    )
+
+    # archive subdirectory inside expanded path
+    extracted_dir = os.path.join(run_name, descriptor+postfix)
+
+    # move MFDn files back into work directory
+    work_dir = "work{:s}".format(postfix)
+    mcscript.call(["mkdir", "-p", work_dir])
+    file_list = [
+        extracted_dir+"/mfdn.input", extracted_dir+"/mfdn.out",
+        extracted_dir+"/mfdn.res",
+    ]
+    if os.path.isfile(extracted_dir+"/mfdn_partitioning.generated"):
+        file_list += [extracted_dir+"/mfdn_partitioning.generated"]
+    if os.path.isfile(extracted_dir+"/mfdn_sp_orbitals.info"):
+        file_list += [extracted_dir+"/mfdn_sp_orbitals.info"]
+    # partitioning file
+    if os.path.isfile(extracted_dir+"/mfdn_partitioning.info"):
+        file_list += [extracted_dir+"/mfdn_partitioning.info"]
+    # MFDN obdme
+    if (glob.glob(extracted_dir+"/mfdn.*obdme*")):
+        file_list += glob.glob(extracted_dir+"/mfdn.*obdme*")
+    mcscript.call(["mv", "-t", work_dir+"/",] + file_list)
+
+    # move remaining files into task directory
+    file_list = glob.glob(extracted_dir+"/*")
+    mcscript.call(["mv", "-t", "./",] + file_list)
+
+    # remove temporary directories
+    mcscript.call(["rm", "-vfd", extracted_dir, run_name])
