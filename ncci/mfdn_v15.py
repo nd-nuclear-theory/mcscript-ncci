@@ -408,10 +408,10 @@ def save_mfdn_output(task, postfix=""):
     archive_file_list += glob.glob("em-gen*")
     archive_file_list += glob.glob("obscalc-ob*")
     # generate archive (outside work directory)
-    archive_filename = "{:s}.tgz".format(filename_prefix)
+    task_data_archive_filename = "{:s}.tgz".format(filename_prefix)
     mcscript.call(
         [
-            "tar", "zcvf", archive_filename,
+            "tar", "zcvf", task_data_archive_filename,
             "--transform=s,{:s}/,,".format(work_dir),
             "--transform=s,^,{:s}/{:s}{:s}/,".format(mcscript.parameters.run.name, descriptor, postfix),
             "--show-transformed"
@@ -435,14 +435,31 @@ def save_mfdn_output(task, postfix=""):
 
     # copy results out (if in multi-task run)
     if (mcscript.task.results_dir is not None):
+
+        # copy out res and out files
+        # Note: This should no longer actually be needed, as the mfdn run driver should copy these out now.
+        ## mcscript.call(
+        ##     [
+        ##         "cp",
+        ##         "--verbose",
+        ##         res_filename, out_filename,
+        ##         "--target-directory={}".format(mcscript.task.results_dir)
+        ##     ]
+        ## )
+
+        # copy out task data archives
+        task_data_dir = os.path.join(mcscript.parameters.run.work_dir, "task-data")
+        mcscript.call(["mkdir", "-p", task_data_dir])
         mcscript.call(
             [
                 "cp",
                 "--verbose",
-                res_filename, out_filename, archive_filename,
-                "--target-directory={}".format(mcscript.task.results_dir)
+                task_data_archive_filename,
+                "--target-directory={}".format(task_data_dir)
             ]
         )
+
+        # copy out wave function archives
         if task.get("save_wavefunctions"):
             wavefunction_dir = os.path.join(mcscript.parameters.run.work_dir, "wavefunctions")
             mcscript.call(["mkdir", "-p", wavefunction_dir])
@@ -499,8 +516,8 @@ def extract_mfdn_output(
 
     # construct archive path
     filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(run_name, descriptor, postfix)
-    archive_filename = "{:s}.tgz".format(filename_prefix)
-    archive_path = os.path.join(results_dir, archive_filename)
+    task_data_archive_filename = "{:s}.tgz".format(filename_prefix)
+    archive_path = os.path.join(results_dir, task_data_archive_filename)
 
     # extract archive
     mcscript.call(
