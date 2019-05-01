@@ -16,6 +16,7 @@ University of Notre Dame
 - 10/18/17 (pjf): Call extract_natural_orbitals().
 - 04/23/18 (mac): Provide handler for MFDn phase of oscillator run.
 - 10/17/18 (mac): Remove deprecated results-only archive handler.
+- 04/30/19 (mac): Add separate archive for task data archive directory.
 """
 import os
 import glob

@@ -29,6 +29,8 @@ University of Notre Dame
 - 12/17/18 (pjf): Add "mfdn_inputlist" as pass-through override.
 - 03/18/19 (pjf): Add "calculate_obdme" as flag to enable/disable OBDME calculation.
 - 04/24/19 (pjf): Add extract_mfdn_output() to resume from archives.
+- 04/30/19 (mac): Modify save_mfdn_output to store task data archive in separate
+    directory and omit renamed .{res,out} files.
 """
 import os
 import glob
@@ -400,7 +402,7 @@ def save_mfdn_output(task, postfix=""):
     if os.path.isfile(work_dir+"/mfdn_partitioning.info"):
         archive_file_list += [work_dir+"/mfdn_partitioning.info"]
     # renamed versions
-    archive_file_list += [out_filename, res_filename]
+    ## archive_file_list += [out_filename, res_filename]
     # MFDN obdme
     if (task["save_obdme"]):
         archive_file_list += glob.glob(work_dir+"/*obdme*")
