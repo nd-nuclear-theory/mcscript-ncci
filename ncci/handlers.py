@@ -17,6 +17,7 @@ University of Notre Dame
 - 04/23/18 (mac): Provide handler for MFDn phase of oscillator run.
 - 10/17/18 (mac): Remove deprecated results-only archive handler.
 - 04/30/19 (mac): Add separate archive for task data archive directory.
+- 05/03/19 (mac): Add task_handler_post_run_no_cleanup().
 """
 import os
 import glob
@@ -74,12 +75,17 @@ def task_handler_nonzeros(task, postfix=""):
 # generic cleanup and archive steps
 ################################################################
 
-def task_handler_post_run(task, postfix=""):
+def task_handler_post_run(task, postfix="", cleanup=True):
     """Task handler for serial components after MFDn run.
+
+    If expect to use wave functions after initial results archive, invoke this
+    handler via the wrapper task_handler_post_run_no_cleanup.
 
     Arguments:
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
+        cleanup (bool, optional): whether or not to do cleanup after archiving
+
     """
     mfdn_driver = task.get("mfdn_driver")
     if mfdn_driver is None:
@@ -90,8 +96,17 @@ def task_handler_post_run(task, postfix=""):
         mfdn_driver.extract_natural_orbitals(task, postfix)
 
     mfdn_driver.save_mfdn_output(task, postfix=postfix)
-    mfdn_driver.cleanup_mfdn_workdir(task, postfix=postfix)
+    if (cleanup):
+        mfdn_driver.cleanup_mfdn_workdir(task, postfix=postfix)
 
+def task_handler_post_run_no_cleanup(task,postfix=""):
+    """ Task handler for serial components after MFDn run (no cleanup).
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+    task_handler_post_run(task,postfix=postfix,cleanup=False)
 
 ################################################################
 # basic oscillator run
