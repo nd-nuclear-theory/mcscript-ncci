@@ -591,7 +591,7 @@ def extract_wavefunctions(
 
     # construct archive path
     filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(run_name, descriptor, postfix)
-    wavefunctions_archive_filename = "{:s}.tgz".format(filename_prefix)
+    wavefunctions_archive_filename = "{:s}-wf.tar".format(filename_prefix)
     archive_path = os.path.join(wavefunctions_dir, wavefunctions_archive_filename)
 
     # extract archive
