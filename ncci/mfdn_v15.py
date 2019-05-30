@@ -597,7 +597,7 @@ def extract_wavefunctions(
     # extract archive
     mcscript.call(
         [
-            "tar", "zxvf", archive_path,
+            "tar", "xvf", archive_path,
         ]
     )
 
