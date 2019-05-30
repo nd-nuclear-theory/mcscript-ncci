@@ -408,7 +408,7 @@ def save_mfdn_output(task, postfix=""):
     if os.path.isfile(environ.emgen_filename(postfix)):
         archive_file_list += [environ.emgen_filename(postfix)]
     if os.path.isfile(environ.obscalc_ob_filename(postfix)):
-        archive_file_list += [environ.obscalc_ob_filename]
+        archive_file_list += [environ.obscalc_ob_filename(postfix)]
     if os.path.isfile(environ.obscalc_ob_res_filename(postfix)):
         archive_file_list += [environ.obscalc_ob_res_filename(postfix)]
     # generate archive (outside work directory)

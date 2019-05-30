@@ -23,6 +23,7 @@ University of Notre Dame
     + Call save_wavefunctions() in task_handler_post_run().
     + Make archive_handler_mfdn() and archive_handler_mfdn_hsi() simple
       wrappers for underlying mcscript generic handlers.
+    + Remove references to save_mfdn_output_out_only().
 """
 import os
 import glob
@@ -56,7 +57,6 @@ def task_handler_dimension(task, postfix=""):
     radial.set_up_orbitals(task, postfix=postfix)
     mfdn_driver.run_mfdn(
         task, run_mode=modes.MFDnRunMode.kDimension, postfix=postfix)
-    mfdn_driver.save_mfdn_output_out_only(task, postfix=postfix)
 
 
 def task_handler_nonzeros(task, postfix=""):
@@ -72,7 +72,6 @@ def task_handler_nonzeros(task, postfix=""):
     radial.set_up_orbitals(task, postfix=postfix)
     mfdn_driver.run_mfdn(
         task, run_mode=modes.MFDnRunMode.kNonzeros, postfix=postfix)
-    mfdn_driver.save_mfdn_output_out_only(task, postfix=postfix)
 
 
 ################################################################
