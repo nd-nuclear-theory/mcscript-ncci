@@ -17,6 +17,8 @@ University of Notre Dame
 - 04/23/18 (mac): Provide handler for MFDn phase of oscillator run.
 - 10/17/18 (mac): Remove deprecated results-only archive handler.
 - 04/30/19 (mac): Add separate archive for task data archive directory.
+- 05/03/19 (mac): Add task_handler_post_run_no_cleanup().
+- 05/29/19 (mac): Remove task_handler_post_run_no_cleanup().
 - 05/30/19 (pjf):
     + Call save_wavefunctions() in task_handler_post_run().
     + Make archive_handler_mfdn() and archive_handler_mfdn_hsi() simple
@@ -36,7 +38,6 @@ from . import (
 
 # set default MFDn driver
 default_mfdn_driver = mfdn_v14
-
 
 ################################################################
 # counting-only run
@@ -78,12 +79,23 @@ def task_handler_nonzeros(task, postfix=""):
 # generic cleanup and archive steps
 ################################################################
 
-def task_handler_post_run(task, postfix=""):
+def task_handler_post_run(task, postfix="", cleanup=True):
     """Task handler for serial components after MFDn run.
+
+    If expect to use wave functions after initial results archive, invoke this
+    handler with cleanup=False option, as
+
+        phase_handler_list=[
+            ...
+            functools.partial(ncci.handlers.task_handler_post_run,cleanup=False),
+            ...
+            ]
 
     Arguments:
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
+        cleanup (bool, optional): whether or not to do cleanup after archiving
+
     """
     mfdn_driver = task.get("mfdn_driver")
     if mfdn_driver is None:
@@ -96,8 +108,8 @@ def task_handler_post_run(task, postfix=""):
     mfdn_driver.save_mfdn_output(task, postfix=postfix)
     if task.get("save_wavefunctions"):
         mfdn_driver.save_wavefunctions(task, postfix)
-    mfdn_driver.cleanup_mfdn_workdir(task, postfix=postfix)
-
+    if (cleanup):
+        mfdn_driver.cleanup_mfdn_workdir(task, postfix=postfix)
 
 ################################################################
 # basic oscillator run

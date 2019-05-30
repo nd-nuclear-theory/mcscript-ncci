@@ -31,6 +31,8 @@ University of Notre Dame
 - 04/24/19 (pjf): Add extract_mfdn_output() to resume from archives.
 - 04/30/19 (mac): Modify save_mfdn_output to store task data archive in separate
     directory and omit renamed .{res,out} files.
+- 05/30/19 (mac): Update extract_mfdn_output() to retrieve from task_data_dir and add
+    extract_wavefunctions().
 - 05/30/19 (pjf):
     + Use new subarchive features in mcscript.
     + Move wave function saving into a separate function.
@@ -487,7 +489,7 @@ def cleanup_mfdn_workdir(task, postfix=""):
 
 def extract_mfdn_task_data(
         task,
-        results_dir=None,
+        task_data_dir=None,
         run_name=None,
         descriptor=None,
         postfix=""
@@ -496,7 +498,7 @@ def extract_mfdn_task_data(
 
     Arguments:
         task (dict): as described in module docstring
-        results_dir (str, optional): location where results archives can be found;
+        task_data_dir (str, optional): location where results archives can be found;
             defaults to current run results directory
         run_name (str, optional): run name for archive; defaults to current run name
         descriptor (str, optional): descriptor for archive; defaults to current
@@ -504,23 +506,20 @@ def extract_mfdn_task_data(
         postfix (str, optional): postfix for archive; defaults to empty string
     """
     # get defaults
-    if results_dir is None:
-        results_dir = mcscript.task.results_dir
+    if task_data_dir is None:
+        task_data_dir = os.path.join(mcscript.task.results_dir, "task-data")
     if run_name is None:
         run_name = mcscript.parameters.run.name
     if descriptor is None:
         descriptor = task["metadata"]["descriptor"]
 
     # expand results directory path
-    results_dir = mcscript.utils.expand_path(results_dir)
+    task_data_dir = mcscript.utils.expand_path(task_data_dir)
 
     # construct archive path
     filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(run_name, descriptor, postfix)
     task_data_archive_filename = "{:s}.tgz".format(filename_prefix)
-    archive_path = os.path.join(results_dir, "task-data", task_data_archive_filename)
-    if not os.path.exists(archive_path):
-        # fall back to old directory structure
-        archive_path = os.path.join(results_dir, task_data_archive_filename)
+    archive_path = os.path.join(task_data_dir, task_data_archive_filename)
 
     # extract archive
     mcscript.call(
@@ -550,6 +549,62 @@ def extract_mfdn_task_data(
     if (glob.glob(extracted_dir+"/mfdn.*obdme*")):
         file_list += glob.glob(extracted_dir+"/mfdn.*obdme*")
     mcscript.call(["mv", "-t", work_dir+"/",] + file_list)
+
+    # move remaining files into task directory
+    file_list = glob.glob(extracted_dir+"/*")
+    mcscript.call(["mv", "-t", "./",] + file_list)
+
+    # remove temporary directories
+    mcscript.call(["rm", "-vfd", extracted_dir, run_name])
+
+def extract_wavefunctions(
+        task,
+        wavefunctions_dir=None,
+        run_name=None,
+        descriptor=None,
+        postfix=""
+):
+    """Extract wave functions to task directory from output archive.
+
+    Arguments:
+        task (dict): as described in module docstring
+        wavefunctions_dir (str, optional): location where results archives can be found;
+            defaults to current run results directory
+        run_name (str, optional): run name for archive; defaults to current run name
+        descriptor (str, optional): descriptor for archive; defaults to current
+            descriptor
+        postfix (str, optional): postfix for archive; defaults to empty string
+    """
+    # get defaults
+    if wavefunctions_dir is None:
+        wavefunctions_dir = os.path.join(mcscript.task.results_dir, "wf")
+    if run_name is None:
+        run_name = mcscript.parameters.run.name
+    if descriptor is None:
+        descriptor = task["metadata"]["descriptor"]
+
+    # expand results directory path
+    wavefunctions_dir = mcscript.utils.expand_path(wavefunctions_dir)
+
+    # construct archive path
+    filename_prefix = "{:s}-mfdn15wf-{:s}{:s}".format(run_name, descriptor, postfix)
+    wavefunctions_archive_filename = "{:s}.tar".format(filename_prefix)
+    archive_path = os.path.join(wavefunctions_dir, wavefunctions_archive_filename)
+    if not os.path.exists(archive_path):
+        # fall back to old filename convention
+        filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(run_name, descriptor, postfix)
+        wavefunctions_archive_filename = "{:s}-wf.tar".format(filename_prefix)
+        archive_path = os.path.join(wavefunctions_dir, wavefunctions_archive_filename)
+
+    # extract archive
+    mcscript.call(
+        [
+            "tar", "xvf", archive_path,
+        ]
+    )
+
+    # archive subdirectory inside expanded path
+    extracted_dir = os.path.join(run_name, descriptor+postfix)
 
     # move remaining files into task directory
     file_list = glob.glob(extracted_dir+"/*")

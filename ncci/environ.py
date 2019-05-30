@@ -19,6 +19,7 @@ University of Notre Dame
 - 12/21/17 (pjf): Allow absolute paths for MFDn and interaction filenames.
 - 02/21/19 (mac): Support search for "interaction" file with no hw.
 - 04/04/19 (pjf): Add operator_dir_list for operator TBME input file search support.
+- 05/29/19 (mac): Add mfdn_postprocessor_filename.
 """
 
 import os
@@ -53,6 +54,11 @@ def mfdn_filename(name):
         return mcscript.utils.expand_path(name)
     return os.path.join(mcscript.parameters.run.install_dir, "mfdn", name)
 
+def mfdn_postprocessor_filename(name):
+    """Construct filename for MFDn postprocessor executable."""
+    if os.path.isfile(mcscript.utils.expand_path(name)):
+        return mcscript.utils.expand_path(name)
+    return os.path.join(mcscript.parameters.run.install_dir, "mfdn-transitions", name)
 
 def interaction_filename(interaction, truncation, hw):
     """Construct filename for interaction h2 file.
