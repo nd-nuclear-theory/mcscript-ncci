@@ -31,6 +31,8 @@ University of Notre Dame
 - 04/24/19 (pjf): Add extract_mfdn_output() to resume from archives.
 - 04/30/19 (mac): Modify save_mfdn_output to store task data archive in separate
     directory and omit renamed .{res,out} files.
+- 05/30/19 (mac): Modify extract_mfdn_output() to retrieve from task_data_dir.
+
 """
 import os
 import glob
@@ -489,7 +491,7 @@ def cleanup_mfdn_workdir(task, postfix=""):
 
 def extract_mfdn_output(
         task,
-        results_dir=None,
+        task_data_dir=None,
         run_name=None,
         descriptor=None,
         postfix=""
@@ -498,7 +500,7 @@ def extract_mfdn_output(
 
     Arguments:
         task (dict): as described in module docstring
-        results_dir (str, optional): location where results archives can be found;
+        task_data_dir (str, optional): location where results archives can be found;
             defaults to current run results directory
         run_name (str, optional): run name for archive; defaults to current run name
         descriptor (str, optional): descriptor for archive; defaults to current
@@ -506,20 +508,20 @@ def extract_mfdn_output(
         postfix (str, optional): postfix for archive; defaults to empty string
     """
     # get defaults
-    if results_dir is None:
-        results_dir = mcscript.task.results_dir
+    if task_data_dir is None:
+        task_data_dir = os.path.join(mcscript.parameters.run.work_dir, "task-data") ##mcscript.task.results_dir
     if run_name is None:
         run_name = mcscript.parameters.run.name
     if descriptor is None:
         descriptor = task["metadata"]["descriptor"]
 
     # expand results directory path
-    results_dir = mcscript.utils.expand_path(results_dir)
+    task_data_dir = mcscript.utils.expand_path(task_data_dir)
 
     # construct archive path
     filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(run_name, descriptor, postfix)
     task_data_archive_filename = "{:s}.tgz".format(filename_prefix)
-    archive_path = os.path.join(results_dir, task_data_archive_filename)
+    archive_path = os.path.join(task_data_dir, task_data_archive_filename)
 
     # extract archive
     mcscript.call(
