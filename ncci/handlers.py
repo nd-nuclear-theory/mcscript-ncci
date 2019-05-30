@@ -17,6 +17,10 @@ University of Notre Dame
 - 04/23/18 (mac): Provide handler for MFDn phase of oscillator run.
 - 10/17/18 (mac): Remove deprecated results-only archive handler.
 - 04/30/19 (mac): Add separate archive for task data archive directory.
+- 05/30/19 (pjf):
+    + Call save_wavefunctions() in task_handler_post_run().
+    + Make archive_handler_mfdn() and archive_handler_mfdn_hsi() simple
+      wrappers for underlying mcscript generic handlers.
 """
 import os
 import glob
@@ -90,6 +94,8 @@ def task_handler_post_run(task, postfix=""):
         mfdn_driver.extract_natural_orbitals(task, postfix)
 
     mfdn_driver.save_mfdn_output(task, postfix=postfix)
+    if task.get("save_wavefunctions"):
+        mfdn_driver.save_wavefunctions(task, postfix)
     mfdn_driver.cleanup_mfdn_workdir(task, postfix=postfix)
 
 
@@ -242,73 +248,16 @@ def archive_handler_mfdn():
     """Generate archives for MFDn results and MFDn wavefunctions."""
 
     # generate usual archive for results directory
-    archive_filename = mcscript.task.archive_handler_generic(
+    archive_filename_list = mcscript.task.archive_handler_generic(
         include_results=True)
-
-    # generate task data archive
-    task_data_archive_filename = None
-    task_data_dir = os.path.join(mcscript.parameters.run.work_dir, "task-data")
-    if os.path.exists(task_data_dir):
-        task_data_archive_filename = os.path.join(
-            mcscript.task.archive_dir,
-            "{:s}-archive-{:s}-task-data.tar".format(
-                mcscript.parameters.run.name, mcscript.utils.date_tag())
-        )
-        toc_filename = "{}.toc".format(mcscript.parameters.run.name)
-        filename_list = [
-            toc_filename,
-            "task-data"
-        ]
-        mcscript.control.call(
-            [
-                "tar",
-                "cvf",
-                task_data_archive_filename,
-                "--transform=s,^,{:s}/,".format(mcscript.parameters.run.name),
-                "--show-transformed"
-            ] + filename_list,
-            cwd=mcscript.parameters.run.work_dir,
-            check_return=True
-        )
-
-    # generate wave function archive
-    wavefunction_archive_filename = None
-    wavefunction_dir = os.path.join(mcscript.parameters.run.work_dir, "wavefunctions")
-    if os.path.exists(wavefunction_dir):
-        wavefunction_archive_filename = os.path.join(
-            mcscript.task.archive_dir,
-            "{:s}-archive-{:s}-wf.tar".format(
-                mcscript.parameters.run.name, mcscript.utils.date_tag())
-        )
-        toc_filename = "{}.toc".format(mcscript.parameters.run.name)
-        filename_list = [
-            toc_filename,
-            "wavefunctions"
-        ]
-        mcscript.control.call(
-            [
-                "tar",
-                "cvf",
-                wavefunction_archive_filename,
-                "--transform=s,^,{:s}/,".format(mcscript.parameters.run.name),
-                "--show-transformed"
-            ] + filename_list,
-            cwd=mcscript.parameters.run.work_dir,
-            check_return=True
-        )
-
-    return (archive_filename, task_data_archive_filename, wavefunction_archive_filename)
+    return archive_filename_list
 
 
 def archive_handler_mfdn_hsi():
     """Generate archives for MFDn and save to tape."""
 
     # generate archives
-    (archive_filename, task_data_archive_filename, wavefunction_archive_filename) = archive_handler_mfdn()
+    archive_filename_list = archive_handler_mfdn()
 
     # save to tape
-    mcscript.task.archive_handler_hsi(archive_filename)
-    if wavefunction_archive_filename:
-        mcscript.task.archive_handler_hsi(wavefunction_archive_filename)
-    if task_data_archive_filename:
-        mcscript.task.archive_handler_hsi(task_data_archive_filename)
+    mcscript.task.archive_handler_hsi(archive_filename_list)

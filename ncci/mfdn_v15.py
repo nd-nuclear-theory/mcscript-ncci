@@ -31,6 +31,11 @@ University of Notre Dame
 - 04/24/19 (pjf): Add extract_mfdn_output() to resume from archives.
 - 04/30/19 (mac): Modify save_mfdn_output to store task data archive in separate
     directory and omit renamed .{res,out} files.
+- 05/30/19 (pjf):
+    + Use new subarchive features in mcscript.
+    + Move wave function saving into a separate function.
+    + Always save mfdn.res and mfdn.out in results directory, at end of run.
+    + Clean up observable output archiving.
 """
 import os
 import glob
@@ -128,9 +133,9 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     Raises:
         mcscript.exception.ScriptError: if MFDn output not found
     """
-    # create work directory if it doesn't exist yet (-p)
+    # create work directory if it doesn't exist yet
     work_dir = "work{:s}".format(postfix)
-    mcscript.call(["mkdir", "-p", work_dir])
+    mcscript.utils.mkdir(work_dir, exist_ok=True, parents=True)
 
     # inputlist namelist dictionary
     inputlist = collections.OrderedDict()
@@ -262,6 +267,42 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     # leave work directory
     os.chdir("..")
 
+    # save quick inspection copies of mfdn.{res,out}
+    descriptor = task["metadata"]["descriptor"]
+    print("Saving basic output files...")
+    work_dir = "work{:s}".format(postfix)
+    filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+    res_filename = "{:s}.res".format(filename_prefix)
+    out_filename = "{:s}.out".format(filename_prefix)
+
+    # copy results out (if in multi-task run)
+    if (mcscript.task.results_dir is not None):
+        res_dir = os.path.join(mcscript.task.results_dir, "res")
+        mcscript.utils.mkdir(res_dir, exist_ok=True)
+        mcscript.call(
+            [
+                "cp",
+                "--verbose",
+                work_dir+"/mfdn.res",
+                os.path.join(res_dir, res_filename)
+            ]
+        )
+        out_dir = os.path.join(mcscript.task.results_dir, "out")
+        mcscript.utils.mkdir(out_dir, exist_ok=True)
+        mcscript.call(
+            [
+                "cp",
+                "--verbose",
+                work_dir+"/mfdn.out",
+                os.path.join(out_dir, out_filename)
+            ]
+        )
+    else:
+        mcscript.call(["cp", "--verbose", work_dir+"/mfdn.res", res_filename])
+        mcscript.call(["cp", "--verbose", work_dir+"/mfdn.out", out_filename])
+
+
+
 
 def extract_natural_orbitals(task, postfix=""):
     """Extract OBDME files for subsequent natural orbital iterations.
@@ -303,35 +344,6 @@ def extract_natural_orbitals(task, postfix=""):
     )
 
 
-def save_mfdn_output_out_only(task, postfix=""):
-    """Collect and save MFDn output files only.
-
-    Arguments:
-        task (dict): as described in module docstring
-        postfix (string, optional): identifier to add to generated files
-    """
-    # save quick inspection copies of mfdn.{res,out}
-    descriptor = task["metadata"]["descriptor"]
-    print("Saving basic output files...")
-    work_dir = "work{:s}".format(postfix)
-    filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
-    res_filename = "{:s}.res".format(filename_prefix)
-    mcscript.call(["cp", "--verbose", work_dir+"/mfdn.res", res_filename])
-    out_filename = "{:s}.out".format(filename_prefix)
-    mcscript.call(["cp", "--verbose", work_dir+"/mfdn.out", out_filename])
-
-    # copy results out (if in multi-task run)
-    if (mcscript.task.results_dir is not None):
-        mcscript.call(
-            [
-                "cp",
-                "--verbose",
-                res_filename, out_filename,
-                "--target-directory={}".format(mcscript.task.results_dir)
-            ]
-        )
-
-
 def save_mfdn_output(task, postfix=""):
     """Collect and save MFDn output.
 
@@ -339,24 +351,10 @@ def save_mfdn_output(task, postfix=""):
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
-    # save quick inspection copies of mfdn.{res,out}
+    # convenience definitions
     descriptor = task["metadata"]["descriptor"]
     work_dir = "work{:s}".format(postfix)
-    print("Saving basic output files...")
     filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
-    res_filename = "{:s}.res".format(filename_prefix)
-    mcscript.call(["cp", "--verbose", work_dir+"/mfdn.res", res_filename])
-    out_filename = "{:s}.out".format(filename_prefix)
-    mcscript.call(["cp", "--verbose", work_dir+"/mfdn.out", out_filename])
-
-    # append obscalc-ob output to res file
-    if os.path.exists(environ.obscalc_ob_res_filename(postfix)):
-        print("Appending obscalc-ob output to res file...")
-        with open(res_filename, 'a') as res_file:
-            res_file.write("\n")
-            with open(environ.obscalc_ob_res_filename(postfix), 'r') as obs_file:
-                for line in obs_file:
-                    res_file.write(line)
 
     # save full archive of input, log, and output files
     print("Saving full output files...")
@@ -401,14 +399,16 @@ def save_mfdn_output(task, postfix=""):
     # partitioning file
     if os.path.isfile(work_dir+"/mfdn_partitioning.info"):
         archive_file_list += [work_dir+"/mfdn_partitioning.info"]
-    # renamed versions
-    ## archive_file_list += [out_filename, res_filename]
     # MFDN obdme
     if (task["save_obdme"]):
-        archive_file_list += glob.glob(work_dir+"/*obdme*")
+        archive_file_list += glob.glob(work_dir+"/mfdn*obdme*")
     # observable output
-    archive_file_list += glob.glob("em-gen*")
-    archive_file_list += glob.glob("obscalc-ob*")
+    if os.path.isfile(environ.emgen_filename(postfix)):
+        archive_file_list += [environ.emgen_filename(postfix)]
+    if os.path.isfile(environ.obscalc_ob_filename(postfix)):
+        archive_file_list += [environ.obscalc_ob_filename]
+    if os.path.isfile(environ.obscalc_ob_res_filename(postfix)):
+        archive_file_list += [environ.obscalc_ob_res_filename(postfix)]
     # generate archive (outside work directory)
     task_data_archive_filename = "{:s}.tgz".format(filename_prefix)
     mcscript.call(
@@ -420,38 +420,12 @@ def save_mfdn_output(task, postfix=""):
         ] + archive_file_list
     )
 
-    # save wavefunctions (smwf files)
-    if task.get("save_wavefunctions"):
-        smwf_archive_file_list = glob.glob(work_dir+"/mfdn_smwf*")
-        smwf_archive_file_list += glob.glob(work_dir+"/mfdn_MBgroups*")
-        smwf_archive_file_list += glob.glob(work_dir+"/mfdn_partitioning.*")
-        smwf_archive_filename = "{:s}-wf.tar".format(filename_prefix)
-        mcscript.call(
-            [
-                "tar", "cvf", smwf_archive_filename,
-                "--transform=s,{:s}/,,".format(work_dir),
-                "--transform=s,^,{:s}/{:s}{:s}/,".format(mcscript.parameters.run.name, descriptor, postfix),
-                "--show-transformed"
-            ] + smwf_archive_file_list
-        )
-
     # copy results out (if in multi-task run)
     if (mcscript.task.results_dir is not None):
 
-        # copy out res and out files
-        # Note: This should no longer actually be needed, as the mfdn run driver should copy these out now.
-        ## mcscript.call(
-        ##     [
-        ##         "cp",
-        ##         "--verbose",
-        ##         res_filename, out_filename,
-        ##         "--target-directory={}".format(mcscript.task.results_dir)
-        ##     ]
-        ## )
-
         # copy out task data archives
         task_data_dir = os.path.join(mcscript.parameters.run.work_dir, "task-data")
-        mcscript.call(["mkdir", "-p", task_data_dir])
+        mcscript.utils.mkdir(task_data_dir, exist_ok=True)
         mcscript.call(
             [
                 "cp",
@@ -461,18 +435,42 @@ def save_mfdn_output(task, postfix=""):
             ]
         )
 
-        # copy out wave function archives
-        if task.get("save_wavefunctions"):
-            wavefunction_dir = os.path.join(mcscript.parameters.run.work_dir, "wavefunctions")
-            mcscript.call(["mkdir", "-p", wavefunction_dir])
-            mcscript.call(
-                [
-                    "mv",
-                    "--verbose",
-                    smwf_archive_filename,
-                    "--target-directory={}".format(wavefunction_dir)
-                ]
-            )
+
+def save_mfdn_wavefunctions(task, postfix=""):
+    """Collect and save MFDn wave functions.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+    descriptor = task["metadata"]["descriptor"]
+    work_dir = "work{:s}".format(postfix)
+    filename_prefix = "{:s}-mfdn15wf-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+    archive_file_list = glob.glob(work_dir+"/mfdn_smwf*")
+    archive_file_list += glob.glob(work_dir+"/mfdn_MBgroups*")
+    archive_file_list += glob.glob(work_dir+"/mfdn_partitioning.*")
+    archive_filename = "{:s}.tar".format(filename_prefix)
+    mcscript.call(
+        [
+            "tar", "cvf", archive_filename,
+            "--transform=s,{:s}/,,".format(work_dir),
+            "--transform=s,^,{:s}/{:s}{:s}/,".format(mcscript.parameters.run.name, descriptor, postfix),
+            "--show-transformed"
+        ] + archive_file_list
+    )
+
+    # move wave function archives out (if in multi-task run)
+    if (mcscript.task.results_dir is not None):
+        wavefunction_dir = os.path.join(mcscript.parameters.run.results_dir, "wf")
+        mcscript.utils.mkdir(wavefunction_dir, exist_ok=True)
+        mcscript.call(
+            [
+                "mv",
+                "--verbose",
+                archive_filename,
+                "--target-directory={}".format(wavefunction_dir)
+            ]
+        )
 
 
 def cleanup_mfdn_workdir(task, postfix=""):
@@ -487,14 +485,14 @@ def cleanup_mfdn_workdir(task, postfix=""):
     mcscript.call(["rm", "-vf"] + scratch_file_list)
 
 
-def extract_mfdn_output(
+def extract_mfdn_task_data(
         task,
         results_dir=None,
         run_name=None,
         descriptor=None,
         postfix=""
 ):
-    """Extract task directory from output archive.
+    """Extract task directory from task data archive.
 
     Arguments:
         task (dict): as described in module docstring
@@ -519,7 +517,10 @@ def extract_mfdn_output(
     # construct archive path
     filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(run_name, descriptor, postfix)
     task_data_archive_filename = "{:s}.tgz".format(filename_prefix)
-    archive_path = os.path.join(results_dir, task_data_archive_filename)
+    archive_path = os.path.join(results_dir, "task-data", task_data_archive_filename)
+    if not os.path.exists(archive_path):
+        # fall back to old directory structure
+        archive_path = os.path.join(results_dir, task_data_archive_filename)
 
     # extract archive
     mcscript.call(
@@ -533,7 +534,7 @@ def extract_mfdn_output(
 
     # move MFDn files back into work directory
     work_dir = "work{:s}".format(postfix)
-    mcscript.call(["mkdir", "-p", work_dir])
+    mcscript.utils.mkdir(work_dir, exist_ok=True)
     file_list = [
         extracted_dir+"/mfdn.input", extracted_dir+"/mfdn.out",
         extracted_dir+"/mfdn.res",

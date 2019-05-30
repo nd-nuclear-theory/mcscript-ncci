@@ -4,6 +4,7 @@ Patrick Fasano
 University of Notre Dame
 
 - 10/25/17 (pjf): Created.
+- 05/30/19 (pjf): Move obscalc-ob.res out to results subdirectory.
 """
 import os
 import glob
@@ -260,3 +261,22 @@ def evaluate_ob_observables(task, postfix=""):
         input_lines=lines,
         mode=mcscript.CallMode.kSerial
     )
+
+    # copy results out (if in multi-task run)
+
+    if (mcscript.task.results_dir is not None):
+        descriptor = task["metadata"]["descriptor"]
+        print("Saving basic output files...")
+        work_dir = "work{:s}".format(postfix)
+        filename_prefix = "{:s}-obscalc-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+        res_filename = "{:s}.res".format(filename_prefix)
+        obscalc_dir = os.path.join(mcscript.task.results_dir, "obscalc")
+        mcscript.utils.mkdir(obscalc_dir, exist_ok=True)
+        mcscript.call(
+            [
+                "cp",
+                "--verbose",
+                environ.obscalc_ob_res_filename(postfix),
+                os.path.join(obscalc_dir, res_filename)
+            ]
+        )
