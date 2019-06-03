@@ -90,6 +90,9 @@ def task_handler_post_run(task, postfix="", cleanup=True):
             ...
             ]
 
+    Unfortunately, this hides the docstring from being properly listed in the
+    phase summary.
+
     Arguments:
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files

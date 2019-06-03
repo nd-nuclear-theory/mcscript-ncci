@@ -345,6 +345,33 @@ def extract_natural_orbitals(task, postfix=""):
         ]
     )
 
+def save_mfdn_output_out_only(task, postfix=""):
+    """Collect and save MFDn output files only.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+    # save quick inspection copies of mfdn.{res,out}
+    descriptor = task["metadata"]["descriptor"]
+    print("Saving basic output files...")
+    work_dir = "work{:s}".format(postfix)
+    filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+    res_filename = "{:s}.res".format(filename_prefix)
+    mcscript.call(["cp", "--verbose", work_dir+"/mfdn.res", res_filename])
+    out_filename = "{:s}.out".format(filename_prefix)
+    mcscript.call(["cp", "--verbose", work_dir+"/mfdn.out", out_filename])
+
+    # copy results out (if in multi-task run)
+    if (mcscript.task.results_dir is not None):
+        mcscript.call(
+            [
+                "cp",
+                "--verbose",
+                res_filename, out_filename,
+                "--target-directory={}".format(mcscript.task.results_dir)
+            ]
+        )
 
 def save_mfdn_output(task, postfix=""):
     """Collect and save MFDn output.
