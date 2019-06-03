@@ -462,7 +462,7 @@ def save_mfdn_wavefunctions(task, postfix=""):
 
     # move wave function archives out (if in multi-task run)
     if (mcscript.task.results_dir is not None):
-        wavefunction_dir = os.path.join(mcscript.parameters.run.results_dir, "wf")
+        wavefunction_dir = os.path.join(mcscript.task.results_dir, "wf")
         mcscript.utils.mkdir(wavefunction_dir, exist_ok=True)
         mcscript.call(
             [
