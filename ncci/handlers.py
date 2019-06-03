@@ -109,7 +109,7 @@ def task_handler_post_run(task, postfix="", cleanup=True):
 
     mfdn_driver.save_mfdn_output(task, postfix=postfix)
     if task.get("save_wavefunctions"):
-        mfdn_driver.save_wavefunctions(task, postfix)
+        mfdn_driver.save_mfdn_wavefunctions(task, postfix)
     if (cleanup):
         mfdn_driver.cleanup_mfdn_workdir(task, postfix=postfix)
 
