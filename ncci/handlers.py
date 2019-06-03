@@ -24,6 +24,7 @@ University of Notre Dame
     + Make archive_handler_mfdn() and archive_handler_mfdn_hsi() simple
       wrappers for underlying mcscript generic handlers.
     + Remove references to save_mfdn_output_out_only().
+- 06/02/19 (mac): Rename save_mfdn_output to save_mfdn_task_data.
 """
 import os
 import glob
@@ -107,9 +108,9 @@ def task_handler_post_run(task, postfix="", cleanup=True):
     if task.get("natural_orbitals"):
         mfdn_driver.extract_natural_orbitals(task, postfix)
 
-    mfdn_driver.save_mfdn_output(task, postfix=postfix)
+    mfdn_driver.save_mfdn_task_data(task, postfix=postfix)
     if task.get("save_wavefunctions"):
-        mfdn_driver.save_wavefunctions(task, postfix)
+        mfdn_driver.save_mfdn_wavefunctions(task, postfix)
     if (cleanup):
         mfdn_driver.cleanup_mfdn_workdir(task, postfix=postfix)
 
@@ -143,9 +144,6 @@ def task_handler_oscillator_mfdn(task, postfix=""):
     if mfdn_driver is None:
         mfdn_driver = default_mfdn_driver
     mfdn_driver.run_mfdn(task, postfix=postfix)
-
-    # save quick inspection results
-    mfdn_driver.save_mfdn_output_out_only(task, postfix=postfix)
 
 def task_handler_oscillator(task, postfix=""):
     """Task handler for basic oscillator run.
