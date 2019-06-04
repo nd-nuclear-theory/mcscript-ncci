@@ -36,6 +36,7 @@ University of Notre Dame
 - 06/02/19 (mac):
   + Remove save_mfdn_output_out_only.
   + Rename save_mfdn_output to save_mfdn_task_data.
+- 06/04/19 (pjf): Save mfdn.out and mfdn.res to subdirectories of results.
 
 """
 import os
@@ -204,9 +205,34 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     print("Saving basic output files...")
     filename_prefix = "{:s}-mfdn-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
     res_filename = "{:s}.res".format(filename_prefix)
-    mcscript.call(["cp", "--verbose", work_dir+"/mfdn.res", res_filename])
     out_filename = "{:s}.out".format(filename_prefix)
-    mcscript.call(["cp", "--verbose", work_dir+"/mfdn.out", out_filename])
+
+    # copy results out (if in multi-task run)
+    if (mcscript.task.results_dir is not None):
+        res_dir = os.path.join(mcscript.task.results_dir, "res")
+        mcscript.utils.mkdir(res_dir, exist_ok=True)
+        mcscript.call(
+            [
+                "cp",
+                "--verbose",
+                work_dir+"/mfdn.res",
+                os.path.join(res_dir, res_filename)
+            ]
+        )
+        out_dir = os.path.join(mcscript.task.results_dir, "out")
+        mcscript.utils.mkdir(out_dir, exist_ok=True)
+        mcscript.call(
+            [
+                "cp",
+                "--verbose",
+                work_dir+"/mfdn.out",
+                os.path.join(out_dir, out_filename)
+            ]
+        )
+    else:
+        mcscript.call(["cp", "--verbose", work_dir+"/mfdn.res", res_filename])
+        mcscript.call(["cp", "--verbose", work_dir+"/mfdn.out", out_filename])
+
 
 def extract_natural_orbitals(task, postfix=""):
     """Extract OBDME files for subsequent natural orbital iterations.
