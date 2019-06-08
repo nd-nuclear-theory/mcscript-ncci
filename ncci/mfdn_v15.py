@@ -38,6 +38,8 @@ University of Notre Dame
     + Move wave function saving into a separate function.
     + Always save mfdn.res and mfdn.out in results directory, at end of run.
     + Clean up observable output archiving.
+- 06/07/19 (pjf): Check that MFDn launches successfully with
+    mcscript.control.FileWatchdog on mfdn.out.
 """
 import os
 import glob
@@ -257,7 +259,8 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             environ.mfdn_filename(task["mfdn_executable"])
         ],
         mode=mcscript.CallMode.kHybrid,
-        check_return=True
+        check_return=True,
+        file_watchdog=mcscript.control.FileWatchdog("mfdn.out")
     )
 
     # test for basic indications of success

@@ -37,7 +37,8 @@ University of Notre Dame
   + Remove save_mfdn_output_out_only.
   + Rename save_mfdn_output to save_mfdn_task_data.
 - 06/04/19 (pjf): Save mfdn.out and mfdn.res to subdirectories of results.
-
+- 06/07/19 (pjf): Check that MFDn launches successfully with
+    mcscript.control.FileWatchdog on mfdn.out.
 """
 import os
 import glob
@@ -187,7 +188,8 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             environ.mfdn_filename(task["mfdn_executable"])
         ],
         mode=mcscript.CallMode.kHybrid,
-        check_return=True
+        check_return=True,
+        file_watchdog=mcscript.control.FileWatchdog("mfdn.out")
     )
 
     # test for basic indications of success
