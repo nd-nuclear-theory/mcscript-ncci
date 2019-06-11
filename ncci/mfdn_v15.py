@@ -40,6 +40,7 @@ University of Notre Dame
     + Clean up observable output archiving.
 - 06/07/19 (pjf): Check that MFDn launches successfully with
     mcscript.control.FileWatchdog on mfdn.out.
+- 06/11/19 (pjf): Save task-data archives to correct place (under results_dir).
 """
 import os
 import glob
@@ -428,7 +429,7 @@ def save_mfdn_task_data(task, postfix=""):
     if (mcscript.task.results_dir is not None):
 
         # copy out task data archives
-        task_data_dir = os.path.join(mcscript.parameters.run.work_dir, "task-data")
+        task_data_dir = os.path.join(mcscript.task.results_dir, "task-data")
         mcscript.utils.mkdir(task_data_dir, exist_ok=True)
         mcscript.call(
             [
