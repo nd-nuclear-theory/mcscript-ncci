@@ -25,6 +25,7 @@ University of Notre Dame
       wrappers for underlying mcscript generic handlers.
     + Remove references to save_mfdn_output_out_only().
 - 06/02/19 (mac): Rename save_mfdn_output to save_mfdn_task_data.
+- 07/03/19 (mac): Restore task_handler_post_run_no_cleanup().
 """
 import os
 import glob
@@ -113,6 +114,15 @@ def task_handler_post_run(task, postfix="", cleanup=True):
         mfdn_driver.save_mfdn_wavefunctions(task, postfix)
     if (cleanup):
         mfdn_driver.cleanup_mfdn_workdir(task, postfix=postfix)
+
+def task_handler_post_run_no_cleanup(task,postfix=""):
+    """ Task handler for serial components after MFDn run (no cleanup).
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+    task_handler_post_run(task,postfix=postfix,cleanup=False)
 
 ################################################################
 # basic oscillator run
