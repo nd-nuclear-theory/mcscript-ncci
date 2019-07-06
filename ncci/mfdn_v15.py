@@ -565,7 +565,8 @@ def extract_wavefunctions(
         wavefunctions_dir=None,
         run_name=None,
         descriptor=None,
-        postfix=""
+        postfix="",
+        target_dir=None
 ):
     """Extract wave functions to task directory from output archive.
 
@@ -577,6 +578,10 @@ def extract_wavefunctions(
         descriptor (str, optional): descriptor for archive; defaults to current
             descriptor
         postfix (str, optional): postfix for archive; defaults to empty string
+        target_dir (str, optional): path for target directory for
+            wavefunction files; defaults to current task directory and, if unqualified, will be
+            taken relative to such as current working directory
+
     """
     # get defaults
     if wavefunctions_dir is None:
@@ -585,6 +590,9 @@ def extract_wavefunctions(
         run_name = mcscript.parameters.run.name
     if descriptor is None:
         descriptor = task["metadata"]["descriptor"]
+    if target_dir is None:
+        target_dir = "work{:s}".format(postfix)
+        mcscript.utils.mkdir(target_dir, exist_ok=True)
 
     # expand results directory path
     wavefunctions_dir = mcscript.utils.expand_path(wavefunctions_dir)
@@ -609,9 +617,9 @@ def extract_wavefunctions(
     # archive subdirectory inside expanded path
     extracted_dir = os.path.join(run_name, descriptor+postfix)
 
-    # move remaining files into task directory
-    file_list = glob.glob(extracted_dir+"/*")
-    mcscript.call(["mv", "-t", "./",] + file_list)
+    # move files into task directory
+    file_list = glob.glob(os.path.join(extracted_dir,"*"))
+    mcscript.call(["mv", "-t", target_dir,] + file_list)
 
     # remove temporary directories
     mcscript.call(["rm", "-vfd", extracted_dir, run_name])
