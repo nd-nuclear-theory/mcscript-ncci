@@ -26,6 +26,7 @@ University of Notre Dame
     + Remove references to save_mfdn_output_out_only().
 - 06/02/19 (mac): Rename save_mfdn_output to save_mfdn_task_data.
 - 07/03/19 (mac): Restore task_handler_post_run_no_cleanup().
+- 07/14/19 (mac): Update archive_handler_mfdn() to use archive_handler_subarchives()
 """
 import os
 import glob
@@ -270,8 +271,14 @@ def archive_handler_mfdn():
     """Generate archives for MFDn results and MFDn wavefunctions."""
 
     # generate usual archive for results directory
-    archive_filename_list = mcscript.task.archive_handler_generic(
-        include_results=True)
+    archive_filename_list = mcscript.task.archive_handler_subarchives(
+        [
+            {"postfix" : "-out", "paths" : ["out"], "compress" : True, "include_metadata" : True},
+            {"postfix" : "-res", "paths" : ["res"], "compress" : True},
+            {"postfix" : "-task-data", "paths" : ["-task-data"]},
+            {"postfix" : "-wf", "paths" : ["wf"]},
+        ]
+    )
     return archive_filename_list
 
 
