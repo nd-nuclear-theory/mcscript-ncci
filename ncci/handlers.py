@@ -273,10 +273,10 @@ def archive_handler_mfdn():
     # generate usual archive for results directory
     archive_filename_list = mcscript.task.archive_handler_subarchives(
         [
-            {"postfix" : "-out", "paths" : ["out"], "compress" : True, "include_metadata" : True},
-            {"postfix" : "-res", "paths" : ["res"], "compress" : True},
-            {"postfix" : "-task-data", "paths" : ["-task-data"]},
-            {"postfix" : "-wf", "paths" : ["wf"]},
+            {"postfix" : "-out", "paths" : ["results/out"], "compress" : True, "include_metadata" : True},
+            {"postfix" : "-res", "paths" : ["results/res"], "compress" : True},
+            {"postfix" : "-task-data", "paths" : ["results/task-data"]},
+            {"postfix" : "-wf", "paths" : ["results/wf"]},
         ]
     )
     return archive_filename_list
