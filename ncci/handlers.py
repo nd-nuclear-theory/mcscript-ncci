@@ -270,7 +270,6 @@ def task_handler_natorb(task):
 def archive_handler_mfdn():
     """Generate archives for MFDn results and MFDn wavefunctions."""
 
-    # generate usual archive for results directory
     archive_filename_list = mcscript.task.archive_handler_subarchives(
         [
             {"postfix" : "-out", "paths" : ["results/out"], "compress" : True, "include_metadata" : True},
@@ -281,6 +280,19 @@ def archive_handler_mfdn():
     )
     return archive_filename_list
 
+def archive_handler_mfdn_lightweight():
+    """Generate archives for MFDn results (but not task data or wavefunctions).
+
+    This is useful as a follow-up archive after running the postprocessor.
+    """
+
+    archive_filename_list = mcscript.task.archive_handler_subarchives(
+        [
+            {"postfix" : "-out", "paths" : ["results/out"], "compress" : True, "include_metadata" : True},
+            {"postfix" : "-res", "paths" : ["results/res"], "compress" : True},
+        ]
+    )
+    return archive_filename_list
 
 def archive_handler_mfdn_hsi():
     """Generate archives for MFDn and save to tape."""
