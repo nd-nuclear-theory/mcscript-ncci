@@ -5,6 +5,7 @@ University of Notre Dame
 
 - 10/25/17 (pjf): Created.
 - 05/30/19 (pjf): Move obscalc-ob.res out to results subdirectory.
+- 09/04/19 (pjf): Update for new em-gen, using l and s one-body RMEs.
 """
 import os
 import glob
@@ -32,10 +33,29 @@ def generate_em(task, postfix=""):
         "set-basis-scale-factor {:e}".format(utils.oscillator_length(task["hw"])),
         ]
 
+    for am_type in ["l", "s"]:
+        lines.append("define-am-source {type:s} {filename:s}".format(
+            type=am_type, filename=environ.obme_filename(postfix, am_type)
+        ))
+
     for (operator_type, order) in task.get("ob_observables", []):
-        lines.append("define-radial-source {:s}".format(
-            environ.radial_me_filename(postfix, operator_type, order)
+        if operator_type == 'E':
+            radial_power = order
+        elif operator_type == 'M':
+            radial_power = order-1
+        else:
+            raise mcscript.exception.ScriptError("only E or M transitions currently supported")
+
+        # short-circuit on solid harmonic of order zero
+        if radial_power == 0:
+            continue
+
+        operator_id = "rY{:d}".format(radial_power)
+        lines.append("define-radial-source {type:s} {order:d} {filename:s}".format(
+            type='r', order=radial_power,
+            filename=environ.obme_filename(postfix, operator_id)
             ))
+
         for species in ["p", "n"]:
             if operator_type == "E":
                 lines.append(
