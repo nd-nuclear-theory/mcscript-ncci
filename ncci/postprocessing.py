@@ -6,6 +6,7 @@ University of Notre Dame
 - 10/25/17 (pjf): Created.
 - 05/30/19 (pjf): Move obscalc-ob.res out to results subdirectory.
 - 09/04/19 (pjf): Update for new em-gen, using l and s one-body RMEs.
+- 09/11/19 (pjf): Update for new obscalc-ob input format (single vs. multi-file).
 """
 import os
 import glob
@@ -46,15 +47,13 @@ def generate_em(task, postfix=""):
         else:
             raise mcscript.exception.ScriptError("only E or M transitions currently supported")
 
-        # short-circuit on solid harmonic of order zero
-        if radial_power == 0:
-            continue
-
-        operator_id = "rY{:d}".format(radial_power)
-        lines.append("define-radial-source {type:s} {order:d} {filename:s}".format(
-            type='r', order=radial_power,
-            filename=environ.obme_filename(postfix, operator_id)
-            ))
+        # load non-trivial solid harmonic RMEs
+        if radial_power > 0:
+            operator_id = "rY{:d}".format(radial_power)
+            lines.append("define-radial-source {type:s} {order:d} {filename:s}".format(
+                type='r', order=radial_power,
+                filename=environ.obme_filename(postfix, operator_id)
+                ))
 
         for species in ["p", "n"]:
             if operator_type == "E":
@@ -117,7 +116,6 @@ def evaluate_ob_observables(task, postfix=""):
     # indexing setup
     lines += [
         "set-indexing {:s}".format(environ.orbitals_filename(postfix)),
-        "set-robdme-info {:s}".format(os.path.join(work_dir, "mfdn.rppobdme.info")),
         "set-output-file {:s}".format(environ.obscalc_ob_res_filename(postfix)),
         ]
 
@@ -194,8 +192,10 @@ def evaluate_ob_observables(task, postfix=""):
     statrobdme_files.sort(key=lambda item: item["seq"])
     for statrobdme_file in statrobdme_files:
         lines.append(
-            "define-static-densities {twoJ:d} {g:d} {n:d} {filename:s}".format(**statrobdme_file)
+            "define-static-densities {twoJ:d} {g:d} {n:d} {filename:s} {info_filename:s}".format(
+                info_filename=os.path.join(work_dir, "mfdn.rppobdme.info"), **statrobdme_file
             )
+        )
 
     # define-transition-densities 2Jf gf nf 2Ji gi fi robdme_info_filename robdme_filename
     # get filenames for static densities and extract quantum numbers
@@ -260,8 +260,10 @@ def evaluate_ob_observables(task, postfix=""):
     robdme_files.sort(key=lambda item: (item["seqf"], item["seqi"]))
     for robdme_file in robdme_files:
         lines.append(
-            "define-transition-densities {twoJf:d} {gf:d} {nf:d} {twoJi:d} {gi:d} {ni:d} {filename:s}".format(**robdme_file)
+            "define-transition-densities {twoJf:d} {gf:d} {nf:d} {twoJi:d} {gi:d} {ni:d} {filename:s} {info_filename:s}".format(
+                info_filename=os.path.join(work_dir, "mfdn.rppobdme.info"), **robdme_file
             )
+        )
 
     # ensure trailing line
     lines.append("")
