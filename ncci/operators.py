@@ -13,6 +13,9 @@
           predefined operators are now written generically in terms of one- and
           two-body parts.
         + Rename Trel->Tintr.
+    - 09/11/19 (pjf):
+        + Eliminate bsqr for explict hw arguments.
+        + Improve docstrings.
 """
 import math
 import os
@@ -25,7 +28,7 @@ from . import utils
 # identity operator
 ################################################################
 
-def identity():
+def identity(**kwargs):
     return mcscript.utils.CoefficientDict(identity=1.)
 
 
@@ -33,19 +36,19 @@ def identity():
 # radial kinematic operators
 ################################################################
 
-def Ursqr():
+def Ursqr(**kwargs):
     return mcscript.utils.CoefficientDict({"U[r.r]": 1.})
 
-def Vr1r2():
+def Vr1r2(**kwargs):
     return mcscript.utils.CoefficientDict({"V[r,r]": -math.sqrt(3)})
 
 
 # note (pjf): since <b||k||a> is pure imaginary, we actually store <b||ik||a>;
 #   this extra factor of -1 comes from k.k = -(ik).(ik)
-def Uksqr():
+def Uksqr(**kwargs):
     return mcscript.utils.CoefficientDict({"U[k.k]": -1.})
 
-def Vk1k2():
+def Vk1k2(**kwargs):
     return mcscript.utils.CoefficientDict({"V[k,k]": math.sqrt(3)})
 
 
@@ -53,19 +56,19 @@ def Vk1k2():
 # angular momentum operators
 ################################################################
 
-def L2():
+def L2(**kwargs):
     return mcscript.utils.CoefficientDict({"U[l2]":1., "V[l,l]":2*-math.sqrt(3)})
 
-def Sp2():
+def Sp2(**kwargs):
     return mcscript.utils.CoefficientDict({"U[sp2]":1., "V[sp,sp]":2*-math.sqrt(3)})
 
-def Sn2():
+def Sn2(**kwargs):
     return mcscript.utils.CoefficientDict({"U[sn2]":1., "V[sn,sn]":2*-math.sqrt(3)})
 
-def S2():
+def S2(**kwargs):
     return mcscript.utils.CoefficientDict({"U[s2]":1., "V[s,s]":2*-math.sqrt(3)})
 
-def J2():
+def J2(**kwargs):
     return mcscript.utils.CoefficientDict({"U[j2]":1., "V[j,j]":2*-math.sqrt(3)})
 
 
@@ -74,9 +77,22 @@ def J2():
 ################################################################
 
 def T2(A, **kwargs):
+    """Isospin-squared operator.
+
+    Arguments:
+        A (int): mass number
+
+    Returns:
+        CoefficientDict containing coefficients for T^2 operator.
+    """
     return mcscript.utils.CoefficientDict({"identity":A*0.75, "V[tz,tz]": 2., "V[t+,t-]":2.})
 
-def Tz():
+def Tz(**kwargs):
+    """Isospin-projection operator.
+
+    Returns:
+        CoefficientDict containing coefficients for Tz operator.
+    """
     return mcscript.utils.CoefficientDict({"U[tz]":1.})
 
 
@@ -84,19 +100,23 @@ def Tz():
 # interactions
 ################################################################
 
-def VNN():
+def VNN(**kwargs):
     return mcscript.utils.CoefficientDict(VNN=1.)
 
-def VC_unscaled():
+def VC_unscaled(**kwargs):
     return mcscript.utils.CoefficientDict(VC_unscaled=1.)
 
-def VC(bsqr_coul=1.0):
+def VC(hw, hw_coul, **kwargs):
     """Coulomb interaction operator.
 
     Arguments:
-        bsqr_coul (float): beta squared (ratio of b^2 to b_coul^2)
+        hw (float): hw of basis
+        hw_coul (float): hw of input Coulomb matrix elements
+
+    Returns:
+        CoefficientDict containing coefficients for Coulomb operator.
     """
-    return VC_unscaled() * math.sqrt(bsqr_coul)
+    return VC_unscaled() * math.sqrt(hw/hw_coul)
 
 
 ################################################################
@@ -118,16 +138,20 @@ def rrel2(A, hw, **kwargs):
     out += (-2*(utils.oscillator_length(hw)/A)**2) * Vr1r2()
     return out
 
-def Ncm(A, bsqr, **kwargs):
+def Ncm(A, hw, hw_cm=None, **kwargs):
     """Number of oscillator quanta in the center-of-mass.
 
     Arguments:
         A (int): mass number
-        bsqr (float): beta squared (ratio of b_cm^2 to b^2)
+        hw (float): hw of basis
+        hw_coul (float): hw of cm oscillator Hamiltonian
 
     Returns:
         CoefficientDict containing coefficients for Ncm operator.
     """
+    if hw_cm is None:
+        hw_cm = hw
+    bsqr = hw/hw_cm
     out = mcscript.utils.CoefficientDict()
     out += (1/(2*A*bsqr)) * Ursqr()
     out += (1/(A*bsqr)) * Vr1r2()
@@ -136,43 +160,48 @@ def Ncm(A, bsqr, **kwargs):
     out += -3/2 * identity()
     return out
 
-def Ntotal(A, bsqr, **kwargs):
+def Ntotal(A, hw, hw_cm=None, **kwargs):
     """Total number of oscillator quanta.
 
     Arguments:
         A (int): mass number
-        bsqr (float): beta squared (ratio of b_cm^2 to b^2)
+        hw (float): hw of basis
+        hw_cm (float, default hw): hw of cm oscillator Hamiltonian
 
     Returns:
         CoefficientDict containing coefficients for N operator.
     """
+    if hw_cm is None:
+        hw_cm = hw
+    bsqr = hw/hw_cm
     out = mcscript.utils.CoefficientDict()
     out += (1/(2*bsqr)) * Ursqr()
     out += ((1/2)*bsqr) * Uksqr()
     out += (-3/2*A) * identity()
     return out
 
-def Nintr(A, bsqr, **kwargs):
+def Nintr(A, hw, hw_cm=None, **kwargs):
     """Number of oscillator quanta in the intrinsic frame.
 
     Arguments:
         A (int): mass number
-        bsqr (float): beta squared (ratio of b_cm^2 to b^2)
+        hw (float): hw of basis
+        hw_cm (float, default hw): hw of cm oscillator Hamiltonian
 
     Returns:
         CoefficientDict containing coefficients for Nintr operator.
     """
-    return Ntotal(A, bsqr) - Ncm(A, bsqr)
+    return Ntotal(A=A, hw=hw, hw_cm=hw_cm) - Ncm(A=A, hw=hw, hw_cm=hw_cm)
 
 def Tintr(A, hw, **kwargs):
     """Two-body intrinsic kinetic energy operator.
 
     Arguments:
         A (int): mass number
-        bsqr (float): beta squared
+        hw (float): hw of basis
 
     Returns:
-        CoefficientDict containing coefficients for Trel operator.
+        CoefficientDict containing coefficients for Tintr operator.
     """
     out = mcscript.utils.CoefficientDict()
     out += ((A-1)/(2*A)*hw) * Uksqr()
@@ -199,22 +228,30 @@ def Tcm(A, hw, **kwargs):
 # standard Hamiltonian
 ################################################################
 
-def Hamiltonian(A, hw, a_cm, bsqr_intr=1.0, use_coulomb=True, bsqr_coul=1.0, **kwargs):
+def Hamiltonian(A, hw, a_cm=0., hw_cm=None, use_coulomb=True, hw_coul=None, hw_coul_rescaled=None, **kwargs):
     """A standard Hamiltonian for shell-model runs.
 
     Arguments:
         A (int): mass number
         hw (float): oscillator basis parameter
-        a_cm (float): Lawson term coefficient
-        bsqr_intr (float, default 1.0): beta-squared for Lawson term (ratio of b_cm^2 to b^2)
+        a_cm (float, default 0.0): Lawson term coefficient
+        hw_cm (float, default hw): Lawson term oscillator frequency
         use_coulomb (bool, default True): include Coulomb interaction
-        bsqr_coul (float, optional): beta-squared for Coulomb scaling (ratio of b^2 to b_coul^2)
+        hw_coul (float): hw for input Coulomb matrix elements
+        hw_coul_rescaled (float, default hw): target hw for analytic scaling of Coulomb matrix elements
+
+    Returns:
+        CoefficientDict containing coefficients for Hamiltonian.
     """
-    kinetic_energy = Tintr(A, hw)
-    lawson_term = a_cm * Ncm(A, bsqr_intr)
+    if hw_cm is None:
+        hw_cm = hw
+    if hw_coul_rescaled is None:
+        hw_coul_rescaled = hw
+    kinetic_energy = Tintr(A=A, hw=hw)
+    lawson_term = a_cm * Ncm(A, hw=hw, hw_cm=hw_cm)
     interaction = VNN()
     if use_coulomb:
-        coulomb_interaction = VC(bsqr_coul)
+        coulomb_interaction = VC(hw=hw_coul_rescaled, hw_coul=hw_coul)
     else:
         coulomb_interaction = mcscript.utils.CoefficientDict()
     return (kinetic_energy + interaction + coulomb_interaction + lawson_term)

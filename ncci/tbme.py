@@ -25,6 +25,7 @@ University of Notre Dame
         + Provide generic interface ("U[x]" and "V[x,y]") for upgraded one-body
           operators and separable operators.
 - 09/07/19 (pjf): Remove Nv from truncation_parameters.
+- 09/11/19 (pjf): Pass parameters as kwargs to operators.
 """
 import collections
 import os
@@ -194,8 +195,9 @@ def generate_tbme(task, postfix=""):
         targets["tbme-H"] = task["hamiltonian"]
     else:
         targets["tbme-H"] = operators.Hamiltonian(
-            A=A, hw=hw, a_cm=a_cm, bsqr_intr=hw/hw_cm,
-            use_coulomb=task["use_coulomb"], bsqr_coul=hw_coul_rescaled/hw_coul
+            A=A, hw=hw, a_cm=a_cm, hw_cm=hw_cm,
+            use_coulomb=task["use_coulomb"], hw_coul=hw_coul,
+            hw_coul_rescaled=hw_coul_rescaled
         )
 
     # accumulate observables
@@ -205,24 +207,24 @@ def generate_tbme(task, postfix=""):
 
     # target: radius squared
     if "tbme-rrel2" not in targets:
-        targets["tbme-rrel2"] = operators.rrel2(A, hw)
+        targets["tbme-rrel2"] = operators.rrel2(A=A, hw=hw)
 
     # target: Ncm
     if "tbme-Ncm" not in targets:
-        targets["tbme-Ncm"] = operators.Ncm(A, hw/hw_cm)
+        targets["tbme-Ncm"] = operators.Ncm(A=A, hw=hw, hw_cm=hw_cm)
 
     # optional observable sets
     # Hamiltonian components
     if "H-components" in task["observable_sets"]:
         # target: Trel (diagnostic)
-        targets["tbme-Tintr"] = operators.Tintr(A, hw)
+        targets["tbme-Tintr"] = operators.Tintr(A=A, hw=hw)
         # target: Tcm (diagnostic)
-        targets["tbme-Tcm"] = operators.Tcm(A, hw)
+        targets["tbme-Tcm"] = operators.Tcm(A=A, hw=hw)
         # target: VNN (diagnostic)
         targets["tbme-VNN"] = operators.VNN()
         # target: VC (diagnostic)
         if (task["use_coulomb"]):
-            targets["tbme-VC"] = operators.VC(hw_coul_rescaled/hw_coul)
+            targets["tbme-VC"] = operators.VC(hw=hw_coul_rescaled, hw_coul=hw_coul)
     # squared angular momenta
     if ("am-sqr" in task["observable_sets"]):
         targets["tbme-L2"] = operators.L2()
