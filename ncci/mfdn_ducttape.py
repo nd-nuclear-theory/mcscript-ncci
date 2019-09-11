@@ -5,6 +5,7 @@ University of Notre Dame
 
 - 10/05/17 (pjf): Copied/stripped from mfdn_v15.py.
 - 10/18/17 (pjf): Use separate work directory for each postfix.
+- 09/11/19 (pjf): Replace task["Mj"]->truncation_parameters["M"]
 """
 import os
 import collections
@@ -38,8 +39,8 @@ def run_mfdn(task, postfix=""):
     # nucleus
     inputlist["Nprotons"], inputlist["Nneutrons"] = task["nuclide"]
 
-    # Mj
-    inputlist["TwoMj"] = int(2*task["Mj"])
+    # M
+    inputlist["TwoMj"] = int(2*task["truncation_parameters"]["M"])
 
     # single-particle orbitals
     inputlist["orbitalfile"] = environ.orbitals_filename(postfix)
