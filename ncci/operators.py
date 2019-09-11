@@ -8,6 +8,11 @@
     - 03/15/19 (pjf): Rough in source and channel data structures.
     - 04/04/19 (pjf): Remove data structures; replace with dictionary
         in tbme.py.
+    - 09/04/19 (pjf):
+        + Redefine operators for new h2mixer; many (incorrectly)
+          predefined operators are now written generically in terms of one- and
+          two-body parts.
+        + Rename Trel->Tintr.
 """
 import math
 import os
@@ -28,60 +33,51 @@ def identity():
 # radial kinematic operators
 ################################################################
 
-kinematic_operator_set = {
-    "identity", "Ursqr", "Vr1r2", "Uksqr", "Vk1k2"
-}
-
 def Ursqr():
-    return mcscript.utils.CoefficientDict(Ursqr=1.)
+    return mcscript.utils.CoefficientDict({"U[r.r]": 1.})
 
 def Vr1r2():
-    return mcscript.utils.CoefficientDict(Vr1r2=1.)
+    return mcscript.utils.CoefficientDict({"V[r,r]": -math.sqrt(3)})
 
+
+# note (pjf): since <b||k||a> is pure imaginary, we actually store <b||ik||a>;
+#   this extra factor of -1 comes from k.k = -(ik).(ik)
 def Uksqr():
-    return mcscript.utils.CoefficientDict(Uksqr=1.)
+    return mcscript.utils.CoefficientDict({"U[k.k]": -1.})
 
 def Vk1k2():
-    return mcscript.utils.CoefficientDict(Vk1k2=1.)
+    return mcscript.utils.CoefficientDict({"V[k,k]": math.sqrt(3)})
 
 
 ################################################################
 # angular momentum operators
 ################################################################
 
-angular_momentum_operator_set = {
-    "L", "Sp", "Sn", "S", "J"
-}
-
 def L2():
-    return mcscript.utils.CoefficientDict(L=1.)
+    return mcscript.utils.CoefficientDict({"U[l2]":1., "V[l,l]":2*-math.sqrt(3)})
 
 def Sp2():
-    return mcscript.utils.CoefficientDict(Sp=1.)
+    return mcscript.utils.CoefficientDict({"U[sp2]":1., "V[sp,sp]":2*-math.sqrt(3)})
 
 def Sn2():
-    return mcscript.utils.CoefficientDict(Sn=1.)
+    return mcscript.utils.CoefficientDict({"U[sn2]":1., "V[sn,sn]":2*-math.sqrt(3)})
 
 def S2():
-    return mcscript.utils.CoefficientDict(S=1.)
+    return mcscript.utils.CoefficientDict({"U[s2]":1., "V[s,s]":2*-math.sqrt(3)})
 
 def J2():
-    return mcscript.utils.CoefficientDict(J=1.)
+    return mcscript.utils.CoefficientDict({"U[j2]":1., "V[j,j]":2*-math.sqrt(3)})
 
 
 ################################################################
 # isospin operators
 ################################################################
 
-isospin_operator_set = {
-    "T", "Tz"
-}
-
-def T2():
-    return mcscript.utils.CoefficientDict(T=1.)
+def T2(A, **kwargs):
+    return mcscript.utils.CoefficientDict({"identity":A*0.75, "V[tz,tz]": 2., "V[t+,t-]":2.})
 
 def Tz():
-    return mcscript.utils.CoefficientDict(Tz=1.)
+    return mcscript.utils.CoefficientDict({"U[tz]":1.})
 
 
 ################################################################
@@ -154,6 +150,7 @@ def Ntotal(A, bsqr, **kwargs):
     out += (1/(2*bsqr)) * Ursqr()
     out += ((1/2)*bsqr) * Uksqr()
     out += (-3/2*A) * identity()
+    return out
 
 def Nintr(A, bsqr, **kwargs):
     """Number of oscillator quanta in the intrinsic frame.
@@ -167,8 +164,8 @@ def Nintr(A, bsqr, **kwargs):
     """
     return Ntotal(A, bsqr) - Ncm(A, bsqr)
 
-def Trel(A, hw, **kwargs):
-    """Two-body kinetic energy operator.
+def Tintr(A, hw, **kwargs):
+    """Two-body intrinsic kinetic energy operator.
 
     Arguments:
         A (int): mass number
@@ -213,7 +210,7 @@ def Hamiltonian(A, hw, a_cm, bsqr_intr=1.0, use_coulomb=True, bsqr_coul=1.0, **k
         use_coulomb (bool, default True): include Coulomb interaction
         bsqr_coul (float, optional): beta-squared for Coulomb scaling (ratio of b^2 to b_coul^2)
     """
-    kinetic_energy = Trel(A, hw)
+    kinetic_energy = Tintr(A, hw)
     lawson_term = a_cm * Ncm(A, bsqr_intr)
     interaction = VNN()
     if use_coulomb:

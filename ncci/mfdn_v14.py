@@ -39,6 +39,7 @@ University of Notre Dame
 - 06/04/19 (pjf): Save mfdn.out and mfdn.res to subdirectories of results.
 - 06/07/19 (pjf): Check that MFDn launches successfully with
     mcscript.control.FileWatchdog on mfdn.out.
++ 09/04/19 (pjf): Rename Trel->Tintr.
 """
 import os
 import glob
@@ -112,7 +113,7 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     # tbo: collect tbo names
     obs_basename_list = ["tbme-rrel2", "tbme-Ncm"]
     if ("H-components" in task["observable_sets"]):
-        obs_basename_list += ["tbme-Trel", "tbme-Tcm", "tbme-VNN"]
+        obs_basename_list += ["tbme-Tintr", "tbme-Tcm", "tbme-VNN"]
         if (task["use_coulomb"]):
             obs_basename_list += ["tbme-VC"]
     if ("am-sqr" in task["observable_sets"]):
