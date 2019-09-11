@@ -1,6 +1,7 @@
 """utils.py -- helper functions for MFDn runs
 
-    - 2/20/17 (pjf): Created, extracted from mfdn.py.
+    - 02/20/17 (pjf): Created, extracted from mfdn.py.
+    - 09/05/19 (pjf): Add Nv_for_nuclide.
 """
 
 import math
@@ -67,3 +68,37 @@ def natural_orbital_indicator(natural_orbital_iteration):
     else:
         indicator = "-no{:1d}".format(natural_orbital_iteration)
     return indicator
+
+################################################################
+# shell model Nv
+################################################################
+
+def Nv_for_nuclide(nuclide):
+    """Calculate oscillator quantum number of valence shell for given nuclide.
+
+    Arguments:
+        nuclide (tuple): (Z,N) for nuclide
+
+    Returns:
+        Nv (int): oscilllator quantum number for valence shell
+    """
+
+    # each major shell eta=2*n+l (for a spin-1/2 fermion) contains (eta+1)*(eta+2) substates
+
+    Nv = 0
+    for species_index in (0,1):
+        num_particles = nuclide[species_index]
+        eta=0
+        while(num_particles>0):
+            # discard particles in shell
+            shell_degeneracy = (eta+1)*(eta+2)
+            num_particles_in_shell = min(num_particles,shell_degeneracy)
+            num_particles -= num_particles_in_shell
+
+            # update Nv
+            Nv = max(Nv, eta)
+
+            # move to next shell
+            eta += 1
+
+    return Nv

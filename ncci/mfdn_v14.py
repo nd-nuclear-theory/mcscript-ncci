@@ -40,6 +40,7 @@ University of Notre Dame
 - 06/07/19 (pjf): Check that MFDn launches successfully with
     mcscript.control.FileWatchdog on mfdn.out.
 + 09/04/19 (pjf): Rename Trel->Tintr.
+- 09/07/19 (pjf): Remove Nv from truncation_parameters.
 """
 import os
 import glob
@@ -75,7 +76,7 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     truncation_parameters = task["truncation_parameters"]
     twice_Mj = int(2*truncation_parameters["M"])
     if task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kNmax:
-        Nmax_orb = truncation_parameters["Nmax"] + truncation_parameters["Nv"]
+        Nmax_orb = truncation_parameters["Nmax"] + utils.Nv_for_nuclide(task["nuclide"])
         Nmax = truncation_parameters["Nmax"]
     elif task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kFCI:
         Nmax_orb = truncation_parameters["Nmax"]

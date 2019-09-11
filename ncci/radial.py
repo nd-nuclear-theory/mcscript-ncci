@@ -28,6 +28,7 @@ University of Notre Dame
   + Update for new radial-gen input on stdin.
   + Update for new orbital-gen flags.
   + Rewrite for new em-gen workflow.
+- 09/07/19 (pjf): Remove Nv from truncation_parameters.
 """
 import errno
 import math
@@ -36,7 +37,11 @@ import os
 import mcscript
 import mcscript.exception
 
-from . import modes, environ
+from . import (
+    utils,
+    modes,
+    environ
+)
 
 
 def set_up_interaction_orbitals(task, postfix=""):
@@ -109,7 +114,7 @@ def set_up_orbitals_Nmax(task, postfix=""):
     if truncation_parameters.get("Nmax_orb") is not None:
         Nmax_orb = truncation_parameters["Nmax_orb"]
     elif task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kNmax:
-        Nmax_orb = truncation_parameters["Nmax"] + truncation_parameters["Nv"]
+        Nmax_orb = truncation_parameters["Nmax"] + utils.Nv_for_nuclide(task["nuclide"])
     elif task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kFCI:
         Nmax_orb = truncation_parameters["Nmax"]
     mcscript.call(

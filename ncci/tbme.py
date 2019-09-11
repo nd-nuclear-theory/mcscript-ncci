@@ -363,8 +363,8 @@ def generate_tbme(task, postfix=""):
                 # important: truncation of orbitals file, one-body
                 # truncation of interaction file, and MFDn
                 # single-particle shells (beware 1-based) must agree
-                N1_max = truncation_parameters["Nv"]+truncation_parameters["Nmax"]
-                N2_max = 2*truncation_parameters["Nv"]+truncation_parameters["Nmax"]
+                N1_max = utils.Nv_for_nuclide(task["nuclide"])+truncation_parameters["Nmax"]
+                N2_max = 2*utils.Nv_for_nuclide(task["nuclide"])+truncation_parameters["Nmax"]
                 target_weight_max = utils.weight_max_string((N1_max, N2_max))
             elif task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kFCI:
                 N1_max = truncation_parameters["Nmax"]
