@@ -10,6 +10,8 @@
     - 08/11/17 (pjf): Update for split single-particle and many-body truncation modes.
     - 09/24/17 (pjf): Save wavefunctions.
     - 12/19/17 (pjf): Update for mfdn->ncci rename.
+    - 09/07/19 (pjf): Remove Nv from truncation_parameters.
+    - 09/11/19 (pjf): Fix task-data save.
 """
 
 import mcscript
@@ -63,8 +65,7 @@ task = {
     "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
     "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
     "truncation_parameters": {
-        "M": 0.5,
-        "Nv": 0,
+        "M": 0.,
         "Nmax": 6,
         "Nstep": 2,
         },
@@ -79,17 +80,14 @@ task = {
     # obdme parameters
     ## "hw_for_trans": 20,
     "obdme_multipolarity": 2,
-    "obdme_reference_state_list": [(0.5, 0, 1)],
+    "obdme_reference_state_list": [(0, 0, 1)],
     "save_obdme": True,
     "ob_observables": [('M', 1), ('E', 2)],
 
     # two-body observables
     ## "observable_sets": ["H-components","am-sqr"],
-    "observable_sets": ["H-components"],
+    "observable_sets": ["H-components", "am-sqr", "isospin"],
     "tb_observables": [],
-
-    # wavefunction storage
-    "save_wavefunctions": True,
 
     # version parameters
     "h2_format": 15099,
@@ -112,7 +110,7 @@ ncci.radial.set_up_orbitals(task)
 ncci.radial.set_up_radial_analytic(task)
 ncci.tbme.generate_tbme(task)
 ncci.mfdn_v15.run_mfdn(task)
-ncci.mfdn_v15.save_mfdn_output(task)
+ncci.mfdn_v15.save_mfdn_task_data(task)
 ncci.postprocessing.generate_em(task)
 ncci.postprocessing.evaluate_ob_observables(task)
 # ncci.handlers.task_handler_oscillator(task)

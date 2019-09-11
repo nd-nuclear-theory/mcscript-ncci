@@ -10,6 +10,7 @@
     - 08/11/17 (pjf): Update for split single-particle and many-body truncation modes.
     - 10/18/17 (pjf): Switch to MFDn v15b00.
     - 12/19/17 (pjf): Update for mfdn->ncci rename.
+    - 09/07/19 (pjf): Remove Nv from truncation_parameters.
 """
 
 import mcscript
@@ -63,7 +64,6 @@ task = {
     "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
     "truncation_parameters": {
         "M": 0,
-        "Nv": 0,
         "Nmax": 2,
         "Nstep": 2,
         },

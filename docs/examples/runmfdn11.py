@@ -7,6 +7,7 @@
 
     - 10/17/17 (pjf): Created, copied from runmfd07; add duct-tape postprocessor step.
     - 12/19/17 (pjf): Update for mfdn->ncci rename.
+    - 09/07/19 (pjf): Remove Nv from truncation_parameters.
 """
 
 import mcscript
@@ -60,7 +61,6 @@ task = {
     "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
     "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
     "truncation_parameters": {
-        "Nv": 0,
         "Nmax": 2,
         "Nstep": 2,
         "M": 0,
@@ -111,7 +111,7 @@ ncci.tbme.generate_tbme(task)
 ncci.mfdn_v15.run_mfdn(task)
 task["obdme_reference_state_list"] = [(0, 0, 1)]
 ncci.mfdn_ducttape.run_mfdn(task)
-ncci.mfdn_v15.save_mfdn_output(task)
+ncci.mfdn_v15.save_mfdn_task_data(task)
 # ncci.handlers.task_handler_oscillator(task)
 
 ##################################################################

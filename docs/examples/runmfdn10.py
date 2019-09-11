@@ -7,6 +7,7 @@
 
     - 09/27/17 (pjf): Created, copied from runmfd07.
     - 12/19/17 (pjf): Update for mfdn->ncci rename.
+    - 09/07/19 (pjf): Remove Nv from truncation_parameters.
 """
 
 import mcscript
@@ -59,7 +60,6 @@ tasks = [{
     "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
     "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
     "truncation_parameters": {
-        "Nv": 1,
         "Nmax": 8,
         "Nstep": 2,
         "M": 0,

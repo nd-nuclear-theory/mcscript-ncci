@@ -6,6 +6,9 @@
     University of Notre Dame
 
     - 01/04/18 (pjf): Created, copied from runmfd09.
+    - 09/11/19 (pjf):
+        + Remove hard-coded path.
+        + Fix task-data save.
 """
 
 import mcscript
@@ -58,7 +61,7 @@ task = {
     "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kManual,
     "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kWeightMax,
     "truncation_parameters": {
-        "sp_filename": "/home/pjfasano/tmp/Nmax20-orbitals.dat",
+        "sp_filename": "${HOME}/tmp/Nmax20-orbitals.dat",
         "sp_weight_max": 20,
         "mb_weight_max": 2.1,
         "parity": +1,
@@ -103,7 +106,7 @@ ncci.radial.set_up_orbitals(task)
 ncci.radial.set_up_radial_analytic(task)
 ncci.tbme.generate_tbme(task)
 ncci.mfdn_v15.run_mfdn(task)
-ncci.mfdn_v15.save_mfdn_output(task)
+ncci.mfdn_v15.save_mfdn_task_data(task)
 
 ##################################################################
 # task control
