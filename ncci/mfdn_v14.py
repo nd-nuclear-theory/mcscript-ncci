@@ -33,6 +33,14 @@ University of Notre Dame
   + Factor out extract_natural_orbitals().
 - 10/25/17 (pjf): Rename "observables" to "tb_observables".
 - 02/11/18 (pjf): Correctly archive mfdn_partitioning.info.
+- 06/02/19 (mac):
+  + Remove save_mfdn_output_out_only.
+  + Rename save_mfdn_output to save_mfdn_task_data.
+- 06/04/19 (pjf): Save mfdn.out and mfdn.res to subdirectories of results.
+- 06/07/19 (pjf): Check that MFDn launches successfully with
+    mcscript.control.FileWatchdog on mfdn.out.
++ 09/04/19 (pjf): Rename Trel->Tintr.
+- 09/07/19 (pjf): Remove Nv from truncation_parameters.
 """
 import os
 import glob
@@ -68,7 +76,7 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     truncation_parameters = task["truncation_parameters"]
     twice_Mj = int(2*truncation_parameters["M"])
     if task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kNmax:
-        Nmax_orb = truncation_parameters["Nmax"] + truncation_parameters["Nv"]
+        Nmax_orb = truncation_parameters["Nmax"] + utils.Nv_for_nuclide(task["nuclide"])
         Nmax = truncation_parameters["Nmax"]
     elif task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kFCI:
         Nmax_orb = truncation_parameters["Nmax"]
@@ -106,7 +114,7 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     # tbo: collect tbo names
     obs_basename_list = ["tbme-rrel2", "tbme-Ncm"]
     if ("H-components" in task["observable_sets"]):
-        obs_basename_list += ["tbme-Trel", "tbme-Tcm", "tbme-VNN"]
+        obs_basename_list += ["tbme-Tintr", "tbme-Tcm", "tbme-VNN"]
         if (task["use_coulomb"]):
             obs_basename_list += ["tbme-VC"]
     if ("am-sqr" in task["observable_sets"]):
@@ -182,7 +190,8 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             environ.mfdn_filename(task["mfdn_executable"])
         ],
         mode=mcscript.CallMode.kHybrid,
-        check_return=True
+        check_return=True,
+        file_watchdog=mcscript.control.FileWatchdog("mfdn.out")
     )
 
     # test for basic indications of success
@@ -193,6 +202,40 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
 
     # leave work directory
     os.chdir("..")
+
+    # save quick inspection copies of mfdn.{res,out}
+    descriptor = task["metadata"]["descriptor"]
+    work_dir = "work{:s}".format(postfix)
+    print("Saving basic output files...")
+    filename_prefix = "{:s}-mfdn-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+    res_filename = "{:s}.res".format(filename_prefix)
+    out_filename = "{:s}.out".format(filename_prefix)
+
+    # copy results out (if in multi-task run)
+    if (mcscript.task.results_dir is not None):
+        res_dir = os.path.join(mcscript.task.results_dir, "res")
+        mcscript.utils.mkdir(res_dir, exist_ok=True)
+        mcscript.call(
+            [
+                "cp",
+                "--verbose",
+                work_dir+"/mfdn.res",
+                os.path.join(res_dir, res_filename)
+            ]
+        )
+        out_dir = os.path.join(mcscript.task.results_dir, "out")
+        mcscript.utils.mkdir(out_dir, exist_ok=True)
+        mcscript.call(
+            [
+                "cp",
+                "--verbose",
+                work_dir+"/mfdn.out",
+                os.path.join(out_dir, out_filename)
+            ]
+        )
+    else:
+        mcscript.call(["cp", "--verbose", work_dir+"/mfdn.res", res_filename])
+        mcscript.call(["cp", "--verbose", work_dir+"/mfdn.out", out_filename])
 
 
 def extract_natural_orbitals(task, postfix=""):
@@ -234,37 +277,7 @@ def extract_natural_orbitals(task, postfix=""):
         ]
     )
 
-
-def save_mfdn_output_out_only(task, postfix=""):
-    """Collect and save MFDn output files only.
-
-    Arguments:
-        task (dict): as described in module docstring
-        postfix (string, optional): identifier to add to generated files
-    """
-    # save quick inspection copies of mfdn.{res,out}
-    descriptor = task["metadata"]["descriptor"]
-    print("Saving basic output files...")
-    work_dir = "work{:s}".format(postfix)
-    filename_prefix = "{:s}-mfdn-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
-    res_filename = "{:s}.res".format(filename_prefix)
-    mcscript.call(["cp", "--verbose", work_dir+"/mfdn.res", res_filename])
-    out_filename = "{:s}.out".format(filename_prefix)
-    mcscript.call(["cp", "--verbose", work_dir+"/mfdn.out", out_filename])
-
-    # copy results out (if in multi-task run)
-    if (mcscript.task.results_dir is not None):
-        mcscript.call(
-            [
-                "cp",
-                "--verbose",
-                res_filename, out_filename,
-                "--target-directory={}".format(mcscript.task.results_dir)
-            ]
-        )
-
-
-def save_mfdn_output(task, postfix=""):
+def save_mfdn_task_data(task, postfix=""):
     """Collect and save MFDn output.
 
     Arguments:

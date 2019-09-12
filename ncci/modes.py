@@ -14,6 +14,7 @@ University of Notre Dame
 - 09/12/17 (pjf): Split config.py -> mode.py + environ.py.
 - 09/27/17 (pjf): Add MFDnRunMode options for counting-only modes.
 - 01/04/18 (pjf): Add MFDnRunMode kManual for user-provided orbital file.
+- 09/07/19 (pjf): Remove Nv from truncation_parameters.
 """
 
 import enum
@@ -75,7 +76,6 @@ class SingleParticleTruncationMode(enum.Enum):
         - traditional Nmax truncation; weight is (2*n + l)
         - compatible with MFDn v14+
         - "truncation_parameters" (dict) must contain:
-            - "Nv" (int): N of valence shell (for use in truncation)
             - "Nmax" (int): single-particle excitation oscillator cutoff
                 (interpreted as one-body Nmax_orb for "FCI" truncation, or
                 many-body excitation cutoff Nmax for "Nmax" truncation)
@@ -106,7 +106,6 @@ class ManyBodyTruncationMode(enum.Enum):
         - compatible with MFDn v14+
         - must be used with SingleParticleTruncationMode.kNmax
         - "truncation_parameters" (dict) must contain:
-            - "Nv" (int): N of valence shell (for use in truncation)
             - "Nmax" (int): many-body excitation cutoff
             - "Nstep" (int): Nstep (2 for single parity, 1 for mixed parity)
             - "M" (float): M-scheme angular momentum projection value

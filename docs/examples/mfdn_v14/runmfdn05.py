@@ -11,6 +11,7 @@
     - 07/31/17 (pjf): Set MFDn driver module in task dictionary.
     - 08/11/17 (pjf): Update for split single-particle and many-body truncation modes.
     - 12/19/17 (pjf): Update for mfdn->ncci rename.
+    - 09/07/19 (pjf): Remove Nv from truncation_parameters.
 """
 
 import mcscript
@@ -107,7 +108,6 @@ task_list = [
         "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
         "truncation_parameters": {
             "M": 0,
-            "Nv": 0,
             "Nmax": Nmax,
             "Nstep": 2,
             },

@@ -16,6 +16,17 @@ University of Notre Dame
 - 10/18/17 (pjf): Call extract_natural_orbitals().
 - 04/23/18 (mac): Provide handler for MFDn phase of oscillator run.
 - 10/17/18 (mac): Remove deprecated results-only archive handler.
+- 04/30/19 (mac): Add separate archive for task data archive directory.
+- 05/03/19 (mac): Add task_handler_post_run_no_cleanup().
+- 05/29/19 (mac): Remove task_handler_post_run_no_cleanup().
+- 05/30/19 (pjf):
+    + Call save_wavefunctions() in task_handler_post_run().
+    + Make archive_handler_mfdn() and archive_handler_mfdn_hsi() simple
+      wrappers for underlying mcscript generic handlers.
+    + Remove references to save_mfdn_output_out_only().
+- 06/02/19 (mac): Rename save_mfdn_output to save_mfdn_task_data.
+- 07/03/19 (mac): Restore task_handler_post_run_no_cleanup().
+- 07/14/19 (mac): Update archive_handler_mfdn() to use archive_handler_subarchives()
 """
 import os
 import glob
@@ -31,7 +42,6 @@ from . import (
 
 # set default MFDn driver
 default_mfdn_driver = mfdn_v14
-
 
 ################################################################
 # counting-only run
@@ -50,7 +60,6 @@ def task_handler_dimension(task, postfix=""):
     radial.set_up_orbitals(task, postfix=postfix)
     mfdn_driver.run_mfdn(
         task, run_mode=modes.MFDnRunMode.kDimension, postfix=postfix)
-    mfdn_driver.save_mfdn_output_out_only(task, postfix=postfix)
 
 
 def task_handler_nonzeros(task, postfix=""):
@@ -66,19 +75,32 @@ def task_handler_nonzeros(task, postfix=""):
     radial.set_up_orbitals(task, postfix=postfix)
     mfdn_driver.run_mfdn(
         task, run_mode=modes.MFDnRunMode.kNonzeros, postfix=postfix)
-    mfdn_driver.save_mfdn_output_out_only(task, postfix=postfix)
 
 
 ################################################################
 # generic cleanup and archive steps
 ################################################################
 
-def task_handler_post_run(task, postfix=""):
+def task_handler_post_run(task, postfix="", cleanup=True):
     """Task handler for serial components after MFDn run.
+
+    If expect to use wave functions after initial results archive, invoke this
+    handler with cleanup=False option, as
+
+        phase_handler_list=[
+            ...
+            functools.partial(ncci.handlers.task_handler_post_run,cleanup=False),
+            ...
+            ]
+
+    Unfortunately, this hides the docstring from being properly listed in the
+    phase summary.
 
     Arguments:
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
+        cleanup (bool, optional): whether or not to do cleanup after archiving
+
     """
     mfdn_driver = task.get("mfdn_driver")
     if mfdn_driver is None:
@@ -88,9 +110,20 @@ def task_handler_post_run(task, postfix=""):
     if task.get("natural_orbitals"):
         mfdn_driver.extract_natural_orbitals(task, postfix)
 
-    mfdn_driver.save_mfdn_output(task, postfix=postfix)
-    mfdn_driver.cleanup_mfdn_workdir(task, postfix=postfix)
+    mfdn_driver.save_mfdn_task_data(task, postfix=postfix)
+    if task.get("save_wavefunctions"):
+        mfdn_driver.save_mfdn_wavefunctions(task, postfix)
+    if (cleanup):
+        mfdn_driver.cleanup_mfdn_workdir(task, postfix=postfix)
 
+def task_handler_post_run_no_cleanup(task,postfix=""):
+    """ Task handler for serial components after MFDn run (no cleanup).
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+    task_handler_post_run(task,postfix=postfix,cleanup=False)
 
 ################################################################
 # basic oscillator run
@@ -122,9 +155,6 @@ def task_handler_oscillator_mfdn(task, postfix=""):
     if mfdn_driver is None:
         mfdn_driver = default_mfdn_driver
     mfdn_driver.run_mfdn(task, postfix=postfix)
-
-    # save quick inspection results
-    mfdn_driver.save_mfdn_output_out_only(task, postfix=postfix)
 
 def task_handler_oscillator(task, postfix=""):
     """Task handler for basic oscillator run.
@@ -240,49 +270,35 @@ def task_handler_natorb(task):
 def archive_handler_mfdn():
     """Generate archives for MFDn results and MFDn wavefunctions."""
 
-    # generate usual archive for results directory
-    archive_filename = mcscript.task.archive_handler_generic(
-        include_results=True)
-
-    # generate wave function archive
-    wavefunction_archive_filename = None
-    wavefunction_dir = os.path.join(
-        mcscript.parameters.run.work_dir, "wavefunctions")
-    if os.path.exists(wavefunction_dir):
-        wavefunction_archive_filename = os.path.join(
-            mcscript.task.archive_dir,
-            "{:s}-archive-{:s}-wf.tar".format(
-                mcscript.parameters.run.name, mcscript.utils.date_tag())
-        )
-        toc_filename = "{}.toc".format(mcscript.parameters.run.name)
-        filename_list = [
-            toc_filename,
-            "wavefunctions"
+    archive_filename_list = mcscript.task.archive_handler_subarchives(
+        [
+            {"postfix" : "-out", "paths" : ["results/out"], "compress" : True, "include_metadata" : True},
+            {"postfix" : "-res", "paths" : ["results/res"], "compress" : True},
+            {"postfix" : "-task-data", "paths" : ["results/task-data"]},
+            {"postfix" : "-wf", "paths" : ["results/wf"]},
         ]
-        mcscript.control.call(
-            [
-                "tar",
-                "cvf",
-                wavefunction_archive_filename,
-                "--transform=s,^,{:s}/,".format(mcscript.parameters.run.name),
-                "--show-transformed",
-                # avoid failure return code due to "tar: runxxxx/output/task-ARCH-0.out: file changed as we read it"
-                "--exclude=task-ARCH-*"
-            ] + filename_list,
-            cwd=mcscript.parameters.run.work_dir,
-            check_return=True
-        )
+    )
+    return archive_filename_list
 
-    return (archive_filename, wavefunction_archive_filename)
+def archive_handler_mfdn_lightweight():
+    """Generate archives for MFDn results (but not task data or wavefunctions).
 
+    This is useful as a follow-up archive after running the postprocessor.
+    """
+
+    archive_filename_list = mcscript.task.archive_handler_subarchives(
+        [
+            {"postfix" : "-out", "paths" : ["results/out"], "compress" : True, "include_metadata" : True},
+            {"postfix" : "-res", "paths" : ["results/res"], "compress" : True},
+        ]
+    )
+    return archive_filename_list
 
 def archive_handler_mfdn_hsi():
     """Generate archives for MFDn and save to tape."""
 
     # generate archives
-    (archive_filename, wavefunction_archive_filename) = archive_handler_mfdn()
+    archive_filename_list = archive_handler_mfdn()
 
     # save to tape
-    mcscript.task.archive_handler_hsi(archive_filename)
-    if wavefunction_archive_filename:
-        mcscript.task.archive_handler_hsi(wavefunction_archive_filename)
+    mcscript.task.archive_handler_hsi(archive_filename_list)

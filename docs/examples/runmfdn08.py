@@ -8,6 +8,10 @@
     - 08/01/17 (pjf): Created, copied from runmfd07; switch to MFDn v15 b01.
     - 08/11/17 (pjf): Update for split single-particle and many-body truncation modes.
     - 12/19/17 (pjf): Update for mfdn->ncci rename.
+    - 09/07/19 (pjf):
+        + Remove Nv from truncation_parameters.
+        + Fix task_pool.
+    - 09/11/19 (pjf): Fix task-data save.
 """
 
 import mcscript
@@ -79,7 +83,6 @@ tasks = [{
     "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
     "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
     "truncation_parameters": {
-        "Nv": 0,
         "Nmax": Nmax,
         "Nstep": 2,
         "M": 0,
@@ -125,12 +128,12 @@ tasks = [{
 ## ncci.radial.set_up_radial_analytic(task)
 ## ncci.tbme.generate_tbme(task)
 ## ncci.mfdn_v15.run_mfdn(task)
-## ncci.mfdn_v15.save_mfdn_output(task)
+## ncci.mfdn_v15.save_mfdn_task_data(task)
 
 ## ncci.handlers.task_handler_oscillator(task)
 
 def task_pool(current_task):
-    pool = "Nmax{truncation_parameters[Nmax]:02d}-Mj{Mj:3.1f}".format(**current_task)
+    pool = "Nmax{truncation_parameters[Nmax]:02d}-M{truncation_parameters[M]:3.1f}".format(**current_task)
     return pool
 
 ##################################################################

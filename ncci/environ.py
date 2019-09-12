@@ -19,6 +19,8 @@ University of Notre Dame
 - 12/21/17 (pjf): Allow absolute paths for MFDn and interaction filenames.
 - 02/21/19 (mac): Support search for "interaction" file with no hw.
 - 04/04/19 (pjf): Add operator_dir_list for operator TBME input file search support.
+- 05/29/19 (mac): Add mfdn_postprocessor_filename.
+- 08/23/19 (pjf): Add obme_filename.
 """
 
 import os
@@ -53,6 +55,11 @@ def mfdn_filename(name):
         return mcscript.utils.expand_path(name)
     return os.path.join(mcscript.parameters.run.install_dir, "mfdn", name)
 
+def mfdn_postprocessor_filename(name):
+    """Construct filename for MFDn postprocessor executable."""
+    if os.path.isfile(mcscript.utils.expand_path(name)):
+        return mcscript.utils.expand_path(name)
+    return os.path.join(mcscript.parameters.run.install_dir, "mfdn-transitions", name)
 
 def interaction_filename(interaction, truncation, hw):
     """Construct filename for interaction h2 file.
@@ -102,38 +109,40 @@ def interaction_filename(interaction, truncation, hw):
 ################################################################
 
 ### orbital filename templates ###
-_orbitals_int_filename_template = "orbitals-int{:s}.dat"
 # filename template for interaction tbme basis orbitals
-_orbitals_coul_filename_template = "orbitals-coul{:s}.dat"
+_orbitals_int_filename_template = "orbitals-int{:s}.dat"
 # filename template for Coulomb tbme basis orbitals
-_orbitals_filename_template = "orbitals{:s}.dat"
+_orbitals_coul_filename_template = "orbitals-coul{:s}.dat"
 # filename template for target basis orbitals
-_radial_xform_filename_template = "radial-xform{:s}.dat"
+_orbitals_filename_template = "orbitals{:s}.dat"
 # filename template for change of basis xform
-_radial_me_filename_template = "radial-me-{}{}{:s}.dat"  # "{}{}" will be replaced by {"r1","r2","k1","k2"}
+_radial_xform_filename_template = "radial-xform{:s}.dat"
 # filename template for radial matrix elements
-_radial_pn_olap_filename_template = "radial-pn-olap{:s}.dat"
+_radial_me_filename_template = "radial-me-{}{}{:s}.dat"  # "{}{}" will be replaced by {"r1","r2","k1","k2"}
+# filename template for one-body matrix elements
+_obme_filename_template = "obme-{}{:s}.dat"  # "{}" will be replaced with an operator name
 # filename for pn overlap matrix elements
-_radial_olap_int_filename_template = "radial-olap-int{:s}.dat"
+_radial_pn_olap_filename_template = "radial-pn-olap{:s}.dat"
 # filename template for overlaps from interaction tbme basis
-_radial_olap_coul_filename_template = "radial-olap-coul{:s}.dat"
+_radial_olap_int_filename_template = "radial-olap-int{:s}.dat"
 # filename template for overlaps from Coulomb tbme basis
-_observable_me_filename_template = "observable-me-{}{}{}{:s}.dat"  # "{}{}{}" will be replaced by {"E2p","M1n",etc.}
+_radial_olap_coul_filename_template = "radial-olap-coul{:s}.dat"
 # filename template for observable matrix elements
-_h2mixer_filename_template = "h2mixer{:s}.in"
+_observable_me_filename_template = "observable-me-{}{}{}{:s}.dat"  # "{}{}{}" will be replaced by {"E2p","M1n",etc.}
 # filename template for h2mixer input
-_obscalc_ob_filename_template = "obscalc-ob{:s}.in"
+_h2mixer_filename_template = "h2mixer{:s}.in"
 # filename template for obscalc-ob input
-_obscalc_ob_res_filename_template = "obscalc-ob{:s}.res"
+_obscalc_ob_filename_template = "obscalc-ob{:s}.in"
 # filename template for obscalc-ob results
-_emgen_filename_template = "em-gen{:s}.in"
+_obscalc_ob_res_filename_template = "obscalc-ob{:s}.res"
 # filename template for em-gen input
-_natorb_info_filename_template = "natorb-obdme{:s}.info"
+_emgen_filename_template = "em-gen{:s}.in"
 # filename template for OBDME info for building natural orbitals
-_natorb_obdme_filename_template = "natorb-obdme{:s}.dat"
+_natorb_info_filename_template = "natorb-obdme{:s}.info"
 # filename template for static OBDME file for building natural orbitals
-_natorb_xform_filename_template = "natorb-xform{:s}.dat"
+_natorb_obdme_filename_template = "natorb-obdme{:s}.dat"
 # filename template for natural orbital xform from previous basis
+_natorb_xform_filename_template = "natorb-xform{:s}.dat"
 
 def orbitals_int_filename(postfix):
     """Construct filename for interaction tbme basis orbitals.
@@ -183,6 +192,17 @@ def radial_me_filename(postfix, operator_type, power):
     Returns: (str) filename
     """
     return _radial_me_filename_template.format(operator_type, power, postfix)
+
+def obme_filename(postfix, id):
+    """Construct filename for one-body matrix elements.
+
+    Arguments:
+        postfix (str): string to append to end of filename
+        id (str): operator id
+        power (int): radial operator power
+    Returns: (str) filename
+    """
+    return _obme_filename_template.format(id, postfix)
 
 def radial_pn_olap_filename(postfix):
     """Construct filename for overlaps between p and n orbitals.

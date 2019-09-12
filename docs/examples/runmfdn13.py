@@ -6,6 +6,7 @@
     University of Notre Dame
 
     - 03/15/19 (pjf): Created, copied from runmfd07.
+    - 09/07/19 (pjf): Remove Nv from truncation_parameters.
 """
 
 import mcscript
@@ -64,7 +65,6 @@ task = {
     "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
     "truncation_parameters": {
         "M": 0.0,
-        "Nv": 0,
         "Nmax": 6,
         "Nstep": 2,
         },
@@ -119,7 +119,7 @@ ncci.radial.set_up_orbitals(task)
 ncci.radial.set_up_radial_analytic(task)
 ncci.tbme.generate_tbme(task)
 ncci.mfdn_v15.run_mfdn(task)
-ncci.mfdn_v15.save_mfdn_output(task)
+ncci.mfdn_v15.save_mfdn_task_data(task)
 ncci.postprocessing.generate_em(task)
 ncci.postprocessing.evaluate_ob_observables(task)
 # ncci.handlers.task_handler_oscillator(task)
