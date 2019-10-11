@@ -354,7 +354,7 @@ def generate_observable_tbme(task, postfix="", generate_scalar=False):
             target_qn_set.add(qn)
 
     if not generate_scalar:
-        target_qn_set.remove((0,0,0))
+        target_qn_set.discard((0,0,0))
 
     for target_qn in target_qn_set:
         targets = get_tbme_targets(task, target_qn)
