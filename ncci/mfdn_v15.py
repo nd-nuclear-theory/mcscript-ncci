@@ -170,7 +170,7 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     # truncation mode
     truncation_setup_functions[task["mb_truncation_mode"]](task, inputlist)
 
-    if run_mode is modes.MFDnRunMode.kNormal:
+    if run_mode in [modes.MFDnRunMode.kNormal,modes.MFDnRunMode.kLanczosOnly]:
         if (task["basis_mode"] in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):
             inputlist["hbomeg"] = float(task["hw"])
 
