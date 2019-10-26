@@ -41,7 +41,7 @@ University of Notre Dame
 - 06/07/19 (pjf): Check that MFDn launches successfully with
     mcscript.control.FileWatchdog on mfdn.out.
 - 06/11/19 (pjf): Save task-data archives to correct place (under results_dir).
-+ 09/04/19 (pjf): Rename Trel->Tintr.
+- 09/04/19 (pjf): Rename Trel->Tintr.
 """
 import os
 import glob
@@ -149,10 +149,10 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     obslist = collections.OrderedDict()
 
     # run mode
-    if (run_mode==ncci.modes.kLanczosOnly):
+    if (run_mode==modes.kLanczosOnly):
         # stopgap until MFDn mode implemented to stop after Lanczos
         print("stopgap until MFDn mode implemented to stop after Lanczos")
-        inputlist["IFLAG_mode"] = int(ncci.modes.kNormal)
+        inputlist["IFLAG_mode"] = int(modes.kNormal)
     else:
         inputlist["IFLAG_mode"] = int(run_mode)
         
