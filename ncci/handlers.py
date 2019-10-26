@@ -176,6 +176,9 @@ def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
     mfdn_driver.run_mfdn(task, run_mode=modes.MFDnRunMode.kLanczosOnly, postfix=postfix)
 
     # copy out lanczos file
+    descriptor = task["metadata"]["descriptor"]
+    work_dir = "work{:s}".format(postfix)
+    filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
     lanczos_source_filename = work_dir+"/mfdn_alphabeta.dat"
     lanczos_target_filename = "{:s}.lanczos".format(filename_prefix)
     if (mcscript.task.results_dir is not None):

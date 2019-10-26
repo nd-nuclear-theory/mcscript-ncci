@@ -280,8 +280,8 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     os.chdir("..")
 
     # copy results out
-    descriptor = task["metadata"]["descriptor"]
     print("Saving basic output files...")
+    descriptor = task["metadata"]["descriptor"]
     work_dir = "work{:s}".format(postfix)
     filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
 
