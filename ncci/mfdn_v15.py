@@ -149,10 +149,10 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     obslist = collections.OrderedDict()
 
     # run mode
-    if (run_mode==modes.kLanczosOnly):
+    if (run_mode==modes.MFDnRunMode.kLanczosOnly):
         # stopgap until MFDn mode implemented to stop after Lanczos
         print("stopgap until MFDn mode implemented to stop after Lanczos")
-        inputlist["IFLAG_mode"] = int(modes.kNormal)
+        inputlist["IFLAG_mode"] = int(modes.MFDnRunMode.kNormal)
     else:
         inputlist["IFLAG_mode"] = int(run_mode)
         
