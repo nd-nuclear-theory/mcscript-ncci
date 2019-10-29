@@ -26,6 +26,7 @@ University of Notre Dame
           operators and separable operators.
 - 09/07/19 (pjf): Remove Nv from truncation_parameters.
 - 09/11/19 (pjf): Pass parameters as kwargs to operators.
+- 10/26/19 (pjf): Make "observable_sets" an optional task dictionary key.
 """
 import collections
 import os
@@ -215,7 +216,7 @@ def generate_tbme(task, postfix=""):
 
     # optional observable sets
     # Hamiltonian components
-    if "H-components" in task["observable_sets"]:
+    if "H-components" in task.get("observable_sets", []):
         # target: Trel (diagnostic)
         targets["tbme-Tintr"] = operators.Tintr(A=A, hw=hw)
         # target: Tcm (diagnostic)
@@ -226,13 +227,13 @@ def generate_tbme(task, postfix=""):
         if (task["use_coulomb"]):
             targets["tbme-VC"] = operators.VC(hw=hw_coul_rescaled, hw_coul=hw_coul)
     # squared angular momenta
-    if ("am-sqr" in task["observable_sets"]):
+    if "am-sqr" in task.get("observable_sets", []):
         targets["tbme-L2"] = operators.L2()
         targets["tbme-Sp2"] = operators.Sp2()
         targets["tbme-Sn2"] = operators.Sn2()
         targets["tbme-S2"] = operators.S2()
         targets["tbme-J2"] = operators.J2()
-    if ("isospin" in task["observable_sets"]):
+    if "isospin" in task.get("observable_sets", []):
         targets["tbme-T2"] = operators.T2(A=A)
 
     # get set of required sources
