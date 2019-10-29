@@ -42,6 +42,8 @@ University of Notre Dame
     mcscript.control.FileWatchdog on mfdn.out.
 - 06/11/19 (pjf): Save task-data archives to correct place (under results_dir).
 + 09/04/19 (pjf): Rename Trel->Tintr.
++ 10/10/19 (pjf): Implement generation of mfdn_smwf.info from old runs.
++ 10/13/19 (pjf): Fix inclusion of partitioning into mfdn_smwf.info.
 """
 import os
 import glob
@@ -616,3 +618,95 @@ def extract_wavefunctions(
 
     # remove temporary directories
     mcscript.call(["rm", "-vfd", extracted_dir, run_name])
+
+
+def generate_smwf_info(task, orbital_filename, partitioning_filename, res_filename, info_filename='mfdn_smwf.info'):
+    """Generate SMWF info file from given MFDn input files.
+
+    Arguments:
+        task (dict): as described in module docstring
+        orbital_filename (str): name of orbital file to be included
+        partitioning_filename (str): name of partitioning file to be included
+        res_filename (str): name of results file to be parsed for state info
+        info_filename (str): output info filename
+    """
+
+    import mfdnres
+    import re
+
+    lines = []
+    lines.append("   15200    ! Version Number")
+    lines.append(
+        " {Z:>3d} {N:>3d} {TwoM:>3d}    ! Z, N, 2Mj".format(
+            Z=task["nuclide"][0], N=task["nuclide"][1], TwoM=int(2*task["truncation_parameters"]["M"])
+        )
+    )
+    lines.append(" {:127s}".format(task["metadata"]["descriptor"]))
+
+    # blank line
+    lines.append("")
+
+    # convert orbitals to 15200
+    mcscript.call(
+        [
+            environ.shell_filename("orbital-gen"),
+            "--convert",
+            "15099", "{:s}".format(orbital_filename),
+            "15200", "{:s}".format(orbital_filename+"15200"),
+        ],
+        mode=mcscript.CallMode.kSerial
+    )
+
+    # append orbitals to info file
+    with open(orbital_filename+"15200") as orbital_fp:
+        for line in orbital_fp:
+            if line.lstrip()[0] == '#':
+                continue
+            if line.lstrip().rstrip() == '15200':
+                continue
+            lines.append(line.rstrip())
+
+    # remove temporary orbital file
+    mcscript.call(["rm","-v","orbital_filename"+"15200"])
+
+    # blank line
+    lines.append("")
+
+    # append partitioning
+    with open(partitioning_filename) as partitioning_fp:
+        for line in partitioning_fp:
+            # ignore lines containing anything other than numbers and whitespace
+            if not re.search(r"[^0-9\s]", line):
+                lines.append(line.rstrip())
+
+    # blank line
+    lines.append("")
+
+    # parse res file
+    res_data = mfdnres.res.read_file(res_filename, "mfdn_v15")[0]
+    levels = res_data.levels
+
+    # basis information
+    lines.append(" {:>3d}  {:>12.4f} {:>15d} {:>7d}    ! Par, WTm, Dim, Npe".format(
+        res_data.params["parity"], res_data.params["WTmax"],
+        res_data.params["dimension"], res_data.params["ndiags"]
+    ))
+
+    # blank line
+    lines.append("")
+
+    # state table
+    lines.append(" {:7d}    ! n_states, followed by (i, 2J, nJ, T, -Eb, res)".format(
+        len(levels)
+    ))
+    for index, level in enumerate(levels):
+        (J, g, n) = level
+        T = res_data.get_isospin(level)
+        en = res_data.get_energy(level)
+        residual = res_data.residuals[level]
+        lines.append(" {:>7d} {:>7d} {:>7d} {:>7.2f} {:>15.4f} {:>15.2e}".format(
+            index+1, int(2*J), n, T, en, residual
+        ))
+
+    mcscript.utils.write_input(info_filename, input_lines=lines, verbose=False)
+
