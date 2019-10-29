@@ -49,7 +49,7 @@ import collections
 
 import mcscript
 
-from . import modes, environ
+from . import modes, environ, tbme
 
 
 def set_up_Nmax_truncation(task, inputlist):
@@ -180,18 +180,10 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         inputlist["TBMEfile"] = "tbme-H"
 
         # tbo: collect tbo names
-        obs_basename_list = ["tbme-rrel2", "tbme-Ncm"]
-        observable_sets = task.get("observable_sets", [])
-        if "H-components" in observable_sets:
-            obs_basename_list += ["tbme-Tintr", "tbme-Tcm", "tbme-VNN"]
-            if task.get("use_coulomb"):
-                obs_basename_list += ["tbme-VC"]
-        if "am-sqr" in observable_sets:
-            obs_basename_list += ["tbme-L2", "tbme-Sp2", "tbme-Sn2", "tbme-S2", "tbme-J2"]
-        if "isospin" in observable_sets:
-            obs_basename_list += ["tbme-T2"]
-        tb_observables = task.get("tb_observables", [])
-        obs_basename_list += ["tbme-{}".format(basename) for (basename, operator) in tb_observables]
+        obs_basename_list = list(tbme.get_tbme_targets(task, (0,0,0)).keys())
+
+        # do not evaluate Hamiltonian as observable
+        obs_basename_list.remove("tbme-H")
 
         # tbo: log tbo names in separate file to aid future data analysis
         mcscript.utils.write_input("tbo_names{:s}.dat".format(postfix), input_lines=obs_basename_list)

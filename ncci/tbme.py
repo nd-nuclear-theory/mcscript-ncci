@@ -26,6 +26,10 @@ University of Notre Dame
           operators and separable operators.
 - 09/07/19 (pjf): Remove Nv from truncation_parameters.
 - 09/11/19 (pjf): Pass parameters as kwargs to operators.
+- 10/10/19 (pjf): Generalize TBME generation:
+    + Make generate_tbme() generic for all operator quantum numbers.
+    + Add generate_diagonalization_tbme() for TBMEs needed at diagonalization time.
+    + Add generate_observable_tbme() for two-body observables.
 """
 import collections
 import os
@@ -46,6 +50,15 @@ k_h2mixer_builtin_obo = {
     "j": (1,0,0),  # this is safe, as our orbitals are always eigenstates of j
     "l2": (0,0,0), "s2": (0,0,0), "j2": (0,0,0),
     "tz": (0,0,0),
+}
+
+k_predefined_obo = {
+    "delta_p": {"linear-combination": mcscript.utils.CoefficientDict({"identity": 0.5, "tz": +1.0}), "qn": (0,0,0)},
+    "delta_n": {"linear-combination": mcscript.utils.CoefficientDict({"identity": 0.5, "tz": -1.0}), "qn": (0,0,0)},
+    "sp": {"tensor-product": ["delta_p", "s"], "qn": (1,0,0)},
+    "sn": {"tensor-product": ["delta_n", "s"], "qn": (1,0,0)},
+    "sp2": {"tensor-product": ["delta_p", "s2"], "qn": (0,0,0)},
+    "sn2": {"tensor-product": ["delta_n", "s2"], "qn": (0,0,0)},
 }
 
 k_h2mixer_builtin_tbo = {
@@ -154,12 +167,15 @@ def generate_h2mixer_tbme_source_lines(identifier, parameters):
     return [line]
 
 
-def generate_tbme(task, postfix=""):
-    """Generate TBMEs for MFDn run.
+def get_tbme_targets(task, target_qn):
+    """Get TBME targets with given quantum numbers.
 
     Arguments:
         task (dict): as described in module docstring
-        postfix (string, optional): identifier added to input filenames
+        target_qn (tuple of int): quantum numbers (J0,g0,Tz0) of desired operators
+
+    Returns:
+        (OrderedDict of CoefficientDict): targets and definitions
     """
     # extract parameters for convenience
     A = sum(task["nuclide"])
@@ -168,8 +184,83 @@ def generate_tbme(task, postfix=""):
     hw_cm = task.get("hw_cm")
     if (hw_cm is None):
         hw_cm = hw
-    hw_int = task["hw_int"]
     hw_coul = task["hw_coul"]
+    hw_coul_rescaled = task.get("hw_coul_rescaled")
+    if (hw_coul_rescaled is None):
+        hw_coul_rescaled = hw
+    xform_truncation_int = task.get("xform_truncation_int")
+    if (xform_truncation_int is None):
+        xform_truncation_int = task["truncation_int"]
+    xform_truncation_coul = task.get("xform_truncation_coul")
+    if (xform_truncation_coul is None):
+        xform_truncation_coul = task["truncation_coul"]
+
+    # accumulate h2mixer targets
+    targets = collections.OrderedDict()
+
+    # special targets, special case for scalar
+    if target_qn == (0,0,0):
+        # target: radius squared (must be first, for built-in MFDn radii)
+        targets["tbme-rrel2"] = operators.rrel2(A=A, hw=hw)
+
+        # target: Hamiltonian
+        if (task.get("hamiltonian")):
+            targets["tbme-H"] = task["hamiltonian"]
+        else:
+            targets["tbme-H"] = operators.Hamiltonian(
+                A=A, hw=hw, a_cm=a_cm, hw_cm=hw_cm,
+                use_coulomb=task["use_coulomb"], hw_coul=hw_coul,
+                hw_coul_rescaled=hw_coul_rescaled
+            )
+
+        # target: Ncm
+        targets["tbme-Ncm"] = operators.Ncm(A=A, hw=hw, hw_cm=hw_cm)
+
+        # optional observable sets
+        # Hamiltonian components
+        if "H-components" in task["observable_sets"]:
+            # target: Trel (diagnostic)
+            targets["tbme-Tintr"] = operators.Tintr(A=A, hw=hw)
+            # target: Tcm (diagnostic)
+            targets["tbme-Tcm"] = operators.Tcm(A=A, hw=hw)
+            # target: VNN (diagnostic)
+            targets["tbme-VNN"] = operators.VNN()
+            # target: VC (diagnostic)
+            if (task["use_coulomb"]):
+                targets["tbme-VC"] = operators.VC(hw=hw_coul_rescaled, hw_coul=hw_coul)
+        # squared angular momenta
+        if ("am-sqr" in task["observable_sets"]):
+            targets["tbme-L2"] = operators.L2()
+            targets["tbme-Sp2"] = operators.Sp2()
+            targets["tbme-Sn2"] = operators.Sn2()
+            targets["tbme-S2"] = operators.S2()
+            targets["tbme-J2"] = operators.J2()
+        if ("isospin" in task["observable_sets"]):
+            targets["tbme-T2"] = operators.T2(A=A)
+
+    # accumulate user observables
+    if task.get("tb_observables"):
+        for (basename, qn, operator) in task["tb_observables"]:
+            if qn == target_qn:
+                targets["tbme-{}".format(basename)] = mcscript.utils.CoefficientDict(operator)
+
+    return targets
+
+
+def generate_diagonalization_tbme(task, postfix=""):
+    """Generate TBMEs for diagonalization.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier added to input filenames
+    """
+    # extract parameters for convenience
+    A = sum(task["nuclide"])
+    hw = task["hw"]
+    hw_cm = task.get("hw_cm")
+    if (hw_cm is None):
+        hw_cm = hw
+    hw_int = task["hw_int"]
     hw_coul_rescaled = task.get("hw_coul_rescaled")
     if (hw_coul_rescaled is None):
         hw_coul_rescaled = hw
@@ -187,83 +278,16 @@ def generate_tbme(task, postfix=""):
                 task["basis_mode"], hw, hw_int
             ))
 
-    # accumulate h2mixer targets
-    targets = collections.OrderedDict()
-
-    # target: Hamiltonian
-    if (task.get("hamiltonian")):
-        targets["tbme-H"] = task["hamiltonian"]
-    else:
-        targets["tbme-H"] = operators.Hamiltonian(
-            A=A, hw=hw, a_cm=a_cm, hw_cm=hw_cm,
-            use_coulomb=task["use_coulomb"], hw_coul=hw_coul,
-            hw_coul_rescaled=hw_coul_rescaled
-        )
-
-    # accumulate observables
-    if task.get("tb_observables"):
-        for (basename, operator) in task["tb_observables"]:
-            targets["tbme-{}".format(basename)] = mcscript.utils.CoefficientDict(operator)
-
-    # target: radius squared
-    if "tbme-rrel2" not in targets:
-        targets["tbme-rrel2"] = operators.rrel2(A=A, hw=hw)
-
-    # target: Ncm
-    if "tbme-Ncm" not in targets:
-        targets["tbme-Ncm"] = operators.Ncm(A=A, hw=hw, hw_cm=hw_cm)
-
-    # optional observable sets
-    # Hamiltonian components
-    if "H-components" in task["observable_sets"]:
-        # target: Trel (diagnostic)
-        targets["tbme-Tintr"] = operators.Tintr(A=A, hw=hw)
-        # target: Tcm (diagnostic)
-        targets["tbme-Tcm"] = operators.Tcm(A=A, hw=hw)
-        # target: VNN (diagnostic)
-        targets["tbme-VNN"] = operators.VNN()
-        # target: VC (diagnostic)
-        if (task["use_coulomb"]):
-            targets["tbme-VC"] = operators.VC(hw=hw_coul_rescaled, hw_coul=hw_coul)
-    # squared angular momenta
-    if ("am-sqr" in task["observable_sets"]):
-        targets["tbme-L2"] = operators.L2()
-        targets["tbme-Sp2"] = operators.Sp2()
-        targets["tbme-Sn2"] = operators.Sn2()
-        targets["tbme-S2"] = operators.S2()
-        targets["tbme-J2"] = operators.J2()
-    if ("isospin" in task["observable_sets"]):
-        targets["tbme-T2"] = operators.T2(A=A)
+    # get targets
+    targets = get_tbme_targets(task, (0,0,0))
 
     # get set of required sources
-    required_obme_sources = set()
     required_tbme_sources = set()
     required_tbme_sources.update(*[op.keys() for op in targets.values()])
 
     # obme and tbme sources: accumulate definitions
     obme_sources = collections.OrderedDict()
     tbme_sources = collections.OrderedDict()
-
-    # tbme sources: h2mixer built-ins
-    builtin_tbme_sources = k_h2mixer_builtin_tbo
-    for source in sorted(builtin_tbme_sources):
-        tbme_sources[source] = dict()
-
-    # tbme sources: upgraded one-body and separable operators
-    for source in sorted(required_tbme_sources):
-        # parse upgraded one-body operator
-        match = re.fullmatch(r"U\[(.+)\]", source)
-        if match:
-            tbme_sources[source] = {"operatorU": match.group(1)}
-            required_obme_sources |= {match.group(1)}
-            continue
-
-        # parse separable operator
-        match = re.fullmatch(r"V\[(.+),(.+)\]", source)
-        if match:
-            tbme_sources[source] = {"operatorV": (match.group(1), match.group(2))}
-            required_obme_sources |= {match.group(1), match.group(2)}
-            continue
 
     # tbme sources: VNN
     if "VNN" in required_tbme_sources:
@@ -305,32 +329,98 @@ def generate_tbme(task, postfix=""):
                 xform_truncation=xform_truncation_coul
             )
 
+    # generate MFDn TBMEs
+    generate_tbme(
+        task,
+        obme_sources=obme_sources, tbme_sources=tbme_sources,
+        targets=targets, target_qn=(0,0,0),
+        postfix=postfix
+    )
+
+
+def generate_observable_tbme(task, postfix="", generate_scalar=False):
+    """Generate observable TBMEs.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier added to input filenames
+        generate_scalar (bool, default False): whether to generate scalar TBMEs;
+            this is generally false, since they will be generated during setup
+            for diagonalization
+    """
+    target_qn_set = set()
+    if task.get("tb_observables"):
+        for (basename, qn, operator) in task["tb_observables"]:
+            target_qn_set.add(qn)
+
+    if not generate_scalar:
+        target_qn_set.remove((0,0,0))
+
+    for target_qn in target_qn_set:
+        targets = get_tbme_targets(task, target_qn)
+        generate_tbme(task, targets=targets, target_qn=target_qn, postfix="")
+
+
+def generate_tbme(
+        task,
+        obme_sources={}, tbme_sources={},
+        targets={}, target_qn=(0,0,0),
+        postfix=""):
+    """Generate TBMEs with
+    """
+    # extract parameters for convenience
+    A = sum(task["nuclide"])
+
+    # get set of required sources
+    required_obme_sources = set()
+    required_tbme_sources = set()
+    required_tbme_sources.update(*[op.keys() for op in targets.values()])
+
+    # tbme sources: h2mixer built-ins
+    builtin_tbme_sources = k_h2mixer_builtin_tbo
+    for source in sorted(builtin_tbme_sources - set(tbme_sources.keys())):
+        tbme_sources[source] = dict()
+
+    # tbme sources: upgraded one-body and separable operators
+    for source in sorted(required_tbme_sources - set(tbme_sources.keys())):
+        # parse upgraded one-body operator
+        match = re.fullmatch(r"U\[(.+)\]", source)
+        if match:
+            tbme_sources[source] = {"operatorU": match.group(1)}
+            required_obme_sources |= {match.group(1)}
+            continue
+
+        # parse separable operator
+        match = re.fullmatch(r"V\[(.+),(.+)\]", source)
+        if match:
+            tbme_sources[source] = {"operatorV": (match.group(1), match.group(2))}
+            required_obme_sources |= {match.group(1), match.group(2)}
+            continue
+
     # tbme sources: override with user-provided
     user_tbme_sources = task.get("tbme_sources")
     if (user_tbme_sources is not None):
-        for (source_id, source) in user_tbme_sources:
-            tbme_sources[source_id] = source
+        for (source_id, source_qn, source) in user_tbme_sources:
+            if source_qn == target_qn:
+                tbme_sources[source_id] = source
 
     # obme sources: h2mixer built-ins
-    builtin_obme_sources = k_h2mixer_builtin_obo
-    for source_id, qn in builtin_obme_sources.items():
-        obme_sources[source_id] = {"qn": qn}
+    for source_id, qn in k_h2mixer_builtin_obo.items():
+        if source_id not in obme_sources:
+            obme_sources[source_id] = {"qn": qn}
 
     # obme sources: radial-gen builtins
-    radialgen_obme_sources = radial.k_radialgen_operators
-    for source_id, qn in radialgen_obme_sources.items():
-        obme_sources[source_id] = {
-            "filename": environ.obme_filename(postfix, source_id),
-            "qn": qn
-        }
+    for source_id, qn in radial.k_radialgen_operators.items():
+        if source_id not in obme_sources:
+            obme_sources[source_id] = {
+                "filename": environ.obme_filename(postfix, source_id),
+                "qn": qn
+            }
 
     # obme sources: special linear combinations
-    obme_sources["delta_p"] = {"linear-combination": mcscript.utils.CoefficientDict({"identity": 0.5, "tz": +1.0}), "qn": (0,0,0)}
-    obme_sources["delta_n"] = {"linear-combination": mcscript.utils.CoefficientDict({"identity": 0.5, "tz": -1.0}), "qn": (0,0,0)}
-    obme_sources["sp"] = {"tensor-product": ["delta_p", "s"], "qn": (1,0,0)}
-    obme_sources["sn"] = {"tensor-product": ["delta_n", "s"], "qn": (1,0,0)}
-    obme_sources["sp2"] = {"tensor-product": ["delta_p", "s2"], "qn": (0,0,0)}
-    obme_sources["sn2"] = {"tensor-product": ["delta_n", "s2"], "qn": (0,0,0)}
+    for source_id, source in k_predefined_obo.items():
+        if source_id not in obme_sources:
+            obme_sources[source_id] = source
 
     # obme sources: override with user-provided
     user_obme_sources = task.get("obme_sources")
@@ -392,14 +482,14 @@ def generate_tbme(task, postfix=""):
         target_weight_max=target_weight_max,
         **task
     ))
-    lines.append("set-target-multipolarity 0 0 0")  # TODO(pjf): generalize for nonscalar operators
+    lines.append("set-target-multipolarity {:d} {:d} {:d}".format(*target_qn))
     lines.append("set-output-format {h2_format}".format(**task))
     lines.append("set-mass {A}".format(A=A, **task))
     lines.append("")
 
     # xform sources: collect unique filenames
     xform_filename_set = set()
-    for source_id in required_tbme_sources:
+    for source_id in sorted(required_tbme_sources & set(tbme_sources.keys())):
         xform_filename = tbme_sources[source_id].get("xform_filename")
         xform_truncation = tbme_sources[source_id].get("xform_truncation")
         if (xform_filename is not None) and (xform_truncation is not None):

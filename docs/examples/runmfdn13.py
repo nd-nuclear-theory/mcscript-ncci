@@ -87,12 +87,12 @@ task = {
     ## "observable_sets": ["H-components","am-sqr"],
     "observable_sets": ["H-components", "am-sqr"],
     "tb_observables": [
-        ("CSp3R", {"CSp3R-U": 0.5, "CSp3R-V": 1.0})
+        ("CSp3R", (0,0,0), {"CSp3R-U": 0.5, "CSp3R-V": 1.0})
         ],
     # two-body sources
     "tbme_sources": [
-        ("CSp3R-U", {"filename": "tbme-CSp3R-U.bin"}),
-        ("CSp3R-V", {"filename": "tbme-CSp3R-V.bin"}),
+        ("CSp3R-U", (0,0,0), {"filename": "tbme-CSp3R-U.bin"}),
+        ("CSp3R-V", (0,0,0), {"filename": "tbme-CSp3R-V.bin"}),
     ],
 
     # wavefunction storage
@@ -117,7 +117,7 @@ task["metadata"] = {
 ncci.radial.set_up_interaction_orbitals(task)
 ncci.radial.set_up_orbitals(task)
 ncci.radial.set_up_radial_analytic(task)
-ncci.tbme.generate_tbme(task)
+ncci.tbme.generate_diagonalization_tbme(task)
 ncci.mfdn_v15.run_mfdn(task)
 ncci.mfdn_v15.save_mfdn_task_data(task)
 ncci.postprocessing.generate_em(task)

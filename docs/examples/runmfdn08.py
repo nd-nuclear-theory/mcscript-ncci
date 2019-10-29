@@ -126,7 +126,7 @@ tasks = [{
 
 ## ncci.radial.set_up_orbitals_ho(task)
 ## ncci.radial.set_up_radial_analytic(task)
-## ncci.tbme.generate_tbme(task)
+## ncci.tbme.generate_diagonalization_tbme(task)
 ## ncci.mfdn_v15.run_mfdn(task)
 ## ncci.mfdn_v15.save_mfdn_task_data(task)
 

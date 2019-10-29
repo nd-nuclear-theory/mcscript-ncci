@@ -107,7 +107,7 @@ task["metadata"] = {
 ncci.radial.set_up_interaction_orbitals(task)
 ncci.radial.set_up_orbitals(task)
 ncci.radial.set_up_radial_analytic(task)
-ncci.tbme.generate_tbme(task)
+ncci.tbme.generate_diagonalization_tbme(task)
 ncci.mfdn_v15.run_mfdn(task)
 task["obdme_reference_state_list"] = [(0, 0, 1)]
 ncci.mfdn_ducttape.run_mfdn(task)

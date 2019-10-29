@@ -39,15 +39,16 @@ University of Notre Dame
 - 06/04/19 (pjf): Save mfdn.out and mfdn.res to subdirectories of results.
 - 06/07/19 (pjf): Check that MFDn launches successfully with
     mcscript.control.FileWatchdog on mfdn.out.
-+ 09/04/19 (pjf): Rename Trel->Tintr.
+- 09/04/19 (pjf): Rename Trel->Tintr.
 - 09/07/19 (pjf): Remove Nv from truncation_parameters.
+- 10/10/19 (pjf): Get tbo basenames from tbme.get_tbme_targets().
 """
 import os
 import glob
 
 import mcscript
 
-from . import utils, modes, environ
+from . import utils, modes, environ, tbme
 
 
 def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
@@ -112,17 +113,10 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     ))
 
     # tbo: collect tbo names
-    obs_basename_list = ["tbme-rrel2", "tbme-Ncm"]
-    if ("H-components" in task["observable_sets"]):
-        obs_basename_list += ["tbme-Tintr", "tbme-Tcm", "tbme-VNN"]
-        if (task["use_coulomb"]):
-            obs_basename_list += ["tbme-VC"]
-    if ("am-sqr" in task["observable_sets"]):
-        obs_basename_list += ["tbme-L2", "tbme-Sp2", "tbme-Sn2", "tbme-S2", "tbme-J2"]
-    if ("isospin" in task["observable_sets"]):
-        obs_basename_list += ["tbme-T2"]
-    if ("tb_observables" in task):
-        obs_basename_list += ["tbme-{}".format(basename) for (basename, operator) in task["tb_observables"]]
+    obs_basename_list = list(tbme.get_tbme_targets(task, (0,0,0)).keys())
+
+    # do not evaluate Hamiltonian as observable
+    obs_basename_list.remove("tbme-H")
 
     # tbo: log tbo names in separate file to aid future data analysis
     mcscript.utils.write_input("tbo_names{:s}.dat".format(postfix), input_lines=obs_basename_list)

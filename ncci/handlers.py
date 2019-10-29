@@ -26,7 +26,10 @@ University of Notre Dame
     + Remove references to save_mfdn_output_out_only().
 - 06/02/19 (mac): Rename save_mfdn_output to save_mfdn_task_data.
 - 07/03/19 (mac): Restore task_handler_post_run_no_cleanup().
-- 07/14/19 (mac): Update archive_handler_mfdn() to use archive_handler_subarchives()
+- 07/14/19 (mac): Update archive_handler_mfdn() to use archive_handler_subarchives().
+- 10/10/19 (pjf):
+    + Change default MFDn driver to mfdn_v15.
+    + Use tbme.generate_diagonalization_tbme() instead of tbme.generate_tbme().
 """
 import os
 import glob
@@ -37,11 +40,11 @@ from . import (
     radial,
     tbme,
     utils,
-    mfdn_v14,
+    mfdn_v15,
 )
 
 # set default MFDn driver
-default_mfdn_driver = mfdn_v14
+default_mfdn_driver = mfdn_v15
 
 ################################################################
 # counting-only run
@@ -140,7 +143,7 @@ def task_handler_oscillator_pre(task, postfix=""):
     radial.set_up_interaction_orbitals(task, postfix=postfix)
     radial.set_up_orbitals(task, postfix=postfix)
     radial.set_up_radial_analytic(task, postfix=postfix)
-    tbme.generate_tbme(task, postfix=postfix)
+    tbme.generate_diagonalization_tbme(task, postfix=postfix)
 
 def task_handler_oscillator_mfdn(task, postfix=""):
     """Task handler for MFDn phase of basic oscillator run.
@@ -202,7 +205,7 @@ def task_handler_natorb_pre(task, source_postfix="", target_postfix=""):
     radial.set_up_radial_natorb(
         task=task, source_postfix=source_postfix, target_postfix=target_postfix
         )
-    tbme.generate_tbme(
+    tbme.generate_diagonalization_tbme(
         task=task, postfix=target_postfix
         )
 
