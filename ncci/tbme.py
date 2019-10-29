@@ -30,6 +30,7 @@ University of Notre Dame
     + Make generate_tbme() generic for all operator quantum numbers.
     + Add generate_diagonalization_tbme() for TBMEs needed at diagonalization time.
     + Add generate_observable_tbme() for two-body observables.
+- 10/26/19 (pjf): Make "observable_sets" an optional task dictionary key.
 """
 import collections
 import os
@@ -218,7 +219,7 @@ def get_tbme_targets(task, target_qn):
 
         # optional observable sets
         # Hamiltonian components
-        if "H-components" in task["observable_sets"]:
+        if "H-components" in task.get("observable_sets", []):
             # target: Trel (diagnostic)
             targets["tbme-Tintr"] = operators.Tintr(A=A, hw=hw)
             # target: Tcm (diagnostic)
@@ -229,13 +230,13 @@ def get_tbme_targets(task, target_qn):
             if (task["use_coulomb"]):
                 targets["tbme-VC"] = operators.VC(hw=hw_coul_rescaled, hw_coul=hw_coul)
         # squared angular momenta
-        if ("am-sqr" in task["observable_sets"]):
+        if "am-sqr" in task.get("observable_sets", []):
             targets["tbme-L2"] = operators.L2()
             targets["tbme-Sp2"] = operators.Sp2()
             targets["tbme-Sn2"] = operators.Sn2()
             targets["tbme-S2"] = operators.S2()
             targets["tbme-J2"] = operators.J2()
-        if ("isospin" in task["observable_sets"]):
+        if "isospin" in task.get("observable_sets", []):
             targets["tbme-T2"] = operators.T2(A=A)
 
     # accumulate user observables

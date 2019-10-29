@@ -30,6 +30,11 @@ University of Notre Dame
 - 10/10/19 (pjf):
     + Change default MFDn driver to mfdn_v15.
     + Use tbme.generate_diagonalization_tbme() instead of tbme.generate_tbme().
+- 10/24/19 (mac):
+    + Add task_handler_oscillator_mfdn_decomposition().
+    + Update archive_handler_mfdn() to archive lanczos files.
+    + Clean up task_handler_oscillator() to call task_handler_oscillator_mfdn().
+
 """
 import os
 import glob
@@ -146,7 +151,7 @@ def task_handler_oscillator_pre(task, postfix=""):
     tbme.generate_diagonalization_tbme(task, postfix=postfix)
 
 def task_handler_oscillator_mfdn(task, postfix=""):
-    """Task handler for MFDn phase of basic oscillator run.
+    """Task handler for MFDn phase of oscillator basis run.
 
     Arguments:
         task (dict): as described in module docstring
@@ -159,19 +164,51 @@ def task_handler_oscillator_mfdn(task, postfix=""):
         mfdn_driver = default_mfdn_driver
     mfdn_driver.run_mfdn(task, postfix=postfix)
 
-def task_handler_oscillator(task, postfix=""):
-    """Task handler for basic oscillator run.
+def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
+    """Task handler for MFDn Lanczos decomposition, assuming oscillator basis.
 
     Arguments:
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
 
+    # run MFDn
     mfdn_driver = task.get("mfdn_driver")
     if mfdn_driver is None:
         mfdn_driver = default_mfdn_driver
+    mfdn_driver.run_mfdn(task, run_mode=modes.MFDnRunMode.kLanczosOnly, postfix=postfix)
+
+    # copy out lanczos file
+    descriptor = task["metadata"]["descriptor"]
+    work_dir = "work{:s}".format(postfix)
+    filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+    lanczos_source_filename = work_dir+"/mfdn_alphabeta.dat"
+    lanczos_target_filename = "{:s}.lanczos".format(filename_prefix)
+    if (mcscript.task.results_dir is not None):
+        lanczos_dir = os.path.join(mcscript.task.results_dir, "lanczos")
+        mcscript.utils.mkdir(lanczos_dir, exist_ok=True)
+        lanczos_target_filename = os.path.join(lanczos_dir, lanczos_target_filename)
+    mcscript.call(
+        [
+            "cp",
+            "--verbose",
+            lanczos_source_filename,
+            lanczos_target_filename,
+        ]
+    )
+
+def task_handler_oscillator(task, postfix=""):
+    """Task handler for complete oscillator basis run, including serial pre and post
+    steps.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+
+    """
+
     task_handler_oscillator_pre(task, postfix=postfix)
-    mfdn_driver.run_mfdn(task, postfix=postfix)
+    task_handler_oscillator_mfdn(task, postfix=postfix)
     task_handler_post_run(task, postfix=postfix)
 
 
@@ -277,6 +314,7 @@ def archive_handler_mfdn():
         [
             {"postfix" : "-out", "paths" : ["results/out"], "compress" : True, "include_metadata" : True},
             {"postfix" : "-res", "paths" : ["results/res"], "compress" : True},
+            {"postfix" : "-lanczos", "paths" : ["results/lanczos"], "compress" : True},
             {"postfix" : "-task-data", "paths" : ["results/task-data"]},
             {"postfix" : "-wf", "paths" : ["results/wf"]},
         ]

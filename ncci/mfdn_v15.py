@@ -151,7 +151,12 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     obslist = collections.OrderedDict()
 
     # run mode
-    inputlist["IFLAG_mode"] = int(run_mode)
+    if (run_mode==modes.MFDnRunMode.kLanczosOnly):
+        # stopgap until MFDn mode implemented to stop after Lanczos
+        print("stopgap until MFDn mode implemented to stop after Lanczos")
+        inputlist["IFLAG_mode"] = int(modes.MFDnRunMode.kNormal)
+    else:
+        inputlist["IFLAG_mode"] = int(run_mode)
 
     # nucleus
     inputlist["Nprotons"], inputlist["Nneutrons"] = task["nuclide"]
@@ -167,7 +172,7 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     # truncation mode
     truncation_setup_functions[task["mb_truncation_mode"]](task, inputlist)
 
-    if run_mode is modes.MFDnRunMode.kNormal:
+    if run_mode in [modes.MFDnRunMode.kNormal,modes.MFDnRunMode.kLanczosOnly]:
         if (task["basis_mode"] in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):
             inputlist["hbomeg"] = float(task["hw"])
 
@@ -268,15 +273,14 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     # leave work directory
     os.chdir("..")
 
-    # save quick inspection copies of mfdn.{res,out}
-    descriptor = task["metadata"]["descriptor"]
+    # copy results out
     print("Saving basic output files...")
+    descriptor = task["metadata"]["descriptor"]
     work_dir = "work{:s}".format(postfix)
     filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
-    res_filename = "{:s}.res".format(filename_prefix)
-    out_filename = "{:s}.out".format(filename_prefix)
 
-    # copy results out (if in multi-task run)
+    # ...copy res file
+    res_filename = "{:s}.res".format(filename_prefix)
     if (mcscript.task.results_dir is not None):
         res_dir = os.path.join(mcscript.task.results_dir, "res")
         mcscript.utils.mkdir(res_dir, exist_ok=True)
@@ -288,6 +292,12 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
                 os.path.join(res_dir, res_filename)
             ]
         )
+    else:
+        mcscript.call(["cp", "--verbose", work_dir+"/mfdn.res", res_filename])
+
+    # ...copy out file
+    out_filename = "{:s}.out".format(filename_prefix)
+    if (mcscript.task.results_dir is not None):
         out_dir = os.path.join(mcscript.task.results_dir, "out")
         mcscript.utils.mkdir(out_dir, exist_ok=True)
         mcscript.call(
@@ -299,10 +309,7 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             ]
         )
     else:
-        mcscript.call(["cp", "--verbose", work_dir+"/mfdn.res", res_filename])
         mcscript.call(["cp", "--verbose", work_dir+"/mfdn.out", out_filename])
-
-
 
 
 def extract_natural_orbitals(task, postfix=""):
