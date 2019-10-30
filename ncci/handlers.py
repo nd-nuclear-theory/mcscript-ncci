@@ -181,6 +181,7 @@ def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
     print(levels)
     seq_lookup = dict(enumerate(levels,1))
     print(seq_lookup)
+
     
     res_filename = "../../../library/run{run:s}/res/{descriptor:s}.res".format(
         run=task["source_wf_descriptor"][0],
@@ -197,6 +198,7 @@ def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
     
     # set up run parameters
     task["mfdn_inputlist"] = {
+        "selectpiv" : 4,
         "initvec_index": task["source_wf_seq"],
         "initvec_smwffilename": "../../../library/run{run:s}/wf/{descriptor:s}/smwf_info".format(
             run=task["source_wf_descriptor"][0],
