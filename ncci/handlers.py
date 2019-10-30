@@ -169,6 +169,41 @@ def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
         postfix (string, optional): identifier to add to generated files
     """
 
+    # read in level set
+    import mfdnres
+    res_filename = "../../../library/run{run:s}/res/{descriptor:s}.res".format(
+        run=task["source_wf_descriptor"][0],
+        descriptor=task["source_wf_descriptor"][1]
+    )
+    print("Reading {}...".format(res_filename))
+    res_data = mfdnres.res.read_file(res_filename, "mfdn_v15")[0]
+    levels = res_data.levels
+    print(levels)
+    seq_lookup = dict(enumerate(levels,1))
+    print(seq_lookup)
+    
+    res_filename = "../../../library/run{run:s}/res/{descriptor:s}.res".format(
+        run=task["source_wf_descriptor"][0],
+        descriptor=task["source_wf_descriptor"][1]
+    )
+    print("Reading {}...".format(res_filename))
+    res_data = mfdnres.res.read_file(res_filename, "mfdn_v15")[0]
+    levels = res_data.levels
+    print(levels)
+    seq_lookup = dict(enumerate(levels,1))
+    print(seq_lookup)
+    seq_lookup_by_NmaxM[(Nmax,M)] = seq_lookup
+    
+    
+    # set up run parameters
+    task["mfdn_inputlist"] = {
+        "initvec_index": task["source_wf_seq"],
+        "initvec_smwffilename": "../../../library/run{run:s}/wf/{descriptor:s}/smwf_info".format(
+            run=task["source_wf_descriptor"][0],
+            descriptor=task["source_wf_descriptor"][1]
+        ),
+    }
+    
     # run MFDn
     mfdn_driver = task.get("mfdn_driver")
     if mfdn_driver is None:
