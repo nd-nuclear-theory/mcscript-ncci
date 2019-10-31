@@ -171,7 +171,7 @@ def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
 
     # read in level set
     import mfdnres
-    res_filename = "../../../library/run{run:s}/res/{descriptor:s}.res".format(
+    res_filename = "../../../library/run{run:s}/res/run{run:s}-mfdn15-{descriptor:s}.res".format(
         run=task["source_wf_descriptor"][0],
         descriptor=task["source_wf_descriptor"][1]
     )
@@ -181,20 +181,6 @@ def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
     print(levels)
     seq_lookup = dict(enumerate(levels,1))
     print(seq_lookup)
-
-    
-    res_filename = "../../../library/run{run:s}/res/{descriptor:s}.res".format(
-        run=task["source_wf_descriptor"][0],
-        descriptor=task["source_wf_descriptor"][1]
-    )
-    print("Reading {}...".format(res_filename))
-    res_data = mfdnres.res.read_file(res_filename, "mfdn_v15")[0]
-    levels = res_data.levels
-    print(levels)
-    seq_lookup = dict(enumerate(levels,1))
-    print(seq_lookup)
-    seq_lookup_by_NmaxM[(Nmax,M)] = seq_lookup
-    
     
     # set up run parameters
     task["mfdn_inputlist"] = {
