@@ -171,10 +171,10 @@ def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
 
     # read in level set
     import mfdnres
-    res_filename = "../../../library/run{run:s}/res/run{run:s}-mfdn15-{descriptor:s}.res".format(
+    res_filename = mcscript.utils.expand_path("$SCRATCH/runs/library/run{run:s}/res/run{run:s}-mfdn15-{descriptor:s}.res".format(
         run=task["source_wf_descriptor"][0],
         descriptor=task["source_wf_descriptor"][1]
-    )
+    ))
     print("Reading {}...".format(res_filename))
     res_data = mfdnres.res.read_file(res_filename, "mfdn_v15")[0]
     levels = res_data.levels
@@ -186,10 +186,10 @@ def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
     task["mfdn_inputlist"] = {
         "selectpiv" : 4,
         "initvec_index": task["source_wf_seq"],
-        "initvec_smwffilename": "../../../library/run{run:s}/wf/{descriptor:s}/smwf_info".format(
+        "initvec_smwffilename": mcscript.utils.expand_path("$SCRATCH/runs/library/run{run:s}/wf/{descriptor:s}/smwf_info".format(
             run=task["source_wf_descriptor"][0],
             descriptor=task["source_wf_descriptor"][1]
-        ),
+        )),
     }
     
     # run MFDn
