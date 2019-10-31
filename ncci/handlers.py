@@ -179,14 +179,14 @@ def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
     res_data = mfdnres.res.read_file(res_filename, "mfdn_v15")[0]
     levels = res_data.levels
     print(levels)
-    seq_lookup = dict(enumerate(levels,1))
+    seq_lookup = dict(map(reversed,enumerate(levels,1)))
     print(seq_lookup)
     
     # set up run parameters
     task["mfdn_inputlist"] = {
         "selectpiv" : 4,
-        "initvec_index": task["source_wf_seq"],
-        "initvec_smwffilename": mcscript.utils.expand_path("$SCRATCH/runs/library/run{run:s}/wf/{descriptor:s}/smwf_info".format(
+        "initvec_index": seq_lookup[task["source_wf_qn"]],
+        "initvec_smwffilename": mcscript.utils.expand_path("$SCRATCH/runs/library/run{run:s}/wf/{descriptor:s}/mfdn_smwf".format(
             run=task["source_wf_descriptor"][0],
             descriptor=task["source_wf_descriptor"][1]
         )),
