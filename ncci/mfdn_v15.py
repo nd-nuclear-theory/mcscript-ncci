@@ -674,7 +674,7 @@ def generate_smwf_info(task, orbital_filename, partitioning_filename, res_filena
             lines.append(line.rstrip())
 
     # remove temporary orbital file
-    mcscript.call(["rm","-v","orbital_filename"+"15200"])
+    mcscript.call(["rm","-v",orbital_filename+"15200"])
 
     # blank line
     lines.append("")
