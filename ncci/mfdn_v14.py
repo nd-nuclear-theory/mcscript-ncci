@@ -41,9 +41,13 @@ University of Notre Dame
     mcscript.control.FileWatchdog on mfdn.out.
 + 09/04/19 (pjf): Rename Trel->Tintr.
 - 09/07/19 (pjf): Remove Nv from truncation_parameters.
+- 12/11/19 (pjf):
+    + Use new results storage helper functions from mcscript.
+    + Deprecate save_mfdn_task_data().
 """
 import os
 import glob
+import warnings
 
 import mcscript
 
@@ -211,31 +215,17 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     res_filename = "{:s}.res".format(filename_prefix)
     out_filename = "{:s}.out".format(filename_prefix)
 
-    # copy results out (if in multi-task run)
-    if (mcscript.task.results_dir is not None):
-        res_dir = os.path.join(mcscript.task.results_dir, "res")
-        mcscript.utils.mkdir(res_dir, exist_ok=True)
-        mcscript.call(
-            [
-                "cp",
-                "--verbose",
-                work_dir+"/mfdn.res",
-                os.path.join(res_dir, res_filename)
-            ]
-        )
-        out_dir = os.path.join(mcscript.task.results_dir, "out")
-        mcscript.utils.mkdir(out_dir, exist_ok=True)
-        mcscript.call(
-            [
-                "cp",
-                "--verbose",
-                work_dir+"/mfdn.out",
-                os.path.join(out_dir, out_filename)
-            ]
-        )
-    else:
-        mcscript.call(["cp", "--verbose", work_dir+"/mfdn.res", res_filename])
-        mcscript.call(["cp", "--verbose", work_dir+"/mfdn.out", out_filename])
+    # ...copy res file
+    res_filename = "{:s}.res".format(filename_prefix)
+    mcscript.task.save_results_single(
+        task, os.path.join(work_dir, "mfdn.res"), res_filename, "res"
+    )
+
+    # ...copy out file
+    out_filename = "{:s}.out".format(filename_prefix)
+    mcscript.task.save_results_single(
+        task, os.path.join(work_dir, "mfdn.out"), res_filename, "out"
+    )
 
 
 def extract_natural_orbitals(task, postfix=""):
@@ -287,6 +277,7 @@ def save_mfdn_task_data(task, postfix=""):
     Raises:
         mcscript.exception.ScriptError: if MFDn output not found
     """
+    warnings.warn("MFDn v14 task-data archiving is deprecated.", FutureWarning)
     # save quick inspection copies of mfdn.{res,out}
     natural_orbitals = task.get("natural_orbitals")
     descriptor = task["metadata"]["descriptor"]
