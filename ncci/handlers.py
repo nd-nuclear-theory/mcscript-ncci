@@ -338,7 +338,8 @@ def archive_handler_mfdn():
             {"postfix" : "-out", "paths" : ["results/out"], "compress" : True, "include_metadata" : True},
             {"postfix" : "-res", "paths" : ["results/res"], "compress" : True},
             {"postfix" : "-lanczos", "paths" : ["results/lanczos"], "compress" : True},
-            {"postfix" : "-task-data", "paths" : ["results/task-data"]},
+            {"postfix" : "-task-data", "paths" : ["results/task-data"], "compress" : True},
+            {"postfix" : "-obdme", "paths" : ["results/task-data"], "compress" : True},
             {"postfix" : "-wf", "paths" : ["results/wf"]},
         ]
     )
