@@ -224,7 +224,7 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     # ...copy out file
     out_filename = "{:s}.out".format(filename_prefix)
     mcscript.task.save_results_single(
-        task, os.path.join(work_dir, "mfdn.out"), res_filename, "out"
+        task, os.path.join(work_dir, "mfdn.out"), out_filename, "out"
     )
 
 
