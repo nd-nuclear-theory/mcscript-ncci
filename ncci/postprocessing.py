@@ -9,6 +9,7 @@ University of Notre Dame
 - 09/11/19 (pjf): Update for new obscalc-ob input format (single vs. multi-file).
 - 10/11/19 (pjf): Implement initial (basic) two-body postprocessing.
 - 10/12/19 (pjf): Fix call to generation of mfdn_smwf.info.
+- 12/11/19 (pjf): Use new results storage helper functions from mcscript.
 """
 import collections
 import os
@@ -289,23 +290,14 @@ def evaluate_ob_observables(task, postfix=""):
     )
 
     # copy results out (if in multi-task run)
+    print("Saving basic output files...")
+    descriptor = task["metadata"]["descriptor"]
+    filename_prefix = "{:s}-obscalc-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+    res_filename = "{:s}.res".format(filename_prefix)
+    mcscript.task.save_results_single(
+        task, environ.obscalc_ob_res_filename(postfix), res_filename, "res"
+    )
 
-    if (mcscript.task.results_dir is not None):
-        descriptor = task["metadata"]["descriptor"]
-        print("Saving basic output files...")
-        work_dir = "work{:s}".format(postfix)
-        filename_prefix = "{:s}-obscalc-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
-        res_filename = "{:s}.res".format(filename_prefix)
-        obscalc_dir = os.path.join(mcscript.task.results_dir, "obscalc")
-        mcscript.utils.mkdir(obscalc_dir, exist_ok=True)
-        mcscript.call(
-            [
-                "cp",
-                "--verbose",
-                environ.obscalc_ob_res_filename(postfix),
-                os.path.join(obscalc_dir, res_filename)
-            ]
-        )
 
 def run_mfdn_transitions(task, postfix=""):
     """Generate input file and execute MFDn Transitions postprocessor.
@@ -451,14 +443,7 @@ def run_mfdn_transitions(task, postfix=""):
                 os.path.join(transitions_output_dir, res_filename)
             ])
 
-               # copy results out (if in multi-task run)
-            if (mcscript.task.results_dir is not None):
-                res_dir = os.path.join(mcscript.task.results_dir, "trans")
-                mcscript.utils.mkdir(res_dir, exist_ok=True)
-                mcscript.call([
-                    "cp", "--verbose",
-                    os.path.join(work_dir,"transitions.res"),
-                    os.path.join(res_dir, res_filename)
-                ])
-
-
+            # copy results out
+            mcscript.task.save_results_single(
+                task, os.path.join(work_dir, "transitions.res"), res_filename, "res"
+            )

@@ -31,8 +31,10 @@ University of Notre Dame
     + Add generate_diagonalization_tbme() for TBMEs needed at diagonalization time.
     + Add generate_observable_tbme() for two-body observables.
 - 10/26/19 (pjf): Make "observable_sets" an optional task dictionary key.
+- 12/22/19 (pjf): Add save_tbme() handler.
 """
 import collections
+import glob
 import os
 import re
 
@@ -538,4 +540,24 @@ def generate_tbme(
         ],
         input_lines=lines,
         mode=mcscript.CallMode.kSerial
+    )
+
+
+def save_tbme(task, postfix=""):
+    """Save h2 TBME files to results directory.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier added to input filenames
+    """
+    # convenience definitions
+    descriptor = task["metadata"]["descriptor"]
+    target_directory_name = descriptor + postfix
+    work_dir = "work{:s}".format(postfix)
+
+    # glob for list of tbme files
+    archive_file_list = glob.glob(os.path.join(work_dir, "tbme-*"))
+
+    mcscript.task.save_results_multi(
+        task, archive_file_list, target_directory_name, "tbme"
     )

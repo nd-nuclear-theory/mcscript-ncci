@@ -34,7 +34,7 @@ University of Notre Dame
     + Add task_handler_oscillator_mfdn_decomposition().
     + Update archive_handler_mfdn() to archive lanczos files.
     + Clean up task_handler_oscillator() to call task_handler_oscillator_mfdn().
-
+- 12/11/19 (pjf): Use new results storage helper functions from mcscript.
 """
 import os
 import glob
@@ -119,6 +119,8 @@ def task_handler_post_run(task, postfix="", cleanup=True):
         mfdn_driver.extract_natural_orbitals(task, postfix)
 
     mfdn_driver.save_mfdn_task_data(task, postfix=postfix)
+    if task.get("save_obdme"):
+        mfdn_driver.save_mfdn_obdme(task, postfix)
     if task.get("save_wavefunctions"):
         mfdn_driver.save_mfdn_wavefunctions(task, postfix)
     if (cleanup):
@@ -205,19 +207,10 @@ def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
     descriptor = task["metadata"]["descriptor"]
     work_dir = "work{:s}".format(postfix)
     filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
-    lanczos_source_filename = work_dir+"/mfdn_alphabeta.dat"
+    lanczos_source_filename = os.path.join(work_dir, "mfdn_alphabeta.dat")
     lanczos_target_filename = "{:s}.lanczos".format(filename_prefix)
-    if (mcscript.task.results_dir is not None):
-        lanczos_dir = os.path.join(mcscript.task.results_dir, "lanczos")
-        mcscript.utils.mkdir(lanczos_dir, exist_ok=True)
-        lanczos_target_filename = os.path.join(lanczos_dir, lanczos_target_filename)
-    mcscript.call(
-        [
-            "cp",
-            "--verbose",
-            lanczos_source_filename,
-            lanczos_target_filename,
-        ]
+    mcscript.task.save_results_single(
+        task, lanczos_source_filename, lanczos_target_filename, "lanczos"
     )
 
 def task_handler_oscillator(task, postfix=""):
