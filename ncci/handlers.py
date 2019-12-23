@@ -151,6 +151,8 @@ def task_handler_oscillator_pre(task, postfix=""):
     radial.set_up_orbitals(task, postfix=postfix)
     radial.set_up_radial_analytic(task, postfix=postfix)
     tbme.generate_diagonalization_tbme(task, postfix=postfix)
+    if task.get("save_tbme"):
+        tbme.save_tbme(task, postfix=postfix)
 
 def task_handler_oscillator_mfdn(task, postfix=""):
     """Task handler for MFDn phase of oscillator basis run.
@@ -348,6 +350,7 @@ def archive_handler_mfdn_lightweight():
         [
             {"postfix" : "-out", "paths" : ["results/out"], "compress" : True, "include_metadata" : True},
             {"postfix" : "-res", "paths" : ["results/res"], "compress" : True},
+            {"postfix" : "-lanczos", "paths" : ["results/lanczos"], "compress" : True},
         ]
     )
     return archive_filename_list
