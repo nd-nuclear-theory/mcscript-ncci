@@ -33,6 +33,7 @@ def task_descriptor_7(task):
         - Strip back down to basic form for oscillator-like runs only.
         - Adjust some field labels.
         - Add tolerance.
+        - Provide default Nstep=2 for convenience when used in transitions run.
     """
     if (
         task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kNmax
@@ -56,7 +57,7 @@ def task_descriptor_7(task):
         fci_indicator = "-fci"
     else:
         fci_indicator = ""
-    mixed_parity_indicator = mcscript.utils.ifelse(truncation_parameters["Nstep"] == 1, "x", "")
+    mixed_parity_indicator = mcscript.utils.ifelse(truncation_parameters.get("Nstep",2) == 1, "x", "")
     coulomb_flag = int(task["use_coulomb"])
     natural_orbital_indicator = mcscript.utils.ifelse(task.get("natural_orbitals"), "-natorb", "")
 
@@ -69,7 +70,6 @@ def task_descriptor_7(task):
         )
 
     return descriptor
-
 
 def task_descriptor_7b(task):
     """Task descriptor format 7b
@@ -116,6 +116,36 @@ def task_descriptor_7b(task):
 
     return descriptor
 
+def task_descriptor_7_trans(task):
+    """Task descriptor format 7_trans
+
+        Set up for use with transitions:
+        - Remove dependence on basis modes (assumed Nmax mode).
+        - Remove max_iterations, and tolerance dependence.
+        - Make M dependence optional.
+        - Strip mixed parity and fci indicators.
+        - Remove a_cm and natural_orbitals fields (may need to restore later).
+    """
+    truncation_parameters = task["truncation_parameters"]
+    template_string = (
+        "Z{nuclide[0]}-N{nuclide[1]}-{interaction}-coul{coulomb_flag:d}"
+        "-hw{hw:06.3f}"
+        ##"-a_cm{a_cm:g}"
+        "-Nmax{Nmax:02d}"
+        "{M_field}"
+        ##"{natural_orbital_indicator}"
+    )
+
+    coulomb_flag = int(task["use_coulomb"])
+    ##natural_orbital_indicator = mcscript.utils.ifelse(task.get("natural_orbitals"), "-natorb", "")
+    M_field = "-Mj{M:03.1f}".format(**task) if (truncation_parameters.get("M") is not None) else ""
+    descriptor = template_string.format(
+        coulomb_flag=coulomb_flag,
+        M_field=M_field,
+        **mcscript.utils.dict_union(task, truncation_parameters)
+    )
+
+    return descriptor
 
 def task_descriptor_8(task):
     """Task descriptor format 8
