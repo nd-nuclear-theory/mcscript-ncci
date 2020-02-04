@@ -62,11 +62,11 @@ Prerequisites: `mcscript`, `shell`
   `.cshrc`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
-  setenv NCCI_DATA_DIR_H2 "/project/projectdirs/m2032/data/h2"
+  setenv NCCI_DATA_DIR_H2 "/global/cfs/cdirs/m2032/data/h2"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   `.bashrc` or `.bash_profile`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
-  export NCCI_DATA_DIR_H2="/project/projectdirs/m2032/data/h2"
+  export NCCI_DATA_DIR_H2="/global/cfs/cdirs/m2032/data/h2"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
