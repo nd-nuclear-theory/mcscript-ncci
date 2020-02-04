@@ -40,8 +40,8 @@
     - 12/19/17 (pjf): Rename mfdn back to ncci
 """
 
-__ALL__ = ['descriptors', 'handlers', 'radial', 'operators', 'tbme', 'utils', 'modes', 'environ']
-from . import descriptors, handlers, radial, operators, tbme, utils, modes, postprocessing, environ
+__ALL__ = ['descriptors', 'handlers', 'radial', 'operators', 'tbme', 'utils', 'modes', 'environ', 'library']
+from . import descriptors, handlers, radial, operators, tbme, utils, modes, postprocessing, environ, library
 
 if (__name__ == "__MAIN__"):
     pass
