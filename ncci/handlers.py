@@ -171,32 +171,36 @@ def task_handler_oscillator_mfdn(task, postfix=""):
 def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
     """Task handler for MFDn Lanczos decomposition, assuming oscillator basis.
 
+    Task fields:
+       "decomposition_operator_name"
+       "source_wf_qn"
+       "wf_source_info"
+
     Arguments:
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
 
-    # read in level set
+    # process source wave function task/descriptor info
+    wf_source_info = task["wf_source_info"]
+    wf_source_info.setdefault("metadata",{})
+    wf_source_info["metadata"]["descriptor"] = ncci.descriptors.task_descriptor_7(wf_source_info)
+
+    # retrieve level data
     import mfdnres
-    res_filename = mcscript.utils.expand_path("$SCRATCH/runs/library/run{run:s}/res/run{run:s}-mfdn15-{descriptor:s}.res".format(
-        run=task["source_wf_descriptor"][0],
-        descriptor=task["source_wf_descriptor"][1]
-    ))
-    print("Reading {}...".format(res_filename))
-    res_data = mfdnres.res.read_file(res_filename, "mfdn_v15")[0]
+    ket_run = wf_source_info["run"]
+    ket_descriptor = wf_source_info["metadata"]["descriptor"]
+    res_data = ncci.library.get_res_data(ket_run,ket_descriptor)
     levels = res_data.levels
-    print(levels)
-    seq_lookup = dict(map(reversed,enumerate(levels,1)))
-    print(seq_lookup)
+    level_seq_lookup = dict(map(reversed,enumerate(levels,1)))
     
     # set up run parameters
+    qn = task["source_wf_qn"]
+    ket_wf_prefix = ncci.library.get_wf_prefix(ket_run,ket_descriptor)
     task["mfdn_inputlist"] = {
         "selectpiv" : 4,
-        "initvec_index": seq_lookup[task["source_wf_qn"]],
-        "initvec_smwffilename": mcscript.utils.expand_path("$SCRATCH/runs/library/run{run:s}/wf/{descriptor:s}/mfdn_smwf".format(
-            run=task["source_wf_descriptor"][0],
-            descriptor=task["source_wf_descriptor"][1]
-        )),
+        "initvec_index": seq_lookup[qn],
+        "initvec_smwffilename": ket_wf_prefix,
     }
     
     # run MFDn
