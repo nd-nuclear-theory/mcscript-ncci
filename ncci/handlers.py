@@ -41,6 +41,8 @@ import glob
 import mcscript
 
 from . import (
+    descriptors,
+    library,
     modes,
     radial,
     tbme,
@@ -184,19 +186,19 @@ def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
     # process source wave function task/descriptor info
     wf_source_info = task["wf_source_info"]
     wf_source_info.setdefault("metadata",{})
-    wf_source_info["metadata"]["descriptor"] = ncci.descriptors.task_descriptor_7(wf_source_info)
+    wf_source_info["metadata"]["descriptor"] = descriptors.task_descriptor_7(wf_source_info)
 
     # retrieve level data
     import mfdnres
     ket_run = wf_source_info["run"]
     ket_descriptor = wf_source_info["metadata"]["descriptor"]
-    res_data = ncci.library.get_res_data(ket_run,ket_descriptor)
+    res_data = library.get_res_data(ket_run,ket_descriptor)
     levels = res_data.levels
     level_seq_lookup = dict(map(reversed,enumerate(levels,1)))
     
     # set up run parameters
     qn = task["source_wf_qn"]
-    ket_wf_prefix = ncci.library.get_wf_prefix(ket_run,ket_descriptor)
+    ket_wf_prefix = library.get_wf_prefix(ket_run,ket_descriptor)
     task["mfdn_inputlist"] = {
         "selectpiv" : 4,
         "initvec_index": seq_lookup[qn],
