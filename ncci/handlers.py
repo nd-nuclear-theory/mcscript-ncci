@@ -195,13 +195,20 @@ def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
     res_data = library.get_res_data(ket_run,ket_descriptor)
     levels = res_data.levels
     level_seq_lookup = dict(map(reversed,enumerate(levels,1)))
+
+    # really ugly handling of path length workaround for mfdn pivot wf filename...
+    work_dir = "work"
+    mcscript.utils.mkdir(work_dir, exist_ok=True, parents=True)
+    os.chdir("work")
+    library.make_library_base_alias()
+    os.chdir("..")
     
     # set up run parameters
     qn = task["source_wf_qn"]
-    ket_wf_prefix = library.get_wf_prefix(ket_run,ket_descriptor)
+    ket_wf_prefix = library.get_wf_prefix(ket_run,ket_descriptor,library_base=library.LIBRARY_BASE_ALIAS)
     task["mfdn_inputlist"] = {
         "selectpiv" : 4,
-        "initvec_index": seq_lookup[qn],
+        "initvec_index": level_seq_lookup[qn],
         "initvec_smwffilename": ket_wf_prefix,
     }
     
