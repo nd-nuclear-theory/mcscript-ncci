@@ -122,6 +122,8 @@ def get_res_data(run,descriptor,library_base=LIBRARY_BASE):
     Returns:
         res_data (MFDnResultsData): Data object
     """
+
+    import mfdnres
     res_filename = get_res_filename(run,descriptor,library_base=library_base)
     res_data = mfdnres.res.read_file(res_filename, "mfdn_v15")[0]
     return res_data
