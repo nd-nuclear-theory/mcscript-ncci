@@ -202,16 +202,16 @@ def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
     os.chdir("work")
     library.make_library_base_alias()
     os.chdir("..")
-    
+
     # set up run parameters
     qn = task["source_wf_qn"]
     ket_wf_prefix = library.get_wf_prefix(ket_run,ket_descriptor,library_base=library.LIBRARY_BASE_ALIAS)
     task["mfdn_inputlist"] = {
         "selectpiv" : 4,
         "initvec_index": level_seq_lookup[qn],
-        "initvec_smwffilename": ket_wf_prefix,
+        "initvec_smwffilename": os.path.join(ket_wf_prefix, "mfdn_smwf"),
     }
-    
+
     # run MFDn
     mfdn_driver = task.get("mfdn_driver")
     if mfdn_driver is None:
