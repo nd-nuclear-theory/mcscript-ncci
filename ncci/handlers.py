@@ -186,7 +186,7 @@ def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
     # process source wave function task/descriptor info
     wf_source_info = task["wf_source_info"]
     wf_source_info.setdefault("metadata",{})
-    wf_source_info["metadata"]["descriptor"] = descriptors.task_descriptor_7(wf_source_info)
+    wf_source_info["metadata"]["descriptor"] = wf_source_info["descriptor"](wf_source_info)
 
     # retrieve level data
     import mfdnres
