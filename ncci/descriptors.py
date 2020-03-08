@@ -125,6 +125,7 @@ def task_descriptor_7_trans(task):
         - Make M dependence optional.
         - Strip mixed parity and fci indicators.
         - Remove a_cm and natural_orbitals fields (may need to restore later).
+        - Provide subsetting index.
     """
     truncation_parameters = task["truncation_parameters"]
     template_string = (
@@ -133,15 +134,18 @@ def task_descriptor_7_trans(task):
         ##"-a_cm{a_cm:g}"
         "-Nmax{Nmax:02d}"
         "{M_field}"
+        "{subset_field}"
         ##"{natural_orbital_indicator}"
     )
 
     coulomb_flag = int(task["use_coulomb"])
     ##natural_orbital_indicator = mcscript.utils.ifelse(task.get("natural_orbitals"), "-natorb", "")
     M_field = "-Mj{M:03.1f}".format(**task) if (truncation_parameters.get("M") is not None) else ""
+    subset_field = "-subset{subset[0]:03d}".format(**task) if (truncation_parameters.get("subset") is not None) else ""
     descriptor = template_string.format(
         coulomb_flag=coulomb_flag,
         M_field=M_field,
+        subset_field=subset_field,
         **mcscript.utils.dict_union(task, truncation_parameters)
     )
 
