@@ -141,7 +141,7 @@ def task_descriptor_7_trans(task):
     coulomb_flag = int(task["use_coulomb"])
     ##natural_orbital_indicator = mcscript.utils.ifelse(task.get("natural_orbitals"), "-natorb", "")
     M_field = "-Mj{M:03.1f}".format(**task) if (truncation_parameters.get("M") is not None) else ""
-    subset_field = "-subset{subset[0]:03d}".format(**task) if (truncation_parameters.get("subset") is not None) else ""
+    subset_field = "-subset{subset[0]:03d}".format(**task) if (task.get("subset") is not None) else ""
     descriptor = template_string.format(
         coulomb_flag=coulomb_flag,
         M_field=M_field,
