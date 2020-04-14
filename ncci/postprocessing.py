@@ -154,6 +154,7 @@ def evaluate_ob_observables(task, postfix=""):
                     )
 
     # get filenames for static densities and extract quantum numbers
+    obdme_files = {}
     filenames = glob.glob(os.path.join(work_dir, "mfdn.statrobdme.*"))
     regex = re.compile(
         # directory prefix
@@ -178,7 +179,6 @@ def evaluate_ob_observables(task, postfix=""):
         "n": int,
         "twoT": int
         }
-    statrobdme_files = []
     for filename in filenames:
         match = regex.match(filename)
         if match is None:
@@ -190,17 +190,14 @@ def evaluate_ob_observables(task, postfix=""):
         for key in info:
             conversion = conversions[key]
             info[key] = conversion(info[key])
+        if "g" not in info:
+            info["g"] = 0
 
-        statrobdme_files.append(mcscript.utils.dict_union(info, {"filename": filename}))
+        # extract quantum numbers
+        qn = (info["twoJ"]/2., info["g"], info["n"])
+        qn_pair = (qn, qn)
 
-    # sort states by sequence number
-    statrobdme_files.sort(key=lambda item: item["seq"])
-    for statrobdme_file in statrobdme_files:
-        lines.append(
-            "define-static-densities {twoJ:d} {g:d} {n:d} {filename:s} {info_filename:s}".format(
-                info_filename=os.path.join(work_dir, "mfdn.rppobdme.info"), **statrobdme_file
-            )
-        )
+        obdme_files[qn_pair] = filename
 
     # define-transition-densities 2Jf gf nf 2Ji gi fi robdme_info_filename robdme_filename
     # get filenames for static densities and extract quantum numbers
@@ -242,7 +239,6 @@ def evaluate_ob_observables(task, postfix=""):
         "ni": int,
         "twoTi": int
         }
-    robdme_files = []
     for filename in filenames:
         match = regex.match(filename)
         if match is None:
@@ -259,14 +255,22 @@ def evaluate_ob_observables(task, postfix=""):
         if "gi" not in info:
             info["gi"] = 0
 
-        robdme_files.append(mcscript.utils.dict_union(info, {"filename": filename}))
+        # extract quantum numbers
+        qn_bra = (info["twoJf"]/2., info["gf"], info["nf"])
+        qn_ket = (info["twoJi"]/2., info["gi"], info["ni"])
+        qn_pair = (qn_bra, qn_ket)
+
+        obdme_files[qn_pair] = filename
 
     # sort by sequence number of final state, then sequence number of initial state
-    robdme_files.sort(key=lambda item: (item["seqf"], item["seqi"]))
-    for robdme_file in robdme_files:
+    for qn_pair,filename in obdme_files.items():
+        ((J_bra, g_bra, n_bra), (J_ket, g_ket, n_ket)) = qn_pair
         lines.append(
-            "define-transition-densities {twoJf:d} {gf:d} {nf:d} {twoJi:d} {gi:d} {ni:d} {filename:s} {info_filename:s}".format(
-                info_filename=os.path.join(work_dir, "mfdn.rppobdme.info"), **robdme_file
+            "define-transition-densities {J_bra:4.1f} {g_bra:d} {n_bra:d}  {J_ket:4.1f} {g_ket:d} {n_ket:d} {filename:s} {info_filename:s}".format(
+                J_bra=J_bra, g_bra=g_bra, n_bra=n_bra,
+                J_ket=J_ket, g_ket=g_ket, n_ket=n_ket,
+                filename=filename,
+                info_filename=os.path.join(work_dir, "mfdn.rppobdme.info"),
             )
         )
 
