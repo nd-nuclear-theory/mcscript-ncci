@@ -27,6 +27,23 @@ def recover_from_hsi(year,run,date,target_base):
 
     """
 
+    # Notes for possible implementsation of support for legacy archives
+    #
+    #     Bursting contents of legacy archive
+    #       - discard density files
+    #       - split out and res files
+    #     
+    #     # caveat: rename can fail due to too long an argument list
+    #     foreach r (runmac????)
+    #       echo $r
+    #       rm $r/results/*.tgz
+    #       mkdir -p $r/results/res $r/results/out
+    #       mv $r/results/*.out $r/results/out/
+    #       mv $r/results/*.res $r/results/res/
+    #       rename LENPIC-chi2bi2C LENPICchi2bi2C $r/results/out/* -v
+    #       rename LENPIC-chi2bi2C LENPICchi2bi2C $r/results/res/* -v
+    #     end
+    
     # go to base directory for extraction
     mcscript.utils.mkdir(target_base,exist_ok=True,parents=True)
     os.chdir(target_base)
