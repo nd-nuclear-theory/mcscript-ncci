@@ -5,9 +5,11 @@ University of Notre Dame
 
 - 02/04/20 (mac): Created, extracted from runs/mcaprio
     task_handler_postprocessor.py and xfer scripting.
+- 06/09/20 (mac): Add extraction function for legacy archives.
 
 """
 
+import glob
 import os
 
 import mcscript
@@ -17,33 +19,114 @@ from . import (
 )
 
 ################################################################
+# HSI run retrieval scripting -- legacy
+################################################################
+
+def recover_from_hsi_legacy(year,run,date,target_base,keep_metadata=False):
+    """Extract results subarchives from hsi for "legacy" archives (until 2018), before archives
+    were broken down by results type.
+
+    Args
+        year (str): year code (for archive file hsi subdirectory)
+        run (str): run name
+        date (str): date code (for archive filename)
+        target_base (str): path to library directory
+        keep_metadata (bool, optional): whether or not to keep flags/batch/output directories
+    """
+
+    # go to base directory for extraction
+    mcscript.utils.mkdir(target_base,exist_ok=True,parents=True)
+    os.chdir(target_base)
+
+    print("Retrieving {}...".format((year,run,date)))
+
+    # retrieve results subarchives from hsi
+    hsi_command_string = "cd {year}; get run{run}-archive-{date}{{.tgz,-wf.tar}}".format(year=year,run=run,date=date)
+    mcscript.call(["hsi",hsi_command_string],check_return=False)
+
+    # expand results subarchives to run directory
+    for archive_tail in [".tgz","-wf.tar"]:
+            archive_filename = "run{run}-archive-{date}-{archive_tail}".format(run=run,date=date,archive_tail=archive_tail)
+            if os.path.isfile(archive_filename):
+                print("Extracting {}...".format(archive_filename))
+                mcscript.call(["tar","xvf",archive_filename],check_return=False)
+                mcscript.call(["rm",archive_filename],check_return=False)
+
+    # eliminate metadata subdirectories of not desired
+    if (not keep_metadata):
+        target_run_top_prefix = os.path.join(target_base,"run{run}".format(run=run))
+        for subdirectory in ["batch","flags","output"]:
+            mcscript.call([
+                "rm","-r",os.path.join(target_run_top_prefix,subdirectory)
+            ])
+
+    # break results files out by subdirectories
+    target_run_results_prefix = os.path.join(target_base,"run{run}".format(run=run),"results")
+    mcscript.mkdir(os.path.join(target_run_results_prefix,"out"))
+    for filename in glob.glob(os.path.join(target_run_results_prefix,"*.out")):
+        mcscript.call([
+            "mv","-v",filename,os.path.join(target_run_results_prefix,"out")
+        ])
+    mcscript.mkdir(os.path.join(target_run_results_prefix,"res"))
+    for filename in glob.glob(os.path.join(target_run_results_prefix,"*.res")):
+        mcscript.call([
+            "mv","-v",filename,os.path.join(target_run_results_prefix,"res")
+        ])
+    mcscript.mkdir(os.path.join(target_run_results_prefix,"task-data"))
+    for filename in glob.glob(os.path.join(target_run_results_prefix,"*.tar")):
+        mcscript.call([
+            "mv","-v",filename,os.path.join(target_run_results_prefix,"task-data")
+        ])
+
+    # extract individual task tarballs (legacy)
+    target_run_results_prefix = os.path.join(target_base,"run{run}".format(run=run),"results")
+    os.chdir(os.path.join(target_run_results_prefix,"task-data"))
+    for filename in glob.glob("*.tgz"):
+        mcscript.call([
+            "tar","xvf",filename,
+            "--strip-components=1",
+            "--exclude=mfdn*obdme*",
+        ])
+        mcscript.call(["rm","-v",filename])
+    os.chdir(os.path.join(target_run_results_prefix,"wf"))
+    for filename in glob.glob("*.tar"):
+        mcscript.call([
+            "tar","xvf",filename,
+            "--strip-components=1",
+            "--totals"
+        ])
+        mcscript.call(["rm","-v",filename])
+
+    # make retrieved results available to group
+    mcscript.call([
+        "chown","--recursive",":m2032",target_run_results_prefix
+    ])
+    mcscript.call([
+        "chmod","--recursive","g+rX",target_run_results_prefix
+    ])
+        
+    os.chdir(target_base)
+
+    
+################################################################
 # HSI run retrieval scripting
 ################################################################
 
 def recover_from_hsi(year,run,date,target_base):
-    """ Extract results subarchives from hsi.
+    """Extract results subarchives from hsi.
 
-    This routine fails for legacy archives which were not broken down by results type.
+    Limitation: This routine fails for legacy archives where the results
+    directory was not broken down by results type, and thus neither was the
+    archive.
+
+    Args
+        year (str): year code (for archive file hsi subdirectory)
+        run (str): run name
+        date (str): date code (for archive filename)
+        target_base (str): path to library directory
 
     """
 
-    # Notes for possible implementsation of support for legacy archives
-    #
-    #     Bursting contents of legacy archive
-    #       - discard density files
-    #       - split out and res files
-    #     
-    #     # caveat: rename can fail due to too long an argument list
-    #     foreach r (runmac????)
-    #       echo $r
-    #       rm $r/results/*.tgz
-    #       mkdir -p $r/results/res $r/results/out
-    #       mv $r/results/*.out $r/results/out/
-    #       mv $r/results/*.res $r/results/res/
-    #       rename LENPIC-chi2bi2C LENPICchi2bi2C $r/results/out/* -v
-    #       rename LENPIC-chi2bi2C LENPICchi2bi2C $r/results/res/* -v
-    #     end
-    
     # go to base directory for extraction
     mcscript.utils.mkdir(target_base,exist_ok=True,parents=True)
     os.chdir(target_base)
