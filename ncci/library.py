@@ -35,6 +35,10 @@ def recover_from_hsi_legacy(year,run,date,target_base,keep_archives=False,keep_m
         keep_metadata (bool, optional): whether or not to keep flags/batch/output directories
     """
 
+    # set up general paths
+    target_run_top_prefix = os.path.join(target_base,"run{run}".format(run=run))
+    target_run_results_prefix = os.path.join(target_base,"run{run}".format(run=run),"results")
+
     # go to base directory for extraction
     mcscript.utils.mkdir(target_base,exist_ok=True,parents=True)
     os.chdir(target_base)
@@ -53,17 +57,15 @@ def recover_from_hsi_legacy(year,run,date,target_base,keep_archives=False,keep_m
                 mcscript.call(["tar","xvf",archive_filename],check_return=False)
                 if (not keep_archives):
                     mcscript.call(["rm",archive_filename],check_return=False)
-
+    
     # eliminate metadata subdirectories if not desired
     if (not keep_metadata):
-        target_run_top_prefix = os.path.join(target_base,"run{run}".format(run=run))
         for subdirectory in ["batch","flags","output"]:
             mcscript.call([
                 "rm","-r",os.path.join(target_run_top_prefix,subdirectory)
             ],check_return=False)
 
     # break results files out by subdirectories
-    target_run_results_prefix = os.path.join(target_base,"run{run}".format(run=run),"results")
     mcscript.utils.mkdir(os.path.join(target_run_results_prefix,"out"),exist_ok=True,parents=True)
     for filename in glob.glob(os.path.join(target_run_results_prefix,"*.out")):
         mcscript.call([
@@ -81,7 +83,7 @@ def recover_from_hsi_legacy(year,run,date,target_base,keep_archives=False,keep_m
         ])
 
     # relocate old wave functions to results subdirectory
-    mcscript.utils.mkdir(os.path.join(target_run_wavefunctions_prefix,"wf"),exist_ok=True,parents=True)
+    mcscript.utils.mkdir(os.path.join(target_run_results_prefix,"wf"),exist_ok=True,parents=True)
     target_run_old_wavefunctions_prefix = os.path.join(target_base,"run{run}".format(run=run),"wavefunctions")
     for filename in glob.glob(os.path.join(target_run_old_wavefunctions_prefix,"*.tar")):
         mcscript.call([
@@ -92,7 +94,6 @@ def recover_from_hsi_legacy(year,run,date,target_base,keep_archives=False,keep_m
     ])
         
     # extract individual task tarballs (legacy)
-    target_run_results_prefix = os.path.join(target_base,"run{run}".format(run=run),"results")
     os.chdir(os.path.join(target_run_results_prefix,"task-data"))
     for filename in glob.glob("*.tgz"):
         mcscript.call([
@@ -324,7 +325,7 @@ def generate_smwf_info_in_library(wf_source_info):
     #
     # ncci.mfdn_v15.generate_smwf_info requires task data:
     #     "nuclide", "truncation_parameters":"M", "metadata":"descriptor"
-    ncci.mfdn_v15.generate_smwf_info(
+    mfdn_v15.generate_smwf_info(
         wf_source_info,
         orbital_filename=os.path.join(task_data_prefix,"orbitals.dat"),
         partitioning_filename=os.path.join(task_data_prefix,"mfdn_partitioning.info"),
