@@ -22,7 +22,7 @@ from . import (
 # HSI run retrieval scripting -- legacy
 ################################################################
 
-def recover_from_hsi_legacy(year,run,date,target_base,keep_metadata=False):
+def recover_from_hsi_legacy(year,run,date,target_base,keep_archives=False,keep_metadata=False):
     """Extract results subarchives from hsi for "legacy" archives (until 2018), before archives
     were broken down by results type.
 
@@ -31,6 +31,7 @@ def recover_from_hsi_legacy(year,run,date,target_base,keep_metadata=False):
         run (str): run name
         date (str): date code (for archive filename)
         target_base (str): path to library directory
+        keep_archives (bool, optional): whether or not to save unextracted archives (useful in debugging)
         keep_metadata (bool, optional): whether or not to keep flags/batch/output directories
     """
 
@@ -40,17 +41,17 @@ def recover_from_hsi_legacy(year,run,date,target_base,keep_metadata=False):
 
     print("Retrieving {}...".format((year,run,date)))
 
-    # retrieve results subarchives from hsi
-    hsi_command_string = "cd {year}; get run{run}-archive-{date}{{.tgz,-wf.tar}}".format(year=year,run=run,date=date)
-    mcscript.call(["hsi",hsi_command_string],check_return=False)
-
-    # expand results subarchives to run directory
+    # retrieve and expand results subarchives to run directory
     for archive_tail in [".tgz","-wf.tar"]:
-            archive_filename = "run{run}-archive-{date}-{archive_tail}".format(run=run,date=date,archive_tail=archive_tail)
-            if os.path.isfile(archive_filename):
+            archive_filename = "run{run}-archive-{date}{archive_tail}".format(run=run,date=date,archive_tail=archive_tail)
+            if (not os.path.isfile(archive_filename)):
+                hsi_command_string = "cd {year}; get {archive_filename}".format(archive_filename=archive_filename)
+                mcscript.call(["hsi",hsi_command_string],check_return=False)
+            if (os.path.isfile(archive_filename)):
                 print("Extracting {}...".format(archive_filename))
                 mcscript.call(["tar","xvf",archive_filename],check_return=False)
-                mcscript.call(["rm",archive_filename],check_return=False)
+                if (not keep_archives):
+                    mcscript.call(["rm",archive_filename],check_return=False)
 
     # eliminate metadata subdirectories of not desired
     if (not keep_metadata):
