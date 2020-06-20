@@ -5,7 +5,7 @@ University of Notre Dame
 
 - 02/04/20 (mac): Created, extracted from runs/mcaprio
     task_handler_postprocessor.py and xfer scripting.
-- 06/09/20 (mac): Add extraction function for legacy archives.
+- 06/18/20 (mac): Add extraction function for legacy archives.
 
 """
 
@@ -45,6 +45,7 @@ def recover_from_hsi_legacy(year,run,date,target_base,keep_archives=False,keep_m
     for archive_tail in [".tgz","-wf.tar"]:
             archive_filename = "run{run}-archive-{date}{archive_tail}".format(run=run,date=date,archive_tail=archive_tail)
             if (not os.path.isfile(archive_filename)):
+                print("Retrieving {}...".format(archive_filename))                
                 hsi_command_string = "cd {year}; get {archive_filename}".format(archive_filename=archive_filename)
                 mcscript.call(["hsi",hsi_command_string],check_return=False)
             if (os.path.isfile(archive_filename)):
@@ -53,32 +54,43 @@ def recover_from_hsi_legacy(year,run,date,target_base,keep_archives=False,keep_m
                 if (not keep_archives):
                     mcscript.call(["rm",archive_filename],check_return=False)
 
-    # eliminate metadata subdirectories of not desired
+    # eliminate metadata subdirectories if not desired
     if (not keep_metadata):
         target_run_top_prefix = os.path.join(target_base,"run{run}".format(run=run))
         for subdirectory in ["batch","flags","output"]:
             mcscript.call([
                 "rm","-r",os.path.join(target_run_top_prefix,subdirectory)
-            ])
+            ],check_return=False)
 
     # break results files out by subdirectories
     target_run_results_prefix = os.path.join(target_base,"run{run}".format(run=run),"results")
-    mcscript.mkdir(os.path.join(target_run_results_prefix,"out"))
+    mcscript.utils.mkdir(os.path.join(target_run_results_prefix,"out"),exist_ok=True,parents=True)
     for filename in glob.glob(os.path.join(target_run_results_prefix,"*.out")):
         mcscript.call([
             "mv","-v",filename,os.path.join(target_run_results_prefix,"out")
         ])
-    mcscript.mkdir(os.path.join(target_run_results_prefix,"res"))
+    mcscript.utils.mkdir(os.path.join(target_run_results_prefix,"res"),exist_ok=True,parents=True)
     for filename in glob.glob(os.path.join(target_run_results_prefix,"*.res")):
         mcscript.call([
             "mv","-v",filename,os.path.join(target_run_results_prefix,"res")
         ])
-    mcscript.mkdir(os.path.join(target_run_results_prefix,"task-data"))
-    for filename in glob.glob(os.path.join(target_run_results_prefix,"*.tar")):
+    mcscript.utils.mkdir(os.path.join(target_run_results_prefix,"task-data"),exist_ok=True,parents=True)
+    for filename in glob.glob(os.path.join(target_run_results_prefix,"*.tgz")):
         mcscript.call([
             "mv","-v",filename,os.path.join(target_run_results_prefix,"task-data")
         ])
 
+    # relocate old wave functions to results subdirectory
+    mcscript.utils.mkdir(os.path.join(target_run_wavefunctions_prefix,"wf"),exist_ok=True,parents=True)
+    target_run_old_wavefunctions_prefix = os.path.join(target_base,"run{run}".format(run=run),"wavefunctions")
+    for filename in glob.glob(os.path.join(target_run_old_wavefunctions_prefix,"*.tar")):
+        mcscript.call([
+            "mv","-v",filename,os.path.join(target_run_results_prefix,"wf")
+        ])
+    mcscript.call([
+            "rmdir","-v",target_run_old_wavefunctions_prefix
+    ])
+        
     # extract individual task tarballs (legacy)
     target_run_results_prefix = os.path.join(target_base,"run{run}".format(run=run),"results")
     os.chdir(os.path.join(target_run_results_prefix,"task-data"))
