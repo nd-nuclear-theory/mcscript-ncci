@@ -50,7 +50,7 @@ def recover_from_hsi_legacy(year,run,date,target_base,keep_archives=False,keep_m
             archive_filename = "run{run}-archive-{date}{archive_tail}".format(run=run,date=date,archive_tail=archive_tail)
             if (not os.path.isfile(archive_filename)):
                 print("Retrieving {}...".format(archive_filename))                
-                hsi_command_string = "cd {year}; get {archive_filename}".format(archive_filename=archive_filename)
+                hsi_command_string = "cd {year}; get {archive_filename}".format(year=year,archive_filename=archive_filename)
                 mcscript.call(["hsi",hsi_command_string],check_return=False)
             if (os.path.isfile(archive_filename)):
                 print("Extracting {}...".format(archive_filename))
