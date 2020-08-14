@@ -13,6 +13,8 @@ University of Notre Dame
 - 10/04/17 (pjf): Add counting-only descriptor.
 - 01/04/18 (pjf): Add task_descriptor_9 for manual orbitals.
 - 04/23/19 (pjf): Make task_descriptor_c1 use two-digit Z and N fields.
+- 12/26/19 (mac): Add task_descriptor_7_trans.
+- 08/13/20 (pjf): Fix passing M to task_descriptor_7_trans
 """
 import mcscript.exception
 import mcscript.utils
@@ -140,7 +142,7 @@ def task_descriptor_7_trans(task):
 
     coulomb_flag = int(task["use_coulomb"])
     ##natural_orbital_indicator = mcscript.utils.ifelse(task.get("natural_orbitals"), "-natorb", "")
-    M_field = "-Mj{M:03.1f}".format(**task) if (truncation_parameters.get("M") is not None) else ""
+    M_field = "-Mj{M:03.1f}".format(**truncation_parameters) if (truncation_parameters.get("M") is not None) else ""
     subset_field = "-subset{subset[0]:03d}".format(**task) if (task.get("subset") is not None) else ""
     descriptor = template_string.format(
         coulomb_flag=coulomb_flag,
