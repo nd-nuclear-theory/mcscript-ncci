@@ -35,6 +35,7 @@ University of Notre Dame
 - 08/14/20 (pjf):
     + Allow passing A instead of nuclide (important for Tz-changing operators).
     + Fix bug with mutable defaults passed to generate_tbme().
+    + Add flag for controlling whether to construct "built-in" scalar operators.
 """
 import collections
 import glob
@@ -173,7 +174,7 @@ def generate_h2mixer_tbme_source_lines(identifier, parameters):
     return [line]
 
 
-def get_tbme_targets(task, target_qn):
+def get_tbme_targets(task, target_qn, builtin_scalar_targets=True):
     """Get TBME targets with given quantum numbers.
 
     Arguments:
@@ -209,7 +210,7 @@ def get_tbme_targets(task, target_qn):
     targets = collections.OrderedDict()
 
     # special targets, special case for scalar
-    if target_qn == (0,0,0):
+    if builtin_scalar_targets and target_qn == (0,0,0):
         # target: radius squared (must be first, for built-in MFDn radii)
         targets["tbme-rrel2"] = operators.rrel2(A=A, hw=hw)
 
@@ -366,8 +367,8 @@ def generate_observable_tbme(task, postfix="", generate_scalar=False):
         target_qn_set.discard((0,0,0))
 
     for target_qn in target_qn_set:
-        targets = get_tbme_targets(task, target_qn)
-        generate_tbme(task, targets=targets, target_qn=target_qn, postfix="")
+        targets = get_tbme_targets(task, target_qn, builtin_scalar_targets=False)
+        generate_tbme(task, targets=targets, target_qn=target_qn, postfix=postfix)
 
 
 def generate_tbme(
