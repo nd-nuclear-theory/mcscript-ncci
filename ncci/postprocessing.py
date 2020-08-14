@@ -266,7 +266,7 @@ def evaluate_ob_observables(task, postfix=""):
     for qn_pair,filename in obdme_files.items():
         ((J_bra, g_bra, n_bra), (J_ket, g_ket, n_ket)) = qn_pair
         lines.append(
-            "define-transition-densities {J_bra:4.1f} {g_bra:d} {n_bra:d}  {J_ket:4.1f} {g_ket:d} {n_ket:d} {filename:s} {info_filename:s}".format(
+            "define-densities {J_bra:4.1f} {g_bra:d} {n_bra:d}  {J_ket:4.1f} {g_ket:d} {n_ket:d} {filename:s} {info_filename:s}".format(
                 J_bra=J_bra, g_bra=g_bra, n_bra=n_bra,
                 J_ket=J_ket, g_ket=g_ket, n_ket=n_ket,
                 filename=filename,

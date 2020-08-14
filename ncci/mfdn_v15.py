@@ -41,10 +41,13 @@ University of Notre Dame
 - 06/07/19 (pjf): Check that MFDn launches successfully with
     mcscript.control.FileWatchdog on mfdn.out.
 - 06/11/19 (pjf): Save task-data archives to correct place (under results_dir).
-+ 09/04/19 (pjf): Rename Trel->Tintr.
-+ 10/10/19 (pjf): Implement generation of mfdn_smwf.info from old runs.
-+ 10/13/19 (pjf): Fix inclusion of partitioning into mfdn_smwf.info.
-+ 12/11/19 (pjf): Use new results storage helper functions from mcscript.
+- 09/04/19 (pjf): Rename Trel->Tintr.
+- 10/10/19 (pjf): Implement generation of mfdn_smwf.info from old runs.
+- 10/13/19 (pjf): Fix inclusion of partitioning into mfdn_smwf.info.
+- 12/11/19 (pjf): Use new results storage helper functions from mcscript.
+- 06/03/20 (pjf):
+    + Switch to using quantum numbers to specify natorb base state.
+    + Fix saving of OBDMEs.
 """
 import os
 import glob
@@ -307,15 +310,10 @@ def extract_natural_orbitals(task, postfix=""):
 
     work_dir = "work{:s}".format(postfix)
     obdme_info_filename = "mfdn.rppobdme.info"
-    try:
-        (J, g, n) = task["natorb_base_state"]
-        obdme_filename = glob.glob(
-            "{:s}/mfdn.statrobdme.seq*.2J{:02d}.n{:02d}.2T*".format(work_dir, 2*J, n)
-            )
-    except TypeError:
-        obdme_filename = glob.glob(
-            "{:s}/mfdn.statrobdme.seq{:03d}*".format(work_dir, task["natorb_base_state"])
-            )
+    (J, g, n) = task["natorb_base_state"]
+    obdme_filename = glob.glob(
+        "{:s}/mfdn.statrobdme.seq*.2J{:02d}.n{:02d}.2T*".format(work_dir, 2*J, n)
+        )
 
     print("Saving OBDME files for natural orbital generation...")
     mcscript.call(
@@ -409,7 +407,7 @@ def save_mfdn_obdme(task, postfix=""):
     work_dir = "work{:s}".format(postfix)
 
     # do nothing is obdme saving is turned off
-    if (not task.get("save_obdme")) or (not task.get("calculate_obdme")):
+    if (not task.get("save_obdme")) or (not task.get("calculate_obdme",True)):
         print("Cowardly refusing to save obdme...")
         return
 

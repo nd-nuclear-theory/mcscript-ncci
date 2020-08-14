@@ -2,9 +2,12 @@
 
     - 02/20/17 (pjf): Created, extracted from mfdn.py.
     - 09/05/19 (pjf): Add Nv_for_nuclide.
+    - 06/03/20 (pjf): Add check_natorb_base_state.
 """
 
 import math
+
+import mcscript
 
 ################################################################
 # physical constants
@@ -102,3 +105,25 @@ def Nv_for_nuclide(nuclide):
             eta += 1
 
     return Nv
+
+################################################################
+# consistency checks
+################################################################
+
+def check_natorb_base_state(task):
+    """Perform sanity checks on natural orbital base state quantum numbers."""
+    natorb_base_state = task.get("natorb_base_state")
+    try:
+        (J, g, n) = natorb_base_state
+        M = task["truncation_parameters"]["M"]
+    except TypeError:
+        raise mcscript.exception.ScriptError(
+            "invalid natorb_base_state: {}".format(natorb_base_state))
+    if (J < abs(M)) or (abs(int(2*J)%2) != abs(int(2*M)%2)):
+        raise mcscript.exception.ScriptError(
+            "invalid natorb base state J={:3.1f} M={:3.1f}".format(J,M)
+        )
+    if g not in (0,1):
+        raise mcscript.exception.ScriptError(
+            "invalid natorb base state g={}".format(g)
+        )

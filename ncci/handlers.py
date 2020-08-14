@@ -35,6 +35,7 @@ University of Notre Dame
     + Update archive_handler_mfdn() to archive lanczos files.
     + Clean up task_handler_oscillator() to call task_handler_oscillator_mfdn().
 - 12/11/19 (pjf): Use new results storage helper functions from mcscript.
+- 06/03/20 (pjf): Make natural orbital base state selected by quantum numbers.
 """
 import os
 import glob
@@ -259,11 +260,7 @@ def task_handler_natorb_pre(task, source_postfix="", target_postfix=""):
     # sanity checks
     if not task.get("natural_orbitals"):
         raise mcscript.exception.ScriptError("natural orbitals not enabled")
-
-    natorb_base_state = task.get("natorb_base_state")
-    if not isinstance(natorb_base_state, int):
-        raise mcscript.exception.ScriptError(
-            "invalid natorb_base_state: {}".format(natorb_base_state))
+    utils.check_natorb_base_state(task)
 
     # set correct basis mode
     task["basis_mode"] = modes.BasisMode.kGeneric
@@ -290,11 +287,7 @@ def task_handler_natorb_run(task, postfix):
     # sanity checks
     if not task.get("natural_orbitals"):
         raise mcscript.exception.ScriptError("natural orbitals not enabled")
-
-    natorb_base_state = task.get("natorb_base_state")
-    if not isinstance(natorb_base_state, int):
-        raise mcscript.exception.ScriptError(
-            "invalid natorb_base_state: {}".format(natorb_base_state))
+    utils.check_natorb_base_state(task)
 
     mfdn_driver = task.get("mfdn_driver")
     if mfdn_driver is None:
@@ -305,7 +298,7 @@ def task_handler_natorb_run(task, postfix):
     mfdn_driver.run_mfdn(task=task, postfix=postfix)
 
 
-def task_handler_natorb(task):
+def task_handler_natorb(task, cleanup=True):
     """Task handler for basic oscillator+natural orbital run.
 
     Arguments:
@@ -314,11 +307,7 @@ def task_handler_natorb(task):
     # sanity checks
     if not task.get("natural_orbitals"):
         raise mcscript.exception.ScriptError("natural orbitals not enabled")
-
-    natorb_base_state = task.get("natorb_base_state")
-    if not isinstance(natorb_base_state, int):
-        raise mcscript.exception.ScriptError(
-            "invalid natorb_base_state: {}".format(natorb_base_state))
+    utils.check_natorb_base_state(task)
 
     # first do base oscillator run
     task_handler_oscillator(task, postfix=utils.natural_orbital_indicator(0))
@@ -330,7 +319,7 @@ def task_handler_natorb(task):
         )
     task_handler_natorb_run(task=task, postfix=utils.natural_orbital_indicator(1))
     task_handler_post_run(
-        task=task, postfix=utils.natural_orbital_indicator(1)
+        task=task, postfix=utils.natural_orbital_indicator(1), cleanup=cleanup
         )
 
 

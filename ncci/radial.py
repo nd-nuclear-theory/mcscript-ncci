@@ -29,6 +29,9 @@ University of Notre Dame
   + Update for new orbital-gen flags.
   + Rewrite for new em-gen workflow.
 - 09/07/19 (pjf): Remove Nv from truncation_parameters.
+- 06/03/20 (pjf):
+  + Make natural orbital base state selected by quantum numbers.
+  + Pass input to natorb-gen on stdin.
 """
 import errno
 import math
@@ -190,16 +193,24 @@ def set_up_natural_orbitals(task, source_postfix, target_postfix):
     if not task.get("natural_orbitals"):
         raise mcscript.exception.ScriptError("natural orbitals are not enabled")
 
+    (J, g, n) = task["natorb_base_state"]
+
+    lines = []
+    lines += ["set-indexing {:s}".format(environ.orbitals_filename(source_postfix))]
+    lines += ["define-densities {J:3.1f} {g:d} {n:d} {obdme_filename:s} {info_filename:s}".format(
+            J=J, g=g, n=n,
+            obdme_filename=environ.natorb_obdme_filename(source_postfix),
+            info_filename=environ.natorb_info_filename(source_postfix)
+        )]
+    lines += ["set-output-xform {orbital_filename:s} {xform_filename:s}".format(
+            orbital_filename=environ.orbitals_filename(target_postfix),
+            xform_filename=environ.natorb_xform_filename(target_postfix)
+        )]
+
     mcscript.call(
-        [
-            environ.shell_filename("natorb-gen"),
-            environ.orbitals_filename(source_postfix),
-            environ.natorb_info_filename(source_postfix),
-            environ.natorb_obdme_filename(source_postfix),
-            environ.natorb_xform_filename(target_postfix),
-            environ.orbitals_filename(target_postfix)
-        ],
-        mode=mcscript.CallMode.kSerial
+        [environ.shell_filename("natorb-gen")],
+        mode=mcscript.CallMode.kSerial,
+        input_lines=lines
     )
 
 
