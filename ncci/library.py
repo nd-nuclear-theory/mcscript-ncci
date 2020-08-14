@@ -5,9 +5,11 @@ University of Notre Dame
 
 - 02/04/20 (mac): Created, extracted from runs/mcaprio
     task_handler_postprocessor.py and xfer scripting.
+- 06/18/20 (mac): Add extraction function for legacy archives.
 
 """
 
+import glob
 import os
 
 import mcscript
@@ -17,13 +19,125 @@ from . import (
 )
 
 ################################################################
+# HSI run retrieval scripting -- legacy
+################################################################
+
+def recover_from_hsi_legacy(year,run,date,target_base,keep_archives=False,keep_metadata=False):
+    """Extract results subarchives from hsi for "legacy" archives (until 2018), before archives
+    were broken down by results type.
+
+    Args
+        year (str): year code (for archive file hsi subdirectory)
+        run (str): run name
+        date (str): date code (for archive filename)
+        target_base (str): path to library directory
+        keep_archives (bool, optional): whether or not to save unextracted archives (useful in debugging)
+        keep_metadata (bool, optional): whether or not to keep flags/batch/output directories
+    """
+
+    # set up general paths
+    target_run_top_prefix = os.path.join(target_base,"run{run}".format(run=run))
+    target_run_results_prefix = os.path.join(target_base,"run{run}".format(run=run),"results")
+
+    # go to base directory for extraction
+    mcscript.utils.mkdir(target_base,exist_ok=True,parents=True)
+    os.chdir(target_base)
+
+    print("Retrieving {}...".format((year,run,date)))
+
+    # retrieve and expand results subarchives to run directory
+    for archive_tail in [".tgz","-wf.tar"]:
+            archive_filename = "run{run}-archive-{date}{archive_tail}".format(run=run,date=date,archive_tail=archive_tail)
+            if (not os.path.isfile(archive_filename)):
+                print("Retrieving {}...".format(archive_filename))                
+                hsi_command_string = "cd {year}; get {archive_filename}".format(year=year,archive_filename=archive_filename)
+                mcscript.call(["hsi",hsi_command_string],check_return=False)
+            if (os.path.isfile(archive_filename)):
+                print("Extracting {}...".format(archive_filename))
+                mcscript.call(["tar","xvf",archive_filename],check_return=False)
+                if (not keep_archives):
+                    mcscript.call(["rm",archive_filename],check_return=False)
+    
+    # eliminate metadata subdirectories if not desired
+    if (not keep_metadata):
+        for subdirectory in ["batch","flags","output"]:
+            mcscript.call([
+                "rm","-r",os.path.join(target_run_top_prefix,subdirectory)
+            ],check_return=False)
+
+    # break results files out by subdirectories
+    mcscript.utils.mkdir(os.path.join(target_run_results_prefix,"out"),exist_ok=True,parents=True)
+    for filename in glob.glob(os.path.join(target_run_results_prefix,"*.out")):
+        mcscript.call([
+            "mv","-v",filename,os.path.join(target_run_results_prefix,"out")
+        ])
+    mcscript.utils.mkdir(os.path.join(target_run_results_prefix,"res"),exist_ok=True,parents=True)
+    for filename in glob.glob(os.path.join(target_run_results_prefix,"*.res")):
+        mcscript.call([
+            "mv","-v",filename,os.path.join(target_run_results_prefix,"res")
+        ])
+    mcscript.utils.mkdir(os.path.join(target_run_results_prefix,"task-data"),exist_ok=True,parents=True)
+    for filename in glob.glob(os.path.join(target_run_results_prefix,"*.tgz")):
+        mcscript.call([
+            "mv","-v",filename,os.path.join(target_run_results_prefix,"task-data")
+        ])
+
+    # relocate old wave functions to results subdirectory
+    mcscript.utils.mkdir(os.path.join(target_run_results_prefix,"wf"),exist_ok=True,parents=True)
+    target_run_old_wavefunctions_prefix = os.path.join(target_base,"run{run}".format(run=run),"wavefunctions")
+    for filename in glob.glob(os.path.join(target_run_old_wavefunctions_prefix,"*.tar")):
+        mcscript.call([
+            "mv","-v",filename,os.path.join(target_run_results_prefix,"wf")
+        ])
+    mcscript.call([
+            "rmdir","-v",target_run_old_wavefunctions_prefix
+    ])
+        
+    # extract individual task tarballs (legacy)
+    os.chdir(os.path.join(target_run_results_prefix,"task-data"))
+    for filename in glob.glob("*.tgz"):
+        mcscript.call([
+            "tar","xvf",filename,
+            "--strip-components=1",
+            "--exclude=mfdn*obdme*",
+        ])
+        mcscript.call(["rm","-v",filename])
+    os.chdir(os.path.join(target_run_results_prefix,"wf"))
+    for filename in glob.glob("*.tar"):
+        mcscript.call([
+            "tar","xvf",filename,
+            "--strip-components=1",
+            "--totals"
+        ])
+        mcscript.call(["rm","-v",filename])
+
+    # make retrieved results available to group
+    mcscript.call([
+        "chown","--recursive",":m2032",target_run_results_prefix
+    ])
+    mcscript.call([
+        "chmod","--recursive","g+rX",target_run_results_prefix
+    ])
+        
+    os.chdir(target_base)
+
+    
+################################################################
 # HSI run retrieval scripting
 ################################################################
 
 def recover_from_hsi(year,run,date,target_base):
-    """ Extract results subarchives from hsi.
+    """Extract results subarchives from hsi.
 
-    This routine fails for legacy archives which were not broken down by results type.
+    Limitation: This routine fails for legacy archives where the results
+    directory was not broken down by results type, and thus neither was the
+    archive.
+
+    Args
+        year (str): year code (for archive file hsi subdirectory)
+        run (str): run name
+        date (str): date code (for archive filename)
+        target_base (str): path to library directory
 
     """
 
@@ -211,7 +325,7 @@ def generate_smwf_info_in_library(wf_source_info):
     #
     # ncci.mfdn_v15.generate_smwf_info requires task data:
     #     "nuclide", "truncation_parameters":"M", "metadata":"descriptor"
-    ncci.mfdn_v15.generate_smwf_info(
+    mfdn_v15.generate_smwf_info(
         wf_source_info,
         orbital_filename=os.path.join(task_data_prefix,"orbitals.dat"),
         partitioning_filename=os.path.join(task_data_prefix,"mfdn_partitioning.info"),
