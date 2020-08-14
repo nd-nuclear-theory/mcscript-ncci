@@ -34,6 +34,7 @@ University of Notre Dame
 - 12/22/19 (pjf): Add save_tbme() handler.
 - 08/14/20 (pjf):
     + Allow passing A instead of nuclide (important for Tz-changing operators).
+    + Fix bug with mutable defaults passed to generate_tbme().
 """
 import collections
 import glob
@@ -371,11 +372,17 @@ def generate_observable_tbme(task, postfix="", generate_scalar=False):
 
 def generate_tbme(
         task,
-        obme_sources={}, tbme_sources={},
-        targets={}, target_qn=(0,0,0),
+        obme_sources=None, tbme_sources=None,
+        targets=None, target_qn=(0,0,0),
         postfix=""):
     """Generate TBMEs with
     """
+    if obme_sources is None:
+        obme_sources = {}
+    if tbme_sources is None:
+        tbme_sources = {}
+    if targets is None:
+        targets = {}
     # extract parameters for convenience
     nuclide = task.get("nuclide")
     if nuclide is None:
