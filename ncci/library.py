@@ -7,6 +7,11 @@ University of Notre Dame
     task_handler_postprocessor.py and xfer scripting.
 - 06/18/20 (mac): Add extraction function for legacy archives.
 
+- 08/14/20 (pjf):
+    + Configure LIBRARY_BASE from environment variable NCCI_LIBRARY_BASE
+    + Fix default arguments to path-getting functions.
+    + Add get_res_directory() for use with mfdnres slurp.
+    + Remove library alias hack.
 """
 
 import glob
@@ -186,29 +191,35 @@ def recover_from_hsi(year,run,date,target_base):
     mcscript.call([
         "chmod","--recursive","g+rX",target_run_results_prefix
     ])
-        
+
     os.chdir(target_base)
 
 ################################################################
 # library accessors
 ################################################################
 
-LIBRARY_BASE = mcscript.utils.expand_path("$SCRATCH/runs/library")
-LIBRARY_BASE_ALIAS = "library"  # workaround for FORTRAN path length limit
+LIBRARY_BASE = os.environ.get("NCCI_LIBRARY_BASE")
+# TODO(pjf): implement search in multiple library paths
+## LIBRARY_BASE = os.environ.get("NCCI_LIBRARY_PATH").split(":")
 
-def make_library_base_alias():
-    """ Set up symlick alias for libary in cwd, as path length workaround (ugly!).
+def get_res_directory(run, library_base=None):
+    """Construct directory for MFDn res directory in library.
 
-    Ex:
-        ncci.library.make_library_base_alias()  # path length workaround for postprocessor
-        bra_wf_prefix = ncci.library.get_wf_prefix(bra_run,bra_descriptor,library_base=ncci.library.LIBRARY_BASE_ALIAS)
+    Arguments:
+        run (str): run identifier
+        library_base (str,optional): root for library tree
 
+    Returns:
+        res_directory (str): Filename
     """
-    
-    if (not os.path.exists(LIBRARY_BASE_ALIAS)):
-        mcscript.call(["ln", "-s", LIBRARY_BASE,LIBRARY_BASE_ALIAS])
+    if library_base is None:
+        library_base = LIBRARY_BASE
+    res_directory = mcscript.utils.expand_path(
+        os.path.join(library_base, "run{run:s}".format(run=run), "results", "res")
+        )
+    return res_directory
 
-def get_res_filename(run,descriptor,library_base=LIBRARY_BASE):
+def get_res_filename(run, descriptor, library_base=None):
     """ Construct filename for mfdn res file in library.
 
     Arguments:
@@ -219,14 +230,16 @@ def get_res_filename(run,descriptor,library_base=LIBRARY_BASE):
     Returns:
         res_filename (str): Filename
     """
-    res_filename = mcscript.utils.expand_path(os.path.join(library_base,"run{run:s}/results/res/run{run:s}-mfdn15-{descriptor:s}.res").format(
+    if library_base is None:
+        library_base = LIBRARY_BASE
+    res_filename = os.path.join(get_res_directory(run, library_base), "run{run:s}-mfdn15-{descriptor:s}.res".format(
         run=run,
         descriptor=descriptor
     ))
     return res_filename
 
-def get_res_data(run,descriptor,library_base=LIBRARY_BASE):
-    """ Construct pat
+def get_res_data(run, descriptor, library_base=None):
+    """Get results data object for given run and descriptor.
 
     Arguments:
         run (str): run identifier
@@ -236,13 +249,15 @@ def get_res_data(run,descriptor,library_base=LIBRARY_BASE):
     Returns:
         res_data (MFDnResultsData): Data object
     """
+    if library_base is None:
+        library_base = LIBRARY_BASE
 
     import mfdnres
     res_filename = get_res_filename(run,descriptor,library_base=library_base)
     res_data = mfdnres.res.read_file(res_filename, "mfdn_v15")[0]
     return res_data
 
-def get_task_data_prefix(run,descriptor,library_base=LIBRARY_BASE):
+def get_task_data_prefix(run, descriptor, library_base=None):
     """ Construct prefix for wf dir in library.
 
     Arguments:
@@ -253,13 +268,15 @@ def get_task_data_prefix(run,descriptor,library_base=LIBRARY_BASE):
     Returns:
         task_data_prefix (str): Directory name
     """
+    if library_base is None:
+        library_base = LIBRARY_BASE
     task_data_prefix = mcscript.utils.expand_path(os.path.join(library_base,"run{run:s}/results/task-data/{descriptor:s}").format(
         run=run,
         descriptor=descriptor
     ))
     return task_data_prefix
 
-def get_wf_prefix(run,descriptor,library_base=LIBRARY_BASE):
+def get_wf_prefix(run, descriptor, library_base=None):
     """ Construct prefix for wf dir in library.
 
     Arguments:
@@ -270,6 +287,8 @@ def get_wf_prefix(run,descriptor,library_base=LIBRARY_BASE):
     Returns:
         wf_prefix (str): Directory name
     """
+    if library_base is None:
+        library_base = LIBRARY_BASE
     wf_prefix = mcscript.utils.expand_path(os.path.join(library_base,"run{run:s}/results/wf/{descriptor:s}").format(
         run=run,
         descriptor=descriptor
@@ -295,7 +314,7 @@ def generate_smwf_info_in_library(wf_source_info):
     # set up paths
     run = wf_source_info["run"]
     descriptor = wf_source_info["metadata"]["descriptor"]
-    
+
     res_filename = get_res_filename(run,descriptor)
     task_data_prefix = get_task_data_prefix(run,descriptor)
     wf_prefix = get_wf_prefix(run,descriptor)
@@ -305,7 +324,7 @@ def generate_smwf_info_in_library(wf_source_info):
         raise mcscript.exception.ScriptError("Missing task_data directory {}".format(task_data_prefix))
     if (not os.path.isdir(wf_prefix)):
         raise mcscript.exception.ScriptError("Missing wf directory {}".format(wf_prefix))
-    
+
     # short circuit if info file exists
     if (os.path.isfile(os.path.join(wf_prefix,"mfdn_smwf.info"))):
         return
@@ -320,7 +339,7 @@ def generate_smwf_info_in_library(wf_source_info):
             os.path.join(task_data_prefix,"mfdn_partitioning.generated"),
             os.path.join(task_data_prefix,"mfdn_partitioning.info")
         ])
-    
+
     # generate wf info file
     #
     # ncci.mfdn_v15.generate_smwf_info requires task data:
