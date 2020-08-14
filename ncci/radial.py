@@ -407,20 +407,25 @@ def set_up_observable_radial_analytic(task, postfix=""):
     # input lines
     lines = []
 
-    for (operator_type, order) in task.get("ob_observables", []):
+    for (operator, operator_qn) in task.get("ob_observables", []):
+        print(operator, operator_qn)
+        (j0,g0,tz0) = operator_qn
+        if isinstance(operator, (tuple, list)):
+            operator_type, order = operator
+            if order != j0:
+                raise ValueError("invalid J0={} for operator {}".format(j0, operator))
+        else:
+            operator_type = operator
+
         if operator_type == 'E':
             radial_power = order
         elif operator_type == 'M':
             radial_power = order-1
-        else:
-            raise mcscript.exception.ScriptError("only E or M transitions currently supported")
 
         # short-circuit on solid harmonic of order zero
         if radial_power == 0:
             continue
 
-        g0 = radial_power % 2
-        Tz0 = 0  # TODO(pjf): generalize to isospin-changing operators
         operator_id = "rY{:d}".format(radial_power)
         lines.append(solid_harmonic_target_command.format(
             operator_type='r', order=radial_power,

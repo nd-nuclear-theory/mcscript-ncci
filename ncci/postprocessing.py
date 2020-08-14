@@ -10,20 +10,26 @@ University of Notre Dame
 - 10/11/19 (pjf): Implement initial (basic) two-body postprocessing.
 - 10/12/19 (pjf): Fix call to generation of mfdn_smwf.info.
 - 12/11/19 (pjf): Use new results storage helper functions from mcscript.
+- 08/14/20 (pjf): Implement generation of weak interaction one-body observables.
 """
 import collections
-import os
 import glob
+import os
 import re
 
 import mcscript
 
-from . import modes, environ, utils, tbme
-from . import mfdn_v15
+from . import (
+    environ,
+    mfdn_v15,
+    modes,
+    tbme,
+    utils,
+    )
 
 
-def generate_em(task, postfix=""):
-    """Generate electromagnetic matrix elements.
+def generate_electroweak(task, postfix=""):
+    """Generate electroweak matrix elements.
 
     Arguments:
         task (dict): as described in module docstring
@@ -43,44 +49,67 @@ def generate_em(task, postfix=""):
         lines.append("define-am-source {type:s} {filename:s}".format(
             type=am_type, filename=environ.obme_filename(postfix, am_type)
         ))
+    for isospin_type in ["t+", "t-"]:
+        lines.append("define-isospin-source {type:s} {filename:s}".format(
+            type=isospin_type, filename=environ.obme_filename(postfix, isospin_type)
+        ))
 
-    for (operator_type, order) in task.get("ob_observables", []):
-        if operator_type == 'E':
-            radial_power = order
-        elif operator_type == 'M':
-            radial_power = order-1
+    radial_power_set = set()
+    target_lines = []
+    for (operator, operator_qn) in task.get("ob_observables", []):
+        (j0,g0,tz0) = operator_qn
+        if isinstance(operator, (tuple, list)):
+            operator_type, order = operator
+            if order != j0:
+                raise ValueError("invalid J0={} for operator {}".format(j0, operator))
         else:
-            raise mcscript.exception.ScriptError("only E or M transitions currently supported")
+            operator_type = operator
 
-        # load non-trivial solid harmonic RMEs
-        if radial_power > 0:
+        if operator_type == 'E':
+            radial_power_set.add(order)
+            for species in ["p", "n"]:
+                target_lines.append(
+                    "define-em-target E {order:d} {species:s} {output_filename:s}".format(
+                        order=order, species=species,
+                        output_filename=environ.observable_me_filename(postfix, operator_type, order, species)
+                        )
+                    )
+        elif operator_type == 'M':
+            radial_power_set.add(order-1)
+            for species in ["p", "n"]:
+                target_lines.append(
+                    "define-em-target Dl {order:d} {species:s} {output_filename:s}".format(
+                        order=order, species=species,
+                        output_filename=environ.observable_me_filename(postfix, "Dl", order, species)
+                        )
+                    )
+                target_lines.append(
+                    "define-em-target Ds {order:d} {species:s} {output_filename:s}".format(
+                        order=order, species=species,
+                        output_filename=environ.observable_me_filename(postfix, "Ds", order, species)
+                        )
+                    )
+        elif operator_type in {"F", "GT"}:
+            target_lines.append(
+                "define-weak-target {operator_type:s} {output_filename:s}".format(
+                    operator_type=operator_type,
+                    output_filename=environ.observable_me_filename(postfix, operator_type, "", "")
+                    )
+                )
+        else:
+            raise mcscript.exception.ScriptError("unknown one-body operator {}".format(operator))
+
+    # load non-trivial solid harmonic RMEs
+    for radial_power in sorted(radial_power_set):
+        if radial_power != 0:
             operator_id = "rY{:d}".format(radial_power)
             lines.append("define-radial-source {type:s} {order:d} {filename:s}".format(
                 type='r', order=radial_power,
                 filename=environ.obme_filename(postfix, operator_id)
                 ))
 
-        for species in ["p", "n"]:
-            if operator_type == "E":
-                lines.append(
-                    "define-target E {order:d} {species:s} {output_filename:s}".format(
-                        order=order, species=species,
-                        output_filename=environ.observable_me_filename(postfix, operator_type, order, species)
-                        )
-                    )
-            elif operator_type == "M":
-                lines.append(
-                    "define-target Dl {order:d} {species:s} {output_filename:s}".format(
-                        order=order, species=species,
-                        output_filename=environ.observable_me_filename(postfix, "Dl", order, species)
-                        )
-                    )
-                lines.append(
-                    "define-target Ds {order:d} {species:s} {output_filename:s}".format(
-                        order=order, species=species,
-                        output_filename=environ.observable_me_filename(postfix, "Ds", order, species)
-                        )
-                    )
+    # insert target lines after radial input lines
+    lines += target_lines
 
     # ensure trailing line
     lines.append("")
@@ -95,7 +124,7 @@ def generate_em(task, postfix=""):
     # invoke em-gen
     mcscript.call(
         [
-            environ.shell_filename("em-gen")
+            environ.shell_filename("ew-gen")
         ],
         input_lines=lines,
         mode=mcscript.CallMode.kSerial
@@ -125,12 +154,17 @@ def evaluate_ob_observables(task, postfix=""):
         ]
 
     # set up operators
-    for (operator_type, order) in task.get("ob_observables", []):
-        lines.append("define-radial-source {:s}".format(
-            environ.radial_me_filename(postfix, operator_type, order)
-            ))
-        for species in ["p", "n"]:
-            if operator_type == "M":
+    for (operator, operator_qn) in task.get("ob_observables", []):
+        (j0,g0,tz0) = operator_qn
+        if isinstance(operator, (tuple, list)):
+            operator_type, order = operator
+            if order != j0:
+                raise ValueError("invalid J0={} for operator {}".format(j0, operator))
+        else:
+            operator_type = operator
+
+        if operator_type == "M":
+            for species in ["p", "n"]:
                 # convenience definition for M observable
                 lines.append(
                     "define-operator Dl({:s}) {:s}".format(
@@ -144,7 +178,8 @@ def evaluate_ob_observables(task, postfix=""):
                         environ.observable_me_filename(postfix, "Ds", order, species)
                         )
                     )
-            else:
+        elif operator_type == "E":
+            for species in ["p", "n"]:
                 lines.append(
                     "define-operator {:s}({:s}) {:s}".format(
                         operator_type,
@@ -152,6 +187,14 @@ def evaluate_ob_observables(task, postfix=""):
                         environ.observable_me_filename(postfix, operator_type, order, species)
                         )
                     )
+        else:
+            lines.append(
+                "define-operator {:s} {:s}".format(
+                    operator_type,
+                    environ.observable_me_filename(postfix, operator_type, "", "")
+                    )
+                )
+
 
     # get filenames for static densities and extract quantum numbers
     obdme_files = {}
@@ -205,44 +248,51 @@ def evaluate_ob_observables(task, postfix=""):
     regex = re.compile(
         r"{}".format(os.path.join(work_dir, "")) +
         # prolog
-        r"mfdn\.robdme"
-        # final sequence number
-        r"\.seq(?P<seqf>\d{3})"
+        r"(?P<code>.+)\.robdme"
+        # final sequence number (MFDn only)
+        r"(\.seq(?P<seqf>\d+))?"
         # final 2J
-        r"\.2J(?P<twoJf>\d{2})"
+        r"\.2J(?P<twoJf>\d+)"
         # final parity (v14 only)
-        r"(\.p(?P<gf>\d))?"
+        r"(\.p(?P<pf>\d))?"
+        # final g (postprocessor only)
+        r"(\.g(?P<gf>\d))?"
         # final n
-        r"\.n(?P<nf>\d{2})"
-        # final 2T
-        r"\.2T(?P<twoTf>\d{2})"
-        # initial sequence number
-        r"\.seq(?P<seqi>\d{3})"
+        r"\.n(?P<nf>\d+)"
+        # final 2T (MFDn only)
+        r"(\.2T(?P<twoTf>\d+))?"
+        # initial sequence number (MFDn only)
+        r"(\.seq(?P<seqi>\d+))?"
         # initial 2J
-        r"\.2J(?P<twoJi>\d{2})"
+        r"\.2J(?P<twoJi>\d+)"
         # initial parity (v14 only)
-        r"(\.p(?P<gi>\d))?"
+        r"(\.p(?P<pi>\d))?"
+        # initial g (postprocessor only)
+        r"(\.g(?P<gi>\d))?"
         # initial n
-        r"\.n(?P<ni>\d{2})"
-        # inital 2T
-        r"\.2T(?P<twoTi>\d{2})"
+        r"\.n(?P<ni>\d+)"
+        # inital 2T (MFDn only)
+        r"(\.2T(?P<twoTi>\d+))?"
         )
     conversions = {
-        "seqf": int,
+        "code": str,
+        "seqf": lambda x: int(x) if x is not None else 0,
         "twoJf": int,
+        "pf": lambda x: int(x) if x is not None else 0,
         "gf": lambda x: int(x) if x is not None else 0,
         "nf": int,
-        "twoTf": int,
-        "seqi": int,
+        "twoTf": lambda x: int(x) if x is not None else 0,
+        "seqi": lambda x: int(x) if x is not None else 0,
         "twoJi": int,
+        "pi": lambda x: int(x) if x is not None else 0,
         "gi": lambda x: int(x) if x is not None else 0,
         "ni": int,
-        "twoTi": int
+        "twoTi": lambda x: int(x) if x is not None else 0,
         }
     for filename in filenames:
         match = regex.match(filename)
         if match is None:
-            raise ValueError("bad statrobdme filename format")
+            raise ValueError("bad robdme filename: {}".format(filename))
         info = match.groupdict()
 
         # convert fields
@@ -250,6 +300,10 @@ def evaluate_ob_observables(task, postfix=""):
             conversion = conversions[key]
             info[key] = conversion(info[key])
 
+        if "pf" in info:
+            info["gf"] = (1 if info["pf"] == 1 else 1)
+        if "pi" in info:
+            info["gi"] = (1 if info["pi"] == 1 else 1)
         if "gf" not in info:
             info["gf"] = 0
         if "gi" not in info:
@@ -265,14 +319,25 @@ def evaluate_ob_observables(task, postfix=""):
     # sort by sequence number of final state, then sequence number of initial state
     for qn_pair,filename in obdme_files.items():
         ((J_bra, g_bra, n_bra), (J_ket, g_ket, n_ket)) = qn_pair
-        lines.append(
-            "define-densities {J_bra:4.1f} {g_bra:d} {n_bra:d}  {J_ket:4.1f} {g_ket:d} {n_ket:d} {filename:s} {info_filename:s}".format(
-                J_bra=J_bra, g_bra=g_bra, n_bra=n_bra,
-                J_ket=J_ket, g_ket=g_ket, n_ket=n_ket,
-                filename=filename,
-                info_filename=os.path.join(work_dir, "mfdn.rppobdme.info"),
+        if info["code"] == "mfdn":
+            lines.append(
+                "define-densities {J_bra:4.1f} {g_bra:d} {n_bra:d}  {J_ket:4.1f} {g_ket:d} {n_ket:d} {filename:s} {info_filename:s}".format(
+                    J_bra=J_bra, g_bra=g_bra, n_bra=n_bra,
+                    J_ket=J_ket, g_ket=g_ket, n_ket=n_ket,
+                    filename=filename,
+                    info_filename=os.path.join(work_dir, "mfdn.rppobdme.info"),
+                )
             )
-        )
+        elif info["code"] == "transitions":
+            lines.append(
+                "define-densities {J_bra:4.1f} {g_bra:d} {n_bra:d}  {J_ket:4.1f} {g_ket:d} {n_ket:d} {filename:s}".format(
+                    J_bra=J_bra, g_bra=g_bra, n_bra=n_bra,
+                    J_ket=J_ket, g_ket=g_ket, n_ket=n_ket,
+                    filename=filename,
+                )
+            )
+        else:
+            raise mcscript.exception.ScriptError("unknown density code {}".format(info["code"]))
 
     # ensure trailing line
     lines.append("")
