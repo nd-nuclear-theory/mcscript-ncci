@@ -32,6 +32,8 @@ University of Notre Dame
     + Add generate_observable_tbme() for two-body observables.
 - 10/26/19 (pjf): Make "observable_sets" an optional task dictionary key.
 - 12/22/19 (pjf): Add save_tbme() handler.
+- 08/14/20 (pjf):
+    + Allow passing A instead of nuclide (important for Tz-changing operators).
 """
 import collections
 import glob
@@ -181,7 +183,11 @@ def get_tbme_targets(task, target_qn):
         (OrderedDict of CoefficientDict): targets and definitions
     """
     # extract parameters for convenience
-    A = sum(task["nuclide"])
+    nuclide = task.get("nuclide")
+    if nuclide is None:
+        A = task["A"]
+    else:
+        A = sum(nuclide)
     a_cm = task["a_cm"]
     hw = task["hw"]
     hw_cm = task.get("hw_cm")
@@ -258,7 +264,6 @@ def generate_diagonalization_tbme(task, postfix=""):
         postfix (string, optional): identifier added to input filenames
     """
     # extract parameters for convenience
-    A = sum(task["nuclide"])
     hw = task["hw"]
     hw_cm = task.get("hw_cm")
     if (hw_cm is None):
@@ -372,7 +377,11 @@ def generate_tbme(
     """Generate TBMEs with
     """
     # extract parameters for convenience
-    A = sum(task["nuclide"])
+    nuclide = task.get("nuclide")
+    if nuclide is None:
+        A = task["A"]
+    else:
+        A = sum(nuclide)
 
     # get set of required sources
     required_obme_sources = set()
