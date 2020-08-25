@@ -36,6 +36,7 @@ University of Notre Dame
     + Allow passing A instead of nuclide (important for Tz-changing operators).
     + Fix bug with mutable defaults passed to generate_tbme().
     + Add flag for controlling whether to construct "built-in" scalar operators.
+- 08/24/20 (pjf): Add "h2_extension" option for debugging with text-mode.
 """
 import collections
 import glob
@@ -532,8 +533,9 @@ def generate_tbme(
     lines.append("")
 
     # targets: generate h2mixer input
+    h2_extension = task.get("h2_extension", "bin")
     for (basename, operator) in targets.items():
-        lines.append("define-target work{:s}/{:s}.bin".format(postfix, basename))
+        lines.append("define-target work{:s}/{:s}.{:s}".format(postfix, basename, h2_extension))
         for (source, coefficient) in operator.items():
             lines.append("  add-source {:s} {:e}".format(source, coefficient))
         lines.append("")
