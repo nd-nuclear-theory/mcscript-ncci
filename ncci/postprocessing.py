@@ -951,14 +951,15 @@ def run_postprocessor_two_body(task, one_body=False):
         db.commit()
 
         # mark free OBDMEs as finished
-        db.executemany("""
-            UPDATE ob_transitions SET finished = 1
-            WHERE (bra_run,bra_descriptor,bra_level_id) = (?,?,?)
-                AND (ket_run,ket_descriptor,ket_level_id) = (?,?,?)
-            """,
-            [(bra_run,bra_descriptor,bra_level_id,ket_run,ket_descriptor,ket_level_id) for ket_level_id in ket_id_list]
-            )
-        db.commit()
+        if one_body:
+            db.executemany("""
+                UPDATE ob_transitions SET finished = 1
+                WHERE (bra_run,bra_descriptor,bra_level_id) = (?,?,?)
+                    AND (ket_run,ket_descriptor,ket_level_id) = (?,?,?)
+                """,
+                [(bra_run,bra_descriptor,bra_level_id,ket_run,ket_descriptor,ket_level_id) for ket_level_id in ket_id_list]
+                )
+            db.commit()
 
         # save output (for debugging)
         filename_template = "{:s}-transitions-{:s}{:s}-{:s}.{:s}"
@@ -1204,6 +1205,6 @@ def run_postprocessor(task):
     Arguments:
         task (dict): as described in module docstring
     """
-    run_postprocessor_two_body(task)
+    run_postprocessor_two_body(task, one_body=True)
     run_postprocessor_one_body(task)
     evaluate_ob_observables(task)
