@@ -14,6 +14,7 @@ University of Notre Dame
 - 08/24/20 (pjf):
     + Implement one- and two-body postprocessing.
     + Remove old postprocessing scripting.
+- 08/26/20 (pjf): Fix formatting of one-body electric transition operator names.
 """
 import collections
 import glob
@@ -190,8 +191,8 @@ def evaluate_ob_observables(task, postfix=""):
         elif operator_type == "E":
             for species in ["p", "n"]:
                 lines.append(
-                    "define-operator {:s}({:s}) {:s}".format(
-                        operator_type,
+                    "define-operator {:s}{:d}({:s}) {:s}".format(
+                        operator_type, order,
                         species,
                         environ.observable_me_filename(postfix, operator_type, order, species)
                         )
