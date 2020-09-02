@@ -6,12 +6,15 @@ University of Notre Dame
 - 02/04/20 (mac): Created, extracted from runs/mcaprio
     task_handler_postprocessor.py and xfer scripting.
 - 06/18/20 (mac): Add extraction function for legacy archives.
-
 - 08/14/20 (pjf):
     + Configure LIBRARY_BASE from environment variable NCCI_LIBRARY_BASE
     + Fix default arguments to path-getting functions.
     + Add get_res_directory() for use with mfdnres slurp.
     + Remove library alias hack.
+- 09/02/20 (pjf):
+    + Modify library functions to allow searching in multiple
+      library base directories.
+    + Make NCCI_LIBRARY_PATH a colon-delimited list.
 """
 
 import glob
@@ -54,7 +57,7 @@ def recover_from_hsi_legacy(year,run,date,target_base,keep_archives=False,keep_m
     for archive_tail in [".tgz","-wf.tar"]:
             archive_filename = "run{run}-archive-{date}{archive_tail}".format(run=run,date=date,archive_tail=archive_tail)
             if (not os.path.isfile(archive_filename)):
-                print("Retrieving {}...".format(archive_filename))                
+                print("Retrieving {}...".format(archive_filename))
                 hsi_command_string = "cd {year}; get {archive_filename}".format(year=year,archive_filename=archive_filename)
                 mcscript.call(["hsi",hsi_command_string],check_return=False)
             if (os.path.isfile(archive_filename)):
@@ -62,7 +65,7 @@ def recover_from_hsi_legacy(year,run,date,target_base,keep_archives=False,keep_m
                 mcscript.call(["tar","xvf",archive_filename],check_return=False)
                 if (not keep_archives):
                     mcscript.call(["rm",archive_filename],check_return=False)
-    
+
     # eliminate metadata subdirectories if not desired
     if (not keep_metadata):
         for subdirectory in ["batch","flags","output"]:
@@ -97,7 +100,7 @@ def recover_from_hsi_legacy(year,run,date,target_base,keep_archives=False,keep_m
     mcscript.call([
             "rmdir","-v",target_run_old_wavefunctions_prefix
     ])
-        
+
     # extract individual task tarballs (legacy)
     os.chdir(os.path.join(target_run_results_prefix,"task-data"))
     for filename in glob.glob("*.tgz"):
@@ -123,10 +126,10 @@ def recover_from_hsi_legacy(year,run,date,target_base,keep_archives=False,keep_m
     mcscript.call([
         "chmod","--recursive","g+rX",target_run_results_prefix
     ])
-        
+
     os.chdir(target_base)
 
-    
+
 ################################################################
 # HSI run retrieval scripting
 ################################################################
@@ -198,9 +201,7 @@ def recover_from_hsi(year,run,date,target_base):
 # library accessors
 ################################################################
 
-LIBRARY_BASE = os.environ.get("NCCI_LIBRARY_BASE")
-# TODO(pjf): implement search in multiple library paths
-## LIBRARY_BASE = os.environ.get("NCCI_LIBRARY_PATH").split(":")
+LIBRARY_BASE = os.environ.get("NCCI_LIBRARY_PATH", "").split(":")
 
 def get_res_directory(run, library_base=None):
     """Construct directory for MFDn res directory in library.
@@ -214,9 +215,10 @@ def get_res_directory(run, library_base=None):
     """
     if library_base is None:
         library_base = LIBRARY_BASE
-    res_directory = mcscript.utils.expand_path(
-        os.path.join(library_base, "run{run:s}".format(run=run), "results", "res")
-        )
+    res_directory = mcscript.utils.search_in_subdirectories(
+        mcscript.utils.expand_path(library_base),
+        "run{run:s}".format(run=run), "results", "res"
+    )
     return res_directory
 
 def get_res_filename(run, descriptor, library_base=None):
@@ -232,10 +234,11 @@ def get_res_filename(run, descriptor, library_base=None):
     """
     if library_base is None:
         library_base = LIBRARY_BASE
-    res_filename = os.path.join(get_res_directory(run, library_base), "run{run:s}-mfdn15-{descriptor:s}.res".format(
-        run=run,
-        descriptor=descriptor
-    ))
+    res_filename = mcscript.utils.search_in_subdirectories(
+        mcscript.utils.expand_path(library_base),
+        "run{run:s}".format(run=run), "results", "res",
+        "run{run:s}-mfdn15-{descriptor:s}.res".format(run=run, descriptor=descriptor)
+    )
     return res_filename
 
 def get_res_data(run, descriptor, library_base=None):
@@ -270,10 +273,10 @@ def get_task_data_prefix(run, descriptor, library_base=None):
     """
     if library_base is None:
         library_base = LIBRARY_BASE
-    task_data_prefix = mcscript.utils.expand_path(os.path.join(library_base,"run{run:s}/results/task-data/{descriptor:s}").format(
-        run=run,
-        descriptor=descriptor
-    ))
+    task_data_prefix = mcscript.utils.search_in_subdirectories(
+        mcscript.utils.expand_path(library_base),
+        "run{run:s}".format(run=run), "results", "task-data", descriptor
+    )
     return task_data_prefix
 
 def get_wf_prefix(run, descriptor, library_base=None):
@@ -289,10 +292,10 @@ def get_wf_prefix(run, descriptor, library_base=None):
     """
     if library_base is None:
         library_base = LIBRARY_BASE
-    wf_prefix = mcscript.utils.expand_path(os.path.join(library_base,"run{run:s}/results/wf/{descriptor:s}").format(
-        run=run,
-        descriptor=descriptor
-    ))
+    wf_prefix = mcscript.utils.search_in_subdirectories(
+        mcscript.utils.expand_path(library_base),
+        "run{run:s}".format(run=run), "results", "wf", descriptor
+    )
     return wf_prefix
 
 ################################################################
