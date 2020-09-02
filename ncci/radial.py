@@ -32,6 +32,8 @@ University of Notre Dame
 - 06/03/20 (pjf):
   + Make natural orbital base state selected by quantum numbers.
   + Pass input to natorb-gen on stdin.
+- 09/02/20 (pjf): Fix set_up_observable_radial_analytic for operators other than
+  E and M.
 """
 import errno
 import math
@@ -421,6 +423,8 @@ def set_up_observable_radial_analytic(task, postfix=""):
             radial_power = order
         elif operator_type == 'M':
             radial_power = order-1
+        else:
+            radial_power = 0
 
         # short-circuit on solid harmonic of order zero
         if radial_power == 0:
