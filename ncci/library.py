@@ -15,6 +15,7 @@ University of Notre Dame
     + Modify library functions to allow searching in multiple
       library base directories.
     + Make NCCI_LIBRARY_PATH a colon-delimited list.
+- 09/07/20 (pjf): Fix hard-coded file format in get_res_data().
 """
 
 import glob
@@ -257,7 +258,7 @@ def get_res_data(run, descriptor, library_base=None):
 
     import mfdnres
     res_filename = get_res_filename(run,descriptor,library_base=library_base)
-    res_data = mfdnres.res.read_file(res_filename, "mfdn_v15")[0]
+    res_data = mfdnres.res.read_file(res_filename)[0]
     return res_data
 
 def get_task_data_prefix(run, descriptor, library_base=None):
