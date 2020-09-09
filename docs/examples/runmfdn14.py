@@ -80,32 +80,34 @@ task = {
     "obdme_multipolarity": 2,
     # "obdme_reference_state_list": [(0.0, 0, 1)],
     "save_obdme": True,
-    "ob_observables": [('M', 1), ('E', 2)],
+    "ob_observable_sets": ['M1', 'E2', 'GT', 'F'],
 
     # two-body observables
-    ## "observable_sets": ["H-components","am-sqr"],
-    "observable_sets": ["H-components"],
+    "tb_observable_sets": ["H-components","am-sqr"],
+    # "tb_observable_sets": ["H-components"],
     "tb_observables": [
         ("CSp3R", (0,0,0), {"CSp3R-U": 0.5, "CSp3R-V": 1.0}),
         ("UM1", (1,0,0), {
-            "U[Dl1p]": 1.0, "U[Ds1p]": 5.585694713, "U[Ds1n]": -3.82608545
+            "U[Dlp]": 1.0, "U[Dsp]": 5.585694713, "U[Dsn]": -3.82608545
         }),
-        ("UE2", (2,0,0), {"U[E2p]": 1.0})
+        ("UE2", (2,0,0), {"U[E2p]": 1.0}),
+        ("UGT", (1,0,1), {"U[GT]": 10}),
+        ("UF", (0,0,1), {"U[F]": 10}),
         ],
     "tb_transitions": [
         ((2,0,1), [(1,0,1), (2,0,1), (2,0,2)])
     ],
     # sources
     "obme_sources": [
-        ("Dl1p", {"filename": ncci.environ.observable_me_filename("", "Dl", 1, "p"), "qn": (1,0,0)}),
-        ("Dl1n", {"filename": ncci.environ.observable_me_filename("", "Dl", 1, "n"), "qn": (1,0,0)}),
-        ("Ds1p", {"filename": ncci.environ.observable_me_filename("", "Ds", 1, "p"), "qn": (1,0,0)}),
-        ("Ds1n", {"filename": ncci.environ.observable_me_filename("", "Ds", 1, "n"), "qn": (1,0,0)}),
-        ("E2p",  {"filename": ncci.environ.observable_me_filename("", "E", 2, "p"), "qn": (2,0,0)}),
+        # ("Dl1p", {"filename": ncci.environ.observable_me_filename("", "Dl", 1, "p"), "qn": (1,0,0)}),
+        # ("Dl1n", {"filename": ncci.environ.observable_me_filename("", "Dl", 1, "n"), "qn": (1,0,0)}),
+        # ("Ds1p", {"filename": ncci.environ.observable_me_filename("", "Ds", 1, "p"), "qn": (1,0,0)}),
+        # ("Ds1n", {"filename": ncci.environ.observable_me_filename("", "Ds", 1, "n"), "qn": (1,0,0)}),
+        # ("E2p",  {"filename": ncci.environ.observable_me_filename("", "E", 2, "p"), "qn": (2,0,0)}),
     ],
     "tbme_sources": [
-        ("CSp3R-U", (0,0,0), {"filename": "tbme-CSp3R-U.bin"}),
-        ("CSp3R-V", (0,0,0), {"filename": "tbme-CSp3R-V.bin"}),
+        ("CSp3R-U", {"filename": "tbme-CSp3R-U.bin", "qn": (0,0,0)}),
+        ("CSp3R-V", {"filename": "tbme-CSp3R-V.bin", "qn": (0,0,0)}),
     ],
 
     # wavefunction storage
@@ -133,7 +135,6 @@ ncci.radial.set_up_radial_analytic(task)
 ncci.tbme.generate_diagonalization_tbme(task)
 ncci.mfdn_v15.run_mfdn(task)
 task["h2_format"] = 15200
-ncci.postprocessing.generate_em(task)
 ncci.tbme.generate_observable_tbme(task)
 ncci.postprocessing.run_mfdn_transitions(task)
 # ncci.mfdn_v15.save_mfdn_task_data(task)
