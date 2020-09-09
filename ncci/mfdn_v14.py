@@ -45,6 +45,7 @@ University of Notre Dame
 - 12/11/19 (pjf):
     + Use new results storage helper functions from mcscript.
     + Deprecate save_mfdn_task_data().
+- 09/09/20 (pjf): Use operators module instead of tbme for operator names.
 """
 import os
 import glob
@@ -52,7 +53,7 @@ import warnings
 
 import mcscript
 
-from . import utils, modes, environ, tbme
+from . import utils, modes, environ, operators
 
 
 def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
@@ -117,7 +118,7 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     ))
 
     # tbo: collect tbo names
-    obs_basename_list = list(tbme.get_tbme_targets(task, (0,0,0)).keys())
+    obs_basename_list = list(operators.tb.get_tbme_targets(task)[(0,0,0)].keys())
 
     # do not evaluate Hamiltonian as observable
     obs_basename_list.remove("tbme-H")

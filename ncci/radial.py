@@ -34,6 +34,7 @@ University of Notre Dame
   + Pass input to natorb-gen on stdin.
 - 09/02/20 (pjf): Fix set_up_observable_radial_analytic for operators other than
   E and M.
+- 09/09/20 (pjf): Use obmixer inside set_up_radial_analytic().
 """
 import errno
 import math
@@ -45,7 +46,8 @@ import mcscript.exception
 from . import (
     utils,
     modes,
-    environ
+    environ,
+    operators
 )
 
 
@@ -216,10 +218,10 @@ def set_up_natural_orbitals(task, source_postfix, target_postfix):
     )
 
 
-k_kinematic_operators = {"r": (1,1,0), "r.r": (0,0,0), "k": (1,1,0), "k.k": (0,0,0)}
-k_am_operators = {"l": (1,0,0), "s": (1,0,0)}
-k_isospin_operators = {"t+": (0,0,+1), "t-": (0,0,-1)}
-k_radialgen_operators = {**k_kinematic_operators, **k_am_operators, **k_isospin_operators}
+# k_kinematic_operators = {"r": (1,1,0), "r.r": (0,0,0), "ik": (1,1,0), "ik.ik": (0,0,0)}
+# k_am_operators = {"l": (1,0,0), "s": (1,0,0)}
+# k_isospin_operators = {"t+": (0,0,+1), "t-": (0,0,-1)}
+# k_radialgen_operators = {**k_kinematic_operators, **k_am_operators, **k_isospin_operators}
 
 def set_up_radial_analytic(task, postfix=""):
     """Generate radial integrals and overlaps by integration for MFDn run
@@ -239,6 +241,82 @@ def set_up_radial_analytic(task, postfix=""):
     # basis radial code -- expected by radial_utils codes
     basis_radial_code = "oscillator"  # TODO GENERALIZE: if not oscillator basis
 
+    ################################################################
+    # obmixer input
+    ################################################################
+    basis_command = "set-basis {basis_type:s} {orbital_filename:s}"
+    xform_command = "define-xform {id:s} {xform_filename:s}"
+
+    # get tbme sources and flatten for all quantum numbers
+    tbme_targets_by_qn = operators.tb.get_tbme_targets(task, builtin_scalar_targets=True)
+    tbme_targets = {k: d[k] for d in tbme_targets_by_qn.values() for k in d}
+
+    # get obme sources
+    obme_targets = operators.ob.get_obme_targets(task, tbme_targets)
+    obme_sources = operators.ob.get_obme_sources(task, obme_targets.values())
+
+
+    # collect input lines
+    lines = []
+    lines.append(basis_command.format(
+        basis_type=basis_radial_code,
+        orbital_filename=environ.orbitals_filename(postfix)
+    ))
+
+    # generate kinematic RMEs
+    for (identifier, parameters) in obme_sources.items():
+        filename = parameters.get("filename")
+        (j0, g0, tz0) = parameters["qn"]
+        if filename is not None:
+            lines += ["define-source input {id:s} {filename:s} {j0:d} {g0:d} {tz0:d}".format(
+                id=identifier,
+                filename=filename,
+                j0=j0, g0=g0, tz0=tz0
+            )]
+        elif "builtin" in parameters:
+            line = "define-source {mode:s} {id:}".format(
+                id=identifier, mode=parameters["builtin"]
+            )
+            if parameters["builtin"] == "solid-harmonic":
+                line += " {coordinate:s} {order:d} {j0:d}".format(j0=j0, **parameters)
+            if "orbital_filename" in parameters:
+                line += " {orbital_filename:s}".format(**parameters)
+            lines.append(line)
+        elif "linear-combination" in parameters:
+            lines += ["define-source linear-combination {id:s}".format(id=identifier)]
+            for (source_id, coefficient) in parameters["linear-combination"].items():
+                lines.append("  add-source {id:s} {coefficient:e}".format(
+                    id=source_id, coefficient=coefficient
+                ))
+        elif "tensor-product" in parameters:
+            (factor_a, factor_b) = parameters["tensor-product"]
+            coefficient = parameters.get("coefficient", 1.0)
+            lines += ["define-source tensor-product {id:s} {factor_a:s} {factor_b:s} {j0:d} {coefficient:e}".format(
+                id=identifier, factor_a=factor_a, factor_b=factor_b, j0=j0, coefficient=coefficient
+            )]
+        else:
+            raise mcscript.exception.ScriptError("unknown one-body operator {}".format(identifier))
+
+    for (identifier, operator) in obme_targets.items():
+        lines += ["define-target {id:s} {filename:s}".format(
+            id=operator, filename=environ.obme_filename(postfix, identifier)
+        )]
+
+    # # set up radial matrix elements for observables
+    # lines += set_up_observable_radial_analytic(task, postfix)
+
+    # call obmixer
+    mcscript.call(
+        [
+            environ.shell_filename("obmixer")
+        ],
+        mode=mcscript.CallMode.kSerial,
+        input_lines=lines
+    )
+
+    ################################################################
+    # radial-gen input
+    ################################################################
     # define commands
     ket_basis_command = "set-ket-basis {basis_type:s} {orbital_filename:s}"
     operator_target_command = (
@@ -254,30 +332,6 @@ def set_up_radial_analytic(task, postfix=""):
         basis_type=basis_radial_code,
         orbital_filename=environ.orbitals_filename(postfix)
     ))
-
-    # generate kinematic RMEs
-    for operator_type in k_kinematic_operators.keys():
-        lines.append(operator_target_command.format(
-            mode="kinematic", operator_type=operator_type,
-            output_filename=environ.obme_filename(postfix, operator_type)
-        ))
-
-    # generate am RMEs
-    for operator_type in k_am_operators.keys():
-        lines.append(operator_target_command.format(
-            mode="am", operator_type=operator_type,
-            output_filename=environ.obme_filename(postfix, operator_type)
-        ))
-
-    # generate isospin RMEs
-    for operator_type in k_isospin_operators.keys():
-        lines.append(operator_target_command.format(
-            mode="isospin", operator_type=operator_type,
-            output_filename=environ.obme_filename(postfix, operator_type)
-        ))
-
-    # set up radial matrix elements for observables
-    lines += set_up_observable_radial_analytic(task, postfix)
 
     # generate radial overlaps -- generate trivial identities if applicable
     #

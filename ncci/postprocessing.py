@@ -15,6 +15,7 @@ University of Notre Dame
     + Implement one- and two-body postprocessing.
     + Remove old postprocessing scripting.
 - 08/26/20 (pjf): Fix formatting of one-body electric transition operator names.
+- 09/09/20 (pjf): Update to include ob_observable_sets.
 """
 import collections
 import glob
@@ -164,7 +165,8 @@ def evaluate_ob_observables(task, postfix=""):
         ]
 
     # set up operators
-    for (operator, operator_qn) in task.get("ob_observables", []):
+    ob_observables = generate_ob_observable_sets(task)[0] + task.get("ob_observables", [])
+    for (operator, operator_qn, _) in ob_observables:
         (j0,g0,tz0) = operator_qn
         if isinstance(operator, (tuple, list)):
             operator_type, order = operator
@@ -693,9 +695,10 @@ def init_postprocessor_db(task):
 
     # construct list of (bra,ket,ob_qn) tuples
     ob_qn_set = {}
+    ob_observables = generate_ob_observable_sets(task)[0] + task.get("ob_observables", [])
     bra_ket_ob_qn_product = itertools.product(
         bra_merged_data.levels, ket_merged_data.levels,
-        {operator_qn for (operator,operator_qn) in task.get("ob_observables", [])}
+        {operator_qn for (operator,operator_qn,_) in ob_observables}
     )
     for (bra_qn, ket_qn, operator_qn) in bra_ket_ob_qn_product:
         # check canonical order
@@ -777,6 +780,7 @@ def run_postprocessor_two_body(task, one_body=False):
     transitions_executable = environ.mfdn_postprocessor_filename(
         task.get("mfdn-transitions_executable", "xtransitions")
     )
+    ob_observables = generate_ob_observable_sets(task)[0] + task.get("ob_observables", [])
 
     # create work directory if it doesn't exist yet
     mcscript.utils.mkdir(work_dir, exist_ok=True, parents=True)
@@ -895,7 +899,7 @@ def run_postprocessor_two_body(task, one_body=False):
         max_ket_J = max([ket_J for (ket_J,_,_) in ket_qn_list])
         min_ket_J = min([ket_J for (ket_J,_,_) in ket_qn_list])
         max_deltaJ = max(abs(max_ket_J-bra_J), max_ket_J+bra_J, abs(min_ket_J-bra_J), min_ket_J+bra_J)
-        max_J0 = max([J0 for _,(J0,_,_) in task["ob_observables"]])
+        max_J0 = max([J0 for _,(J0,_,_) in ob_observables])
         max2K = 2*int(min(max_deltaJ, max_J0))
         transitions_inputlist = {
             "basisfilename_bra": "{:s}/mfdn_MBgroups".format(bra_wf_prefix),
@@ -1053,6 +1057,7 @@ def run_postprocessor_one_body(task):
     transitions_executable = environ.mfdn_postprocessor_filename(
         task.get("mfdn-transitions_executable", "xtransitions")
     )
+    ob_observables = generate_ob_observable_sets(task)[0] + task.get("ob_observables", [])
 
     # create work directory if it doesn't exist yet
     mcscript.utils.mkdir(work_dir, exist_ok=True, parents=True)
@@ -1119,7 +1124,7 @@ def run_postprocessor_one_body(task):
         max_ket_J = max([ket_J for (ket_J,_,_) in ket_qn_list])
         min_ket_J = min([ket_J for (ket_J,_,_) in ket_qn_list])
         max_deltaJ = max(abs(max_ket_J-bra_J), max_ket_J+bra_J, abs(min_ket_J-bra_J), min_ket_J+bra_J)
-        max_J0 = max([J0 for _,(J0,_,_) in task["ob_observables"]])
+        max_J0 = max([J0 for _,(J0,_,_) in ob_observables])
         max2K = 2*int(min(max_deltaJ, max_J0))
         transitions_inputlist = {
             "basisfilename_bra": "{:s}/mfdn_MBgroups".format(bra_wf_prefix),

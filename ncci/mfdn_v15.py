@@ -48,6 +48,7 @@ University of Notre Dame
 - 06/03/20 (pjf):
     + Switch to using quantum numbers to specify natorb base state.
     + Fix saving of OBDMEs.
+- 09/09/20 (pjf): Use operators module instead of tbme for operator names.
 """
 import os
 import glob
@@ -56,7 +57,7 @@ import warnings
 
 import mcscript
 
-from . import modes, environ, tbme
+from . import modes, environ, operators
 
 
 def set_up_Nmax_truncation(task, inputlist):
@@ -192,10 +193,12 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         inputlist["TBMEfile"] = "tbme-H"
 
         # tbo: collect tbo names
-        obs_basename_list = list(tbme.get_tbme_targets(task, (0,0,0)).keys())
+        obs_basename_list = list(operators.tb.get_tbme_targets(task)[(0,0,0)].keys())
 
         # do not evaluate Hamiltonian as observable
-        obs_basename_list.remove("tbme-H")
+        #  NOTE (pjf): due to possible bug/precision issues in MFDn, evaluate H
+        #    as a consistency check
+        ##obs_basename_list.remove("tbme-H")
 
         # tbo: log tbo names in separate file to aid future data analysis
         mcscript.utils.write_input("tbo_names{:s}.dat".format(postfix), input_lines=obs_basename_list)

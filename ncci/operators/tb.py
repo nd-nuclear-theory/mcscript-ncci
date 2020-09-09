@@ -1,5 +1,24 @@
 """operators.py -- define two-body operators for h2mixer input
 
+A tbme source is defined by the mapping:
+    (id, parameters)
+where parameters is a dict possibly containing the following:
+    "qn": (J0,g0,Tz0)
+    "filename": input TBME filename
+    "xform_filename": input xform matrix elements
+    "xform_truncation": xform truncation parameters
+    "operatorU": ob_id
+    "operatorV": [ob_factor_a, ob_factor_b]
+
+A tb_operator is the tuple:
+    (id, qn, CoefficientDict)
+where CoefficientDict can contain some special keys:
+    "U[obme_id]"
+    "V[obme_id_a,obme_id_b]"
+
+Patrick J. Fasano
+University of Notre Dame
+
     - 02/18/17 (pjf): Created.
     - 05/24/17 (pjf):
       + Fixed VC scaling.
@@ -16,13 +35,40 @@
     - 09/11/19 (pjf):
         + Eliminate bsqr for explict hw arguments.
         + Improve docstrings.
+    - 09/09/20 (pjf):
+        + Move from operators.py to operators/tb.py.
+        + Add target and source generation functions.
 """
+import collections
 import math
 import os
+import re
 
 import mcscript.utils
-from . import utils
+from .. import (
+    environ,
+    modes,
+    utils,
+    )
 
+
+__all__ = [
+    'identity', 'Ursqr', 'Vr1r2', 'Uksqr', 'Vk1k2',
+    'L2', 'Sp2', 'Sn2', 'S2', 'J2', 'T2', 'Tz',
+    'VNN', 'VC_unscaled', 'VC',
+    'rrel2', 'Ncm', 'Ntotal', 'Nintr',
+    'Tintr', 'Tcm',
+    'Hamiltonian'
+    ]
+
+
+################################################################
+# predefined sets
+################################################################
+
+k_h2mixer_builtin= {
+    "identity",
+}
 
 ################################################################
 # identity operator
@@ -46,10 +92,10 @@ def Vr1r2(**kwargs):
 # note (pjf): since <b||k||a> is pure imaginary, we actually store <b||ik||a>;
 #   this extra factor of -1 comes from k.k = -(ik).(ik)
 def Uksqr(**kwargs):
-    return mcscript.utils.CoefficientDict({"U[k.k]": -1.})
+    return mcscript.utils.CoefficientDict({"U[ik.ik]": -1.})
 
 def Vk1k2(**kwargs):
-    return mcscript.utils.CoefficientDict({"V[k,k]": math.sqrt(3)})
+    return mcscript.utils.CoefficientDict({"V[ik,ik]": math.sqrt(3)})
 
 
 ################################################################
@@ -255,3 +301,171 @@ def Hamiltonian(A, hw, a_cm=0., hw_cm=None, use_coulomb=True, hw_coul=None, hw_c
     else:
         coulomb_interaction = mcscript.utils.CoefficientDict()
     return (kinetic_energy + interaction + coulomb_interaction + lawson_term)
+
+################################################################
+# tbme target extraction
+################################################################
+
+def get_tbme_targets(task, builtin_scalar_targets=True):
+    """Extract list of TBME targets from task.
+
+    Arguments:
+        task (dict): as described in module docstring
+        builtin_scalar_targets (bool, optional): include default scalar targets
+            and observable sets
+
+    Returns:
+        (dict of OrderedDict of CoefficientDict): targets and definitions
+            grouped by quantum number
+    """
+    # accumulate h2mixer targets
+    targets = collections.defaultdict(collections.OrderedDict)
+
+    # special targets, special case for scalar
+    if builtin_scalar_targets:
+        # extract parameters for convenience
+        nuclide = task.get("nuclide")
+        if nuclide is None:
+            A = task["A"]
+        else:
+            A = sum(nuclide)
+        hw = task["hw"]
+        hw_cm = task.get("hw_cm")
+        if hw_cm is None:
+            hw_cm = hw
+        a_cm = task.get("a_cm", 0)
+        hw_coul = task.get("hw_coul")
+        if hw_coul is None:
+            hw_coul = hw
+        hw_coul_rescaled = task.get("hw_coul_rescaled")
+        if hw_coul_rescaled is None:
+            hw_coul_rescaled = hw
+
+        # target: radius squared (must be first, for built-in MFDn radii)
+        targets[(0,0,0)]["tbme-rrel2"] = rrel2(A=A, hw=hw)
+
+        # target: Hamiltonian
+        if (task.get("hamiltonian")):
+            targets[(0,0,0)]["tbme-H"] = task["hamiltonian"]
+        else:
+            targets[(0,0,0)]["tbme-H"] = Hamiltonian(
+                A=A, hw=hw, a_cm=a_cm, hw_cm=hw_cm,
+                use_coulomb=task["use_coulomb"], hw_coul=hw_coul,
+                hw_coul_rescaled=hw_coul_rescaled
+            )
+
+        # target: Ncm
+        targets[(0,0,0)]["tbme-Ncm"] = Ncm(A=A, hw=hw, hw_cm=hw_cm)
+
+        # optional observable sets
+        # Hamiltonian components
+        tb_observable_sets = task.get("tb_observable_sets", [])
+        if "H-components" in tb_observable_sets:
+            # target: Trel (diagnostic)
+            targets[(0,0,0)]["tbme-Tintr"] = Tintr(A=A, hw=hw)
+            # target: Tcm (diagnostic)
+            targets[(0,0,0)]["tbme-Tcm"] = Tcm(A=A, hw=hw)
+            # target: VNN (diagnostic)
+            targets[(0,0,0)]["tbme-VNN"] = VNN()
+            # target: VC (diagnostic)
+            if (task["use_coulomb"]):
+                targets[(0,0,0)]["tbme-VC"] = VC(hw=hw_coul_rescaled, hw_coul=hw_coul)
+        # squared angular momenta
+        if "am-sqr" in tb_observable_sets:
+            targets[(0,0,0)]["tbme-L2"] = L2()
+            targets[(0,0,0)]["tbme-Sp2"] = Sp2()
+            targets[(0,0,0)]["tbme-Sn2"] = Sn2()
+            targets[(0,0,0)]["tbme-S2"] = S2()
+            targets[(0,0,0)]["tbme-J2"] = J2()
+        if "isospin" in tb_observable_sets:
+            targets[(0,0,0)]["tbme-T2"] = T2(A=A)
+
+    # accumulate user observables
+    for (basename, qn, operator) in task.get("tb_observables", []):
+        targets[qn]["tbme-{}".format(basename)] = mcscript.utils.CoefficientDict(operator)
+
+    return dict(targets)
+
+def get_tbme_sources(task, targets):
+    """Get TBME sources needed for given targets.
+
+    Arguments:
+        task (dict): as described in module docstring
+        targets (dict of CoefficientDict): target channels
+
+    Returns:
+        (OrderedDict of dict): source id to source mapping
+    """
+    # determine required sources
+    required_tbme_sources = set()
+    required_tbme_sources.update(*[op.keys() for op in targets.values()])
+
+    # tbme sources: accumulate definitions
+    tbme_sources = collections.OrderedDict()
+
+    # tbme sources: VNN
+    if "VNN" in required_tbme_sources:
+        VNN_filename = task.get("interaction_file")
+        if VNN_filename is None:
+            VNN_filename = environ.interaction_filename(
+                task["interaction"],
+                task["truncation_int"],
+                task["hw_int"]
+            )
+
+        if task["basis_mode"] is modes.BasisMode.kDirect:
+            tbme_sources["VNN"] = dict(filename=VNN_filename)
+        else:
+            tbme_sources["VNN"] = dict(
+                filename=VNN_filename,
+                xform_filename=environ.radial_olap_int_filename(postfix),
+                xform_truncation=xform_truncation_int
+            )
+
+    # tbme sources: Coulomb
+    #
+    # Note: This is the "unscaled" Coulomb, still awaiting the scaling
+    # factor from dilation.
+    if "VC_unscaled" in required_tbme_sources:
+        VC_filename = task.get("coulomb_file")
+        if VC_filename is None:
+            VC_filename = environ.interaction_filename(
+                "VC",
+                task["truncation_coul"],
+                task["hw_coul"]
+            )
+        if task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated):
+            tbme_sources["VC_unscaled"] = dict(filename=VC_filename)
+        else:
+            tbme_sources["VC_unscaled"] = dict(
+                filename=VC_filename,
+                xform_filename=environ.radial_olap_coul_filename(postfix),
+                xform_truncation=xform_truncation_coul
+            )
+
+    # tbme sources: h2mixer built-ins
+    builtin_tbme_sources = k_h2mixer_builtin
+    for source in sorted(builtin_tbme_sources - set(tbme_sources.keys())):
+        tbme_sources[source] = dict()
+
+    # tbme sources: upgraded one-body and separable operators
+    for source in sorted(required_tbme_sources - set(tbme_sources.keys())):
+        # parse upgraded one-body operator
+        match = re.fullmatch(r"U\[(.+)\]", source)
+        if match:
+            tbme_sources[source] = {"operatorU": match.group(1)}
+            continue
+
+        # parse separable operator
+        match = re.fullmatch(r"V\[(.+),(.+)\]", source)
+        if match:
+            tbme_sources[source] = {"operatorV": (match.group(1), match.group(2))}
+            continue
+
+    # tbme sources: override with user-provided
+    user_tbme_sources = task.get("tbme_sources", [])
+    for (source_id, source) in user_tbme_sources:
+        if source_id in required_tbme_sources:
+            tbme_sources[source_id] = source
+
+    return tbme_sources
