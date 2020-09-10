@@ -35,6 +35,7 @@ Prerequisites: `mcscript`, `shell`
   a. Subsequently updating source
   ~~~~~~~~~~~~~~~~
   % git pull
+  % pip install --user --editable .
   ~~~~~~~~~~~~~~~~
 
 # 2. Environment Configuration
