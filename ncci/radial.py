@@ -38,6 +38,7 @@ University of Notre Dame
 - 09/13/20 (pjf):
   + Improve source/target handling in set_up_radial_analytic().
   + Use obmixer inside set_up_radial_natorb().
+  + Pass oscillator length to obmixer.
 """
 import math
 import os
@@ -242,6 +243,7 @@ def set_up_radial_analytic(task, postfix=""):
     # obmixer input
     ################################################################
     basis_command = "set-basis {basis_type:s} {orbital_filename:s}"
+    length_command = "set-length-parameter {length_parameter:.17e}"
     xform_command = "define-xform {id:s} {xform_filename:s}"
 
     # get obme sources
@@ -253,6 +255,9 @@ def set_up_radial_analytic(task, postfix=""):
     lines.append(basis_command.format(
         basis_type=basis_radial_code,
         orbital_filename=environ.orbitals_filename(postfix)
+    ))
+    lines.append(length_command.format(
+        length_parameter=utils.oscillator_length(task["hw"])
     ))
 
     # generate one-body RMEs

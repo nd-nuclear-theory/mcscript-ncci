@@ -40,6 +40,7 @@ University of Notre Dame
         + Add target and source generation functions.
     - 09/12/20 (pjf):
         + Fix tbme sources for xform inputs.
+        + Fix scaling of operators with radial dependence.
 """
 import collections
 import math
@@ -54,6 +55,8 @@ from .. import (
     )
 
 
+# legacy -- imported by operators/__init__.py, for older codes which
+# expect operators.*
 __all__ = [
     'identity', 'Ursqr', 'Vr1r2', 'Uksqr', 'Vk1k2',
     'L2', 'Sp2', 'Sn2', 'S2', 'J2', 'T2', 'Tz',
@@ -182,8 +185,8 @@ def rrel2(A, hw, **kwargs):
         CoefficientDict containing coefficients for rrel2 operator.
     """
     out = mcscript.utils.CoefficientDict()
-    out += ((A-1)*(utils.oscillator_length(hw)/A)**2) * Ursqr()
-    out += (-2*(utils.oscillator_length(hw)/A)**2) * Vr1r2()
+    out += ((A-1)/A**2) * Ursqr()
+    out += (-2/A**2) * Vr1r2()
     return out
 
 def Ncm(A, hw, hw_cm=None, **kwargs):
@@ -199,7 +202,7 @@ def Ncm(A, hw, hw_cm=None, **kwargs):
     """
     if hw_cm is None:
         hw_cm = hw
-    bsqr = hw/hw_cm
+    bsqr = utils.oscillator_length(hw_cm)**2
     out = mcscript.utils.CoefficientDict()
     out += (1/(2*A*bsqr)) * Ursqr()
     out += (1/(A*bsqr)) * Vr1r2()
@@ -221,7 +224,7 @@ def Ntotal(A, hw, hw_cm=None, **kwargs):
     """
     if hw_cm is None:
         hw_cm = hw
-    bsqr = hw/hw_cm
+    bsqr = utils.oscillator_length(hw_cm)**2
     out = mcscript.utils.CoefficientDict()
     out += (1/(2*bsqr)) * Ursqr()
     out += ((1/2)*bsqr) * Uksqr()
@@ -251,9 +254,10 @@ def Tintr(A, hw, **kwargs):
     Returns:
         CoefficientDict containing coefficients for Tintr operator.
     """
+    bsqr = utils.oscillator_length(hw)**2
     out = mcscript.utils.CoefficientDict()
-    out += ((A-1)/(2*A)*hw) * Uksqr()
-    out += (-1/A*hw) * Vk1k2()
+    out += ((A-1)/(2*A)*hw*bsqr) * Uksqr()
+    out += (-1/A*hw*bsqr) * Vk1k2()
     return out
 
 def Tcm(A, hw, **kwargs):
@@ -266,9 +270,10 @@ def Tcm(A, hw, **kwargs):
     Returns:
         CoefficientDict containing coefficients for Tcm operator.
     """
+    bsqr = utils.oscillator_length(hw)**2
     out = mcscript.utils.CoefficientDict()
-    out += (hw/(2*A)) * Uksqr()
-    out += (hw/A) * Vk1k2()
+    out += (hw*bsqr/(2*A)) * Uksqr()
+    out += (hw*bsqr/A) * Vk1k2()
     return out
 
 
