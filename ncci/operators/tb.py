@@ -38,6 +38,8 @@ University of Notre Dame
     - 09/09/20 (pjf):
         + Move from operators.py to operators/tb.py.
         + Add target and source generation functions.
+    - 09/12/20 (pjf):
+        + Fix tbme sources for xform inputs.
 """
 import collections
 import math
@@ -386,7 +388,7 @@ def get_tbme_targets(task, builtin_scalar_targets=True):
 
     return dict(targets)
 
-def get_tbme_sources(task, targets):
+def get_tbme_sources(task, targets, postfix):
     """Get TBME sources needed for given targets.
 
     Arguments:
@@ -416,6 +418,9 @@ def get_tbme_sources(task, targets):
         if task["basis_mode"] is modes.BasisMode.kDirect:
             tbme_sources["VNN"] = dict(filename=VNN_filename)
         else:
+            xform_truncation_int = task.get("xform_truncation_int")
+            if xform_truncation_int is None:
+                xform_truncation_int = task["truncation_int"]
             tbme_sources["VNN"] = dict(
                 filename=VNN_filename,
                 xform_filename=environ.radial_olap_int_filename(postfix),
@@ -437,6 +442,9 @@ def get_tbme_sources(task, targets):
         if task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated):
             tbme_sources["VC_unscaled"] = dict(filename=VC_filename)
         else:
+            xform_truncation_coul = task.get("xform_truncation_coul")
+            if xform_truncation_coul is None:
+                xform_truncation_coul = task["truncation_coul"]
             tbme_sources["VC_unscaled"] = dict(
                 filename=VC_filename,
                 xform_filename=environ.radial_olap_coul_filename(postfix),

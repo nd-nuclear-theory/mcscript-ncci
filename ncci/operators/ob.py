@@ -21,6 +21,7 @@ Patrick J. Fasano
 University of Notre Dame
 
 - 09/09/20 (pjf): Created, with some content from operators.py
+- 09/12/20 (pjf): Overhaul logic for generating one-body targets and sources.
 """
 import collections
 import math
@@ -31,6 +32,7 @@ import mcscript.utils
 from .. import (
     environ,
     utils,
+    modes,
 )
 from . import tb
 
@@ -68,11 +70,73 @@ k_am_operators = {
 ################################################################
 k_isospin_operators = {
     "tz": {"builtin": "isospin", "qn": (0,0,0)},
-    "t+": {"builtin": "isospin", "qn": (0,0,1)},
-    "t-": {"builtin": "isospin", "qn": (0,0,1)},
+    "t+": {"builtin": "isospin", "qn": (0,0,+1)},
+    "t-": {"builtin": "isospin", "qn": (0,0,-1)},
     "delta_p": {"linear-combination": mcscript.utils.CoefficientDict({"identity": 0.5, "tz": +1.0}), "qn": (0,0,0)},
     "delta_n": {"linear-combination": mcscript.utils.CoefficientDict({"identity": 0.5, "tz": -1.0}), "qn": (0,0,0)},
 }
+
+################################################################
+# ladder operators
+################################################################
+k_ladder_operators_native = {
+    "c+": {"builtin": "ladder", "qn": (1,1,0)},
+    "c-": {"builtin": "ladder", "qn": (1,1,0)},
+}
+
+def ladder_operators_generic(hw):
+    """Generate ladder operator source info for generic basis.
+
+    Arguments:
+        hw (float): hw of basis
+
+    Returns:
+        (dict): operator sources
+    """
+
+    qn = (1,1,0)
+    b = utils.oscillator_length(hw)
+    sources = {}
+    sources["c+"] = {
+        "linear-combination": mcscript.utils.CoefficientDict({
+            "r": 1/b, "ik": -b
+        }),
+        "qn": qn
+    }
+    sources["c"] = {
+        "linear-combination": mcscript.utils.CoefficientDict({
+            "r": 1/b, "ik": b
+        }),
+        "qn": qn
+    }
+
+    return sources
+
+################################################################
+# solid harmonic operators
+################################################################
+def solid_harmonic_source(coordinate, order, j0=None):
+    """Generate solid harmonic source info.
+
+    Arguments:
+        coordinate (str): "r" or "ik"
+        order (int): power of coordinate (i.e. r^n)
+        j0 (int, optional): rank of spherical harmonic (defaults to order)
+
+    Returns:
+        (id (str), source (dict)): id and source dictionary
+    """
+    if j0 is None:
+        j0 = order
+    if coordinate not in {"r", "ik"}:
+        raise mcscript.exception.ScriptError("unknown coordinate {}".format(coordinate))
+
+    qn = (j0,j0%2,0)  # (j0,g0,tz0)
+    identifier = "{:s}{:d}Y{:d}".format(coordinate, order, j0)
+    source_dict = {
+        "builtin": "solid-harmonic", "coordinate": "r", "order": order, "qn": qn
+    }
+    return (identifier, source_dict)
 
 ################################################################
 # predefined sets
@@ -103,9 +167,17 @@ def generate_ob_observable_sets(task):
                 ("E0p", qn, "E0p"),
                 ("E0n", qn, "E0p"),
             ]
-            obme_sources["E0p"] = {"tensor-product": ["delta_p", "r.r"], "coefficient": coefficient, "qn": qn}
-            obme_sources["E0n"] = {"tensor-product": ["delta_n", "r.r"], "coefficient": coefficient, "qn": qn}
             obme_sources["r.r"] = k_kinematic_operators["r.r"]
+            obme_sources["E0p"] = {
+                "tensor-product": ["delta_p", "r.r"],
+                "coefficient": coefficient,
+                "qn": qn
+            }
+            obme_sources["E0n"] = {
+                "tensor-product": ["delta_n", "r.r"],
+                "coefficient": coefficient,
+                "qn": qn
+            }
             continue
 
         # electric transitions (general)
@@ -113,23 +185,21 @@ def generate_ob_observable_sets(task):
         if match:
             order = int(match.group(1))
             qn = (order,order%2,0)
+            (j0, _, _) = qn
             coefficient = utils.oscillator_length(task["hw"])**order
             ob_observables += [
                 ("E{}p".format(order), qn, "E{}p".format(order)),
                 ("E{}n".format(order), qn, "E{}n".format(order)),
             ]
-            obme_sources["rY{:d}".format(order)] = {
-                "builtin": "solid-harmonic",
-                "coordinate": "r", "order": order,
-                "qn": qn
-            }
+            (solid_harmonic_id, solid_harmonic_def) = solid_harmonic_source("r", order, j0)
+            obme_sources[solid_harmonic_id] = solid_harmonic_def
             obme_sources["E{}p".format(order)] = {
-                "tensor-product": ["delta_p", "rY{:d}".format(order)],
+                "tensor-product": ["delta_p", solid_harmonic_id],
                 "coefficient": coefficient,
                 "qn": qn
             }
             obme_sources["E{}n".format(order)] = {
-                "tensor-product": ["delta_n", "rY{:d}".format(order)],
+                "tensor-product": ["delta_n", solid_harmonic_id],
                 "coefficient": coefficient,
                 "qn": qn
             }
@@ -144,13 +214,31 @@ def generate_ob_observable_sets(task):
                 ("Dln", qn, "Dln"),
                 ("Dsp", qn, "Dsp"),
                 ("Dsn", qn, "Dsn"),
+                ("M1", qn, "M1"),
             ]
             obme_sources["l"] = k_am_operators["l"]
             obme_sources["s"] = k_am_operators["s"]
-            obme_sources["Dlp"] = {"tensor-product": ["delta_p", "l"], "coefficient": coefficient, "qn": qn}
-            obme_sources["Dln"] = {"tensor-product": ["delta_n", "l"], "coefficient": coefficient, "qn": qn}
-            obme_sources["Dsp"] = {"tensor-product": ["delta_p", "s"], "coefficient": coefficient, "qn": qn}
-            obme_sources["Dsn"] = {"tensor-product": ["delta_n", "s"], "coefficient": coefficient, "qn": qn}
+            obme_sources["Dlp"] = {
+                "tensor-product": ["delta_p", "l"], "coefficient": coefficient, "qn": qn
+            }
+            obme_sources["Dln"] = {
+                "tensor-product": ["delta_n", "l"], "coefficient": coefficient, "qn": qn
+            }
+            obme_sources["Dsp"] = {
+                "tensor-product": ["delta_p", "s"], "coefficient": coefficient, "qn": qn
+            }
+            obme_sources["Dsn"] = {
+                "tensor-product": ["delta_n", "s"], "coefficient": coefficient, "qn": qn
+            }
+            obme_sources["M1"] = {
+                "linear-combination": {
+                    "Dlp": 1.0,
+                    # "Dln": 0.0,
+                    "Dsp": 5.5856946893,  # NIST CODATA 2018
+                    "Dsn": -3.82608545,   # NIST CODATA 2018
+                },
+                "qn": qn,
+            }
             continue
 
         # magnetic transitions (general)
@@ -160,46 +248,55 @@ def generate_ob_observable_sets(task):
             if order == 0:
                 raise mcscript.exception.ScriptError("you must construct additional magnetic monopoles")
             qn = (order,(order-1)%2,0)
-            coefficient = utils.oscillator_length(task["hw"])**(order-1) * math.sqrt((2*order+1)*order)
+            l_coefficient = math.sqrt((2*order+1)*order) * 2/(order+1)
+            s_coefficient = math.sqrt((2*order+1)*order)
             ob_observables += [
                 ("M{}lp".format(order), qn, "M{}lp".format(order)),
                 ("M{}ln".format(order), qn, "M{}ln".format(order)),
                 ("M{}sp".format(order), qn, "M{}sp".format(order)),
                 ("M{}sn".format(order), qn, "M{}sn".format(order)),
+                ("M{}".format(order), qn, "M{}".format(order)),
             ]
             obme_sources["l"] = k_am_operators["l"]
             obme_sources["s"] = k_am_operators["s"]
-            obme_sources["rY{:d}".format(order-1)] = {
-                "builtin": "solid-harmonic",
-                "coordinate": "r", "order": order-1,
-                "qn": (order-1,(order-1)%2,0)
+            (solid_harmonic_id, solid_harmonic_def) = solid_harmonic_source("r", order-1, j0-1)
+            obme_sources[solid_harmonic_id] = solid_harmonic_def
+            obme_sources["l"+solid_harmonic_id] = {
+                "tensor-product": ["l", solid_harmonic_id], "qn": qn
             }
-            obme_sources["lrY{:d}".format(order-1)] = {
-                "tensor-product": ["l", "rY{:d}".format(order-1)], "qn": qn
-            }
-            obme_sources["srY{:d}".format(order-1)] = {
-                "tensor-product": ["s", "rY{:d}".format(order-1)], "qn": qn
+            obme_sources["s"+solid_harmonic_id] = {
+                "tensor-product": ["s", solid_harmonic_id], "qn": qn
             }
             obme_sources["M{}lp".format(order)] = {
-                "tensor-product": ["delta_p", "lrY{:d}".format(order-1)],
-                "coefficient": coefficient * (2/(order+1)),
+                "tensor-product": ["delta_p", "l"+solid_harmonic_id],
+                "coefficient": l_coefficient,
                 "qn": qn
             }
             obme_sources["M{}ln".format(order)] = {
-                "tensor-product": ["delta_n", "lrY{:d}".format(order-1)],
-                "coefficient": coefficient * (2/(order+1)),
+                "tensor-product": ["delta_n", "l"+solid_harmonic_id],
+                "coefficient": l_coefficient,
                 "qn": qn
             }
             obme_sources["M{}sp".format(order)] = {
-                "tensor-product": ["delta_p", "srY{:d}".format(order-1)],
-                "coefficient": coefficient,
+                "tensor-product": ["delta_p", "s"+solid_harmonic_id],
+                "coefficient": s_coefficient,
                 "qn": qn
             }
             obme_sources["M{}sn".format(order)] = {
-                "tensor-product": ["delta_n", "srY{:d}".format(order-1)],
-                "coefficient": coefficient,
+                "tensor-product": ["delta_n", "s"+solid_harmonic_id],
+                "coefficient": s_coefficient,
                 "qn": qn
             }
+            obme_sources["M1"] = {
+                "linear-combination": {
+                    "M{}lp".format(order): 1.0,
+                    # "M{}ln".format(order): 0.0,
+                    "M{}sp".format(order): 5.5856946893,  # NIST CODATA 2018
+                    "M{}sn".format(order): -3.82608545,   # NIST CODATA 2018
+                },
+                "qn": qn,
+            }
+
             continue
 
         if name in {"F", "beta"}:
@@ -216,34 +313,87 @@ def generate_ob_observable_sets(task):
 
     return (ob_observables, obme_sources)
 
-def get_obme_targets(task, tbme_targets=None, tbme_targets_only=False):
-    """
-    """
-    if tbme_targets is None:
-        tbme_targets = {}
+def get_obme_targets_h2mixer(task, tbme_targets):
+    """Get OBME target list for h2mixer for a given set of TBME targets.
 
+    These are the sources required internally by h2mixer, for upgrading to
+    two-body via U or V.
+
+    Arguments:
+        task (dict): as described in module docstring
+        tbme_targets (list of target dicts): list of TBME target dictionaries
+
+    Returns:
+        (set of str): set of OBME targets for h2mixer
+    """
     # accumulate obme targets
-    obme_targets = collections.OrderedDict()
+    obme_targets = set()
 
     # extract dependencies from tbme targets
-    tbme_sources = tb.get_tbme_sources(task, tbme_targets)
+    #   postfix is irrelevant for this purpose
+    tbme_sources = tb.get_tbme_sources(task, tbme_targets, postfix="")
     for tbme_source in tbme_sources.values():
         if "operatorU" in tbme_source:
-            obme_targets[tbme_source["operatorU"]] = tbme_source["operatorU"]
+            obme_targets.add(tbme_source["operatorU"])
         if "operatorV" in tbme_source:
-            factor_a, factor_b = tbme_source["operatorV"]
-            obme_targets[factor_a] = factor_a
-            obme_targets[factor_b] = factor_b
+            obme_targets.update(tbme_source["operatorV"])
 
-    # remove tbme dependencies which can be satisfied within h2mixer
-    ##obme_targets -= k_h2mixer_builtin
+    return obme_targets
 
-    # add one-body observables
-    if not tbme_targets_only:
-        for (basename, qn, operator) in generate_ob_observable_sets(task)[0]:
-            obme_targets[basename] = operator
-        for (basename, qn, operator) in task.get("ob_observables", []):
-            obme_targets[basename] = operator
+def get_obme_targets_observables(task):
+    """Get OBME target set for observables.
+
+    These are the sources required for one-body observables, i.e. for input to
+    obscalc-ob.
+
+    Arguments:
+        task (dict): as described in module docstring
+
+    Returns:
+        (set of str): set of observable OBME targets
+    """
+    # accumulate obme targets
+    obme_targets = set()
+
+    for (basename, qn, operator) in generate_ob_observable_sets(task)[0]:
+        obme_targets.add(operator)
+    for (basename, qn, operator) in task.get("ob_observables", []):
+        obme_targets.add(operator)
+
+    return obme_targets
+
+def get_obme_targets_obmixer(task):
+    """Get OBME target set for output by obmixer.
+
+    These are the sources for observables plus the sources which cannot be
+    generated within h2mixer.
+
+    Arguments:
+        task (dict): as described in module docstring
+
+    Returns:
+        (set of str): set of OBME targets for obmixer
+    """
+    # accumulate obme targets
+    obme_targets = set()
+
+    # get h2mixer targets and connected sources
+    tbme_targets_by_qn = tb.get_tbme_targets(task, builtin_scalar_targets=True)
+    obme_targets_h2mixer = set()
+    for tbme_targets in tbme_targets_by_qn.values():
+        obme_targets_h2mixer.update(
+            get_obme_targets_h2mixer(task, tbme_targets)  # postfix doesn't matter
+        )
+    obme_sources_h2mixer = get_obme_sources(task, obme_targets_h2mixer)
+
+    # iterate over sources and accumulate those which cannot
+    # be generated by h2mixer as targets for obmixer
+    for (identifier, source) in obme_sources_h2mixer.items():
+        if ("builtin" in source) and (identifier not in k_h2mixer_builtin):
+            obme_targets.add(identifier)
+
+    # add observable targets
+    obme_targets.update(get_obme_targets_observables(task))
 
     return obme_targets
 
@@ -263,6 +413,11 @@ def get_obme_sources(task, targets):
 
     # gather pre-defined sources first
     obme_sources.update(**k_kinematic_operators, **k_am_operators, **k_isospin_operators)
+    if task.get("basis_mode") in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}:
+        obme_sources.update(**k_ladder_operators_native)
+    else:
+        obme_sources.update(**ladder_operators_generic(task["hw"]))
+
 
     # add sources from observable sets
     obme_sources.update(**generate_ob_observable_sets(task)[1])
@@ -289,23 +444,36 @@ def get_obme_sources(task, targets):
 
     return sorted_obme_sources
 
-def get_obme_sources_h2mixer(task, targets):
+def get_obme_sources_h2mixer(task, targets, postfix):
     """Get OBME sources for task (for use by h2mixer).
 
+    This modifies the list of OBME sources generated by get_obme_sources()
+    by determining which sources are written to file by obmixer, and reading
+    them from file instead of regenerating them.
+
+    Arguments:
+        task (dict): as described in module docstring
+        targets (set): set of targets to generate
+
+    Returns:
+        (OrderedDict of dict): id to source mapping, sorted in reverse
+            topological order
     """
-    # get tbme sources and flatten for all quantum numbers
-    tbme_targets_by_qn = tb.get_tbme_targets(task, builtin_scalar_targets=True)
-    tbme_targets = {k: d[k] for d in tbme_targets_by_qn.values() for k in d}
+    # input normalization
+    if not isinstance(targets, set):
+        targets = set(targets)
 
     # get obme sources
-    obme_targets = get_obme_targets(task, tbme_targets)
-    obme_sources = get_obme_sources(task, obme_targets.values())
+    obme_sources = get_obme_sources(task, targets)
 
-    # sources which were previously a target should now be file inputs
+    # sources which were previously a target for obmixer should now be file inputs
     #   this is achieved by erasing their dependency information; this
     #   turns them into leaf nodes
-    for (identifier, operator) in obme_targets.items():
-        obme_sources[identifier] = {"qn": obme_sources[operator]["qn"]}
+    for identifier in (get_obme_targets_obmixer(task) & targets):
+        obme_sources[identifier] = {
+            "filename": environ.obme_filename(postfix, identifier),
+            "qn": obme_sources[identifier]["qn"]
+        }
 
     # re-construct dependency graph
     obme_dependency_graph = {}

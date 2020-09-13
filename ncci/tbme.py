@@ -38,11 +38,15 @@ University of Notre Dame
     + Add flag for controlling whether to construct "built-in" scalar operators.
 - 08/24/20 (pjf): Add "h2_extension" option for debugging with text-mode.
 - 09/09/20 (pjf): Major rewrite to use operators.ob and operators.tb.
+- 09/12/20 (pjf):
+    + Use improved obme target/source logic.
+    + Increase precision of coefficients passed to h2mixer.
 """
 import collections
 import glob
 import os
 import re
+import warnings
 
 import mcscript.utils
 
@@ -54,7 +58,7 @@ from . import (
     radial
 )
 
-def generate_h2mixer_obme_source_lines(identifier, parameters, postfix=""):
+def generate_h2mixer_obme_source_lines(identifier, parameters):
     """
     """
     filename = parameters.get("filename")
@@ -62,7 +66,7 @@ def generate_h2mixer_obme_source_lines(identifier, parameters, postfix=""):
     lines = []
     if filename is not None:
         if identifier in operators.ob.k_h2mixer_builtin:
-            raise Warning(
+            warnings.warn(
                 "overriding builtin operator {id} with {filename}".format(
                     id=identifier, filename=filename
                 )
@@ -80,21 +84,19 @@ def generate_h2mixer_obme_source_lines(identifier, parameters, postfix=""):
     elif "linear-combination" in parameters:
         lines += ["define-ob-source linear-combination {id:s}".format(id=identifier)]
         for (source_id, coefficient) in parameters["linear-combination"].items():
-            lines.append("  add-ob-source {id:s} {coefficient:e}".format(
+            lines.append("  add-ob-source {id:s} {coefficient:.17e}".format(
                 id=source_id, coefficient=coefficient
             ))
     elif "tensor-product" in parameters:
         (factor_a, factor_b) = parameters["tensor-product"]
         coefficient = parameters.get("coefficient", 1.0)
-        lines += ["define-ob-source tensor-product {id:s} {factor_a:s} {factor_b:s} {j0:d} {coefficient:e}".format(
+        lines += ["define-ob-source tensor-product {id:s} {factor_a:s} {factor_b:s} {j0:d} {coefficient:.17e}".format(
             id=identifier, factor_a=factor_a, factor_b=factor_b, j0=j0, coefficient=coefficient
         )]
     else:
-        lines += ["define-ob-source input {id:s} {filename:s} {j0:d} {g0:d} {tz0:d}".format(
-            id=identifier,
-            filename=environ.obme_filename(postfix, identifier),
-            j0=j0, g0=g0, tz0=tz0
-        )]
+        raise mcscript.exception.ScriptError(
+            "unknown one-body operator {id}".format(id=identifier)
+            )
 
     return lines
 
@@ -122,7 +124,7 @@ def generate_h2mixer_tbme_source_lines(identifier, parameters):
                 )
 
         if identifier in operators.tb.k_h2mixer_builtin:
-            raise Warning(
+            warnings.warn(
                 "overriding builtin operator {id} with {tbme_filename}".format(
                     id=identifier,
                     tbme_filename=tbme_filename
@@ -148,7 +150,7 @@ def generate_h2mixer_tbme_source_lines(identifier, parameters):
     elif "operatorV" in parameters:
         source_id_a, source_id_b = parameters["operatorV"]
         coefficient = parameters.get("coefficient", 1.0)
-        line = ("define-tb-source operatorV {id:s} {source_id_a:s} {source_id_b:s} {coefficient:e}".format(
+        line = ("define-tb-source operatorV {id:s} {source_id_a:s} {source_id_b:s} {coefficient:.17e}".format(
             id=identifier, source_id_a=source_id_a, source_id_b=source_id_b, coefficient=coefficient
         ))
     elif identifier in operators.tb.k_h2mixer_builtin:
@@ -226,11 +228,11 @@ def generate_tbme(task, targets, target_qn=(0,0,0), postfix=""):
     required_tbme_sources.update(*[op.keys() for op in targets.values()])
 
     # get tbme sources
-    tbme_sources = operators.tb.get_tbme_sources(task, targets)
+    tbme_sources = operators.tb.get_tbme_sources(task, targets, postfix)
 
     # get obme sources
-    obme_targets = operators.ob.get_obme_targets(task, targets, tbme_targets_only=True)
-    obme_sources = operators.ob.get_obme_sources_h2mixer(task, obme_targets.keys())
+    obme_targets = operators.ob.get_obme_targets_h2mixer(task, tbme_targets=targets)
+    obme_sources = operators.ob.get_obme_sources_h2mixer(task, obme_targets, postfix)
 
     # accumulate h2mixer input lines
     lines = []
@@ -295,7 +297,7 @@ def generate_tbme(task, targets, target_qn=(0,0,0), postfix=""):
 
     # obme sources: generate h2mixer input (in reverse topological order)
     for obme_id,obme_source in obme_sources.items():
-        lines.extend(generate_h2mixer_obme_source_lines(obme_id, obme_source, postfix))
+        lines.extend(generate_h2mixer_obme_source_lines(obme_id, obme_source))
 
     lines.append("")
 
@@ -310,7 +312,7 @@ def generate_tbme(task, targets, target_qn=(0,0,0), postfix=""):
     for (basename, operator) in targets.items():
         lines.append("define-target work{:s}/{:s}.{:s}".format(postfix, basename, h2_extension))
         for (source, coefficient) in operator.items():
-            lines.append("  add-source {:s} {:e}".format(source, coefficient))
+            lines.append("  add-source {:s} {:.17e}".format(source, coefficient))
         lines.append("")
 
     # ensure terminal line
