@@ -82,11 +82,11 @@ task = {
     "obdme_multipolarity": 2,
     "obdme_reference_state_list": [(0, 0, 1)],
     "save_obdme": True,
-    "ob_observables": [('M', 1), ('E', 2)],
+    "ob_observable_sets": ['M1', 'E2'],
 
     # two-body observables
-    ## "observable_sets": ["H-components","am-sqr"],
-    "observable_sets": ["H-components", "am-sqr", "isospin"],
+    ## "tb_observable_sets": ["H-components","am-sqr"],
+    "tb_observable_sets": ["H-components", "am-sqr", "isospin"],
     "tb_observables": [],
 
     # version parameters

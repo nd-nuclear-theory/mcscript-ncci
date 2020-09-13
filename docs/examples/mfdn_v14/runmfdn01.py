@@ -84,8 +84,8 @@ task = {
     "save_obdme": True,
 
     # two-body observables
-    ## "observable_sets": ["H-components","am-sqr","isospin"],
-    "observable_sets": ["H-components"],
+    ## "tb_observable_sets": ["H-components","am-sqr","isospin"],
+    "tb_observable_sets": ["H-components"],
     "tb_observables": [],
 
     # version parameters
