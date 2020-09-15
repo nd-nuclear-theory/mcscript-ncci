@@ -41,6 +41,7 @@ University of Notre Dame
     - 09/12/20 (pjf):
         + Fix tbme sources for xform inputs.
         + Fix scaling of operators with radial dependence.
+    - 09/15/20 (pjf): Fix H-components when using custom Hamiltonian.
 """
 import collections
 import math
@@ -352,7 +353,7 @@ def get_tbme_targets(task, builtin_scalar_targets=True):
         targets[(0,0,0)]["tbme-rrel2"] = rrel2(A=A, hw=hw)
 
         # target: Hamiltonian
-        if (task.get("hamiltonian")):
+        if isinstance(task.get("hamiltonian"), collections.abc.MutableMapping):
             targets[(0,0,0)]["tbme-H"] = task["hamiltonian"]
         else:
             targets[(0,0,0)]["tbme-H"] = Hamiltonian(
@@ -373,9 +374,10 @@ def get_tbme_targets(task, builtin_scalar_targets=True):
             # target: Tcm (diagnostic)
             targets[(0,0,0)]["tbme-Tcm"] = Tcm(A=A, hw=hw)
             # target: VNN (diagnostic)
-            targets[(0,0,0)]["tbme-VNN"] = VNN()
+            if "VNN" in targets[(0,0,0)]["tbme-H"]:
+                targets[(0,0,0)]["tbme-VNN"] = VNN()
             # target: VC (diagnostic)
-            if (task["use_coulomb"]):
+            if "VC_unscaled" in targets[(0,0,0)]["tbme-H"]:
                 targets[(0,0,0)]["tbme-VC"] = VC(hw=hw_coul_rescaled, hw_coul=hw_coul)
         # squared angular momenta
         if "am-sqr" in tb_observable_sets:
