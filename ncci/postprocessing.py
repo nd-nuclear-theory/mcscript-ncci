@@ -20,6 +20,7 @@ University of Notre Dame
     + Remove generate_electroweak().
     + Remove electromagnetic-specific code in evaluate_ob_observables().
     + Fix input of MFDn-generated OBDMEs.
+    + Include observable sets as well as user-specified observables.
 """
 import collections
 import glob
@@ -457,8 +458,12 @@ def init_postprocessor_db(task):
     db.commit()
 
     # populate operator information
-    for (operator_name, operator_qn, _) in task.get("tb_observables", []):
-        db.execute("INSERT INTO tb_operators VALUES (?,?,?,?)", (operator_name, *operator_qn))
+    tb_observables_by_qn = operators.tb.get_tbme_targets(task)
+    for operator_qn in tb_observables_by_qn:
+        db.executemany(
+            "INSERT INTO tb_operators VALUES (?,?,?,?)",
+            [(operator_name, *operator_qn) for operator_name in tb_observables_by_qn[operator_qn]]
+        )
 
     ################################################################
     # populate transitions table from slurped res files
@@ -535,11 +540,9 @@ def init_postprocessor_db(task):
 
     # construct list of (bra,ket,tbo) tuples
     bra_ket_tbo_product = itertools.product(
-        bra_merged_data.levels, ket_merged_data.levels, task.get("tb_observables", [])
+        bra_merged_data.levels, ket_merged_data.levels, tb_observables_by_qn.keys()
         )
-    for (bra_qn, ket_qn, tb_operator) in bra_ket_tbo_product:
-        (operator_name, operator_qn, _) = tb_operator
-
+    for (bra_qn, ket_qn, operator_qn) in bra_ket_tbo_product:
         # check canonical order
         if canonicalize and not (bra_qn <= ket_qn):
             continue
@@ -557,18 +560,20 @@ def init_postprocessor_db(task):
             continue
         db.execute(
             "INSERT INTO tb_transitions VALUES (?,?,?, ?,?,?, ?, NULL)",
-            (*bra_run_descriptor_pair, bra_id_dict[bra_qn],
-            *ket_run_descriptor_pair, ket_id_dict[ket_qn],
-            operator_name)
+            [
+                (*bra_run_descriptor_pair, bra_id_dict[bra_qn],
+                *ket_run_descriptor_pair, ket_id_dict[ket_qn],
+                operator_name, *operator_qn)
+                for operator_name in tb_observables_by_qn[operator_qn]]
             )
     db.commit()
 
     # construct list of (bra,ket,ob_qn) tuples
-    ob_qn_set = {}
-    ob_observables = generate_ob_observable_sets(task)[0] + task.get("ob_observables", [])
+    ob_observables = operators.ob.generate_ob_observable_sets(task)[0]
+    ob_observables += task.get("ob_observables", [])
     bra_ket_ob_qn_product = itertools.product(
         bra_merged_data.levels, ket_merged_data.levels,
-        {operator_qn for (operator,operator_qn,_) in ob_observables}
+        {operator_qn for (_,operator_qn,_) in ob_observables}
     )
     for (bra_qn, ket_qn, operator_qn) in bra_ket_ob_qn_product:
         # check canonical order
@@ -650,7 +655,8 @@ def run_postprocessor_two_body(task, one_body=False):
     transitions_executable = environ.mfdn_postprocessor_filename(
         task.get("mfdn-transitions_executable", "xtransitions")
     )
-    ob_observables = generate_ob_observable_sets(task)[0] + task.get("ob_observables", [])
+    ob_observables = operators.ob.generate_ob_observable_sets(task)[0]
+    ob_observables += task.get("ob_observables", [])
 
     # create work directory if it doesn't exist yet
     mcscript.utils.mkdir(work_dir, exist_ok=True, parents=True)
@@ -763,7 +769,7 @@ def run_postprocessor_two_body(task, one_body=False):
                 ket_run, ket_descriptor, *ket_id_list)
             ).fetchone()
         else:
-            num_free_obdmes = None
+            num_free_obdmes = 0
 
         # do calculation
         max_ket_J = max([ket_J for (ket_J,_,_) in ket_qn_list])
@@ -784,7 +790,7 @@ def run_postprocessor_two_body(task, one_body=False):
             "TwoJ_ket": [int(2*ket_J) for (ket_J,ket_g,ket_n) in ket_qn_list],
             "n_ket": [int(ket_n) for (ket_J,ket_g,ket_n) in ket_qn_list],
 
-            "obdme": True if num_free_obdmes else False,
+            "obdme": True if num_free_obdmes > 0 else False,
             "max2K": max2K,
             "numTBtrans": len(operator_id_list),
             "TBMEoperators": ["tbme-{}".format(basename) for basename in operator_id_list],
@@ -927,7 +933,8 @@ def run_postprocessor_one_body(task):
     transitions_executable = environ.mfdn_postprocessor_filename(
         task.get("mfdn-transitions_executable", "xtransitions")
     )
-    ob_observables = generate_ob_observable_sets(task)[0] + task.get("ob_observables", [])
+    ob_observables = operators.ob.generate_ob_observable_sets(task)[0]
+    ob_observables += task.get("ob_observables", [])
 
     # create work directory if it doesn't exist yet
     mcscript.utils.mkdir(work_dir, exist_ok=True, parents=True)
