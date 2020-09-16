@@ -36,6 +36,7 @@ University of Notre Dame
     + Clean up task_handler_oscillator() to call task_handler_oscillator_mfdn().
 - 12/11/19 (pjf): Use new results storage helper functions from mcscript.
 - 06/03/20 (pjf): Make natural orbital base state selected by quantum numbers.
+- 09/16/20 (pjf): Revert to general tbme.generate_tbme().
 """
 import os
 import glob
@@ -153,7 +154,7 @@ def task_handler_oscillator_pre(task, postfix=""):
     radial.set_up_interaction_orbitals(task, postfix=postfix)
     radial.set_up_orbitals(task, postfix=postfix)
     radial.set_up_radial_analytic(task, postfix=postfix)
-    tbme.generate_diagonalization_tbme(task, postfix=postfix)
+    tbme.generate_tbme(task, postfix=postfix)
     if task.get("save_tbme"):
         tbme.save_tbme(task, postfix=postfix)
 
@@ -263,7 +264,7 @@ def task_handler_natorb_pre(task, source_postfix="", target_postfix=""):
     radial.set_up_radial_natorb(
         task=task, source_postfix=source_postfix, target_postfix=target_postfix
         )
-    tbme.generate_diagonalization_tbme(
+    tbme.generate_tbme(
         task=task, postfix=target_postfix
         )
 

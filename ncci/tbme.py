@@ -41,11 +41,11 @@ University of Notre Dame
 - 09/12/20 (pjf):
     + Use improved obme target/source logic.
     + Increase precision of coefficients passed to h2mixer.
+- 09/16/20 (pjf): Re-combine generate_diagonalization_tbme() and
+    generate_observable_tbme(); rename generate_tbme() to generate_tbme_targets().
 """
-import collections
 import glob
 import os
-import re
 import warnings
 
 import mcscript.utils
@@ -55,7 +55,6 @@ from . import (
     modes,
     environ,
     operators,
-    radial
 )
 
 def generate_h2mixer_obme_source_lines(identifier, parameters):
@@ -162,7 +161,7 @@ def generate_h2mixer_tbme_source_lines(identifier, parameters):
     return [line]
 
 
-def generate_diagonalization_tbme(task, postfix=""):
+def generate_tbme(task, postfix=""):
     """Generate TBMEs for diagonalization.
 
     Arguments:
@@ -180,36 +179,15 @@ def generate_diagonalization_tbme(task, postfix=""):
             )
 
     # get targets
-    targets = operators.tb.get_tbme_targets(task, builtin_scalar_targets=True).get((0,0,0), {})
-
-    # generate MFDn TBMEs
-    generate_tbme(
-        task,
-        targets=targets, target_qn=(0,0,0),
-        postfix=postfix
-    )
-
-
-def generate_observable_tbme(task, postfix="", generate_scalar=False):
-    """Generate observable TBMEs.
-
-    Arguments:
-        task (dict): as described in module docstring
-        postfix (string, optional): identifier added to input filenames
-        generate_scalar (bool, default False): whether to generate scalar TBMEs;
-            this is generally false, since they will be generated during setup
-            for diagonalization
-    """
-    targets_by_qn = operators.tb.get_tbme_targets(task, builtin_scalar_targets=False)
-
-    if not generate_scalar and ((0,0,0) in targets_by_qn.keys()):
-        del targets_by_qn[(0,0,0)]
+    targets_by_qn = operators.tb.get_tbme_targets(task)
 
     for target_qn,targets in targets_by_qn.items():
-        generate_tbme(task, targets=targets, target_qn=target_qn, postfix=postfix)
+        generate_tbme_targets(
+            task, targets=targets, target_qn=target_qn, postfix=postfix
+        )
 
 
-def generate_tbme(task, targets, target_qn=(0,0,0), postfix=""):
+def generate_tbme_targets(task, targets, target_qn, postfix=""):
     """Generate TBMEs with h2mixer.
 
     Arguments:

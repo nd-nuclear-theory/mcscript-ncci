@@ -49,6 +49,7 @@ University of Notre Dame
     + Switch to using quantum numbers to specify natorb base state.
     + Fix saving of OBDMEs.
 - 09/09/20 (pjf): Use operators module instead of tbme for operator names.
+- 09/16/20 (pjf): Check that diagonalization is enabled.
 """
 import os
 import glob
@@ -147,6 +148,12 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     Raises:
         mcscript.exception.ScriptError: if MFDn output not found
     """
+    # check that diagonalization is enabled
+    if not task.get("diagonalization"):
+        raise mcscript.exception.ScriptError(
+            'Task dictionary "diagonalization" flag not enabled.'
+        )
+
     # create work directory if it doesn't exist yet
     work_dir = "work{:s}".format(postfix)
     mcscript.utils.mkdir(work_dir, exist_ok=True, parents=True)

@@ -378,7 +378,7 @@ def get_obme_targets_obmixer(task):
     obme_targets = set()
 
     # get h2mixer targets and connected sources
-    tbme_targets_by_qn = tb.get_tbme_targets(task, builtin_scalar_targets=True)
+    tbme_targets_by_qn = tb.get_tbme_targets(task)
     obme_targets_h2mixer = set()
     for tbme_targets in tbme_targets_by_qn.values():
         obme_targets_h2mixer.update(

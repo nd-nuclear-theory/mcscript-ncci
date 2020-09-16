@@ -46,6 +46,7 @@ University of Notre Dame
     + Use new results storage helper functions from mcscript.
     + Deprecate save_mfdn_task_data().
 - 09/09/20 (pjf): Use operators module instead of tbme for operator names.
+- 09/16/20 (pjf): Check that diagonalization is enabled.
 """
 import os
 import glob
@@ -67,6 +68,12 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     Raises:
         mcscript.exception.ScriptError: if MFDn output not found
     """
+    # check that diagonalization is enabled
+    if not task.get("diagonalization"):
+        raise mcscript.exception.ScriptError(
+            'Task dictionary "diagonalization" flag not enabled.'
+        )
+
     # validate truncation modes
     allowed_sp_truncations = (modes.SingleParticleTruncationMode.kNmax,)
     allowed_mb_truncations = (modes.ManyBodyTruncationMode.kNmax, modes.ManyBodyTruncationMode.kFCI)

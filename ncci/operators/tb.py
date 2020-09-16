@@ -42,6 +42,8 @@ University of Notre Dame
         + Fix tbme sources for xform inputs.
         + Fix scaling of operators with radial dependence.
     - 09/15/20 (pjf): Fix H-components when using custom Hamiltonian.
+    - 09/16/20 (pjf): Use diagonalization key to decide whether to generate
+        Hamiltonian TBMEs.
 """
 import collections
 import math
@@ -314,44 +316,45 @@ def Hamiltonian(A, hw, a_cm=0., hw_cm=None, use_coulomb=True, hw_coul=None, hw_c
 # tbme target extraction
 ################################################################
 
-def get_tbme_targets(task, builtin_scalar_targets=True):
+def get_tbme_targets(task):
     """Extract list of TBME targets from task.
 
     Arguments:
         task (dict): as described in module docstring
-        builtin_scalar_targets (bool, optional): include default scalar targets
-            and observable sets
 
     Returns:
         (dict of OrderedDict of CoefficientDict): targets and definitions
             grouped by quantum number
     """
+    # extract parameters for convenience
+    nuclide = task.get("nuclide")
+    if nuclide is None:
+        A = task["A"]
+    else:
+        A = sum(nuclide)
+    hw = task.get("hw", None)
+    hw_cm = task.get("hw_cm")
+    if hw_cm is None:
+        hw_cm = hw
+    a_cm = task.get("a_cm", 0)
+    hw_coul = task.get("hw_coul")
+    if hw_coul is None:
+        hw_coul = hw
+    hw_coul_rescaled = task.get("hw_coul_rescaled")
+    if hw_coul_rescaled is None:
+        hw_coul_rescaled = hw
+    tb_observable_sets = task.get("tb_observable_sets", [])
+
     # accumulate h2mixer targets
     targets = collections.defaultdict(collections.OrderedDict)
 
-    # special targets, special case for scalar
-    if builtin_scalar_targets:
-        # extract parameters for convenience
-        nuclide = task.get("nuclide")
-        if nuclide is None:
-            A = task["A"]
-        else:
-            A = sum(nuclide)
-        hw = task["hw"]
-        hw_cm = task.get("hw_cm")
-        if hw_cm is None:
-            hw_cm = hw
-        a_cm = task.get("a_cm", 0)
-        hw_coul = task.get("hw_coul")
-        if hw_coul is None:
-            hw_coul = hw
-        hw_coul_rescaled = task.get("hw_coul_rescaled")
-        if hw_coul_rescaled is None:
-            hw_coul_rescaled = hw
-
+    # targets for diagonalization
+    if task.get("diagonalization"):
         # target: radius squared (must be first, for built-in MFDn radii)
         targets[(0,0,0)]["tbme-rrel2"] = rrel2(A=A, hw=hw)
 
+    # targets for diagonalization or part of Hamiltonian components set
+    if task.get("diagonalization") or ("H-components" in tb_observable_sets):
         # target: Hamiltonian
         if isinstance(task.get("hamiltonian"), collections.abc.MutableMapping):
             targets[(0,0,0)]["tbme-H"] = task["hamiltonian"]
@@ -361,33 +364,31 @@ def get_tbme_targets(task, builtin_scalar_targets=True):
                 use_coulomb=task["use_coulomb"], hw_coul=hw_coul,
                 hw_coul_rescaled=hw_coul_rescaled
             )
-
         # target: Ncm
         targets[(0,0,0)]["tbme-Ncm"] = Ncm(A=A, hw=hw, hw_cm=hw_cm)
 
-        # optional observable sets
-        # Hamiltonian components
-        tb_observable_sets = task.get("tb_observable_sets", [])
-        if "H-components" in tb_observable_sets:
-            # target: Trel (diagnostic)
-            targets[(0,0,0)]["tbme-Tintr"] = Tintr(A=A, hw=hw)
-            # target: Tcm (diagnostic)
-            targets[(0,0,0)]["tbme-Tcm"] = Tcm(A=A, hw=hw)
-            # target: VNN (diagnostic)
-            if "VNN" in targets[(0,0,0)]["tbme-H"]:
-                targets[(0,0,0)]["tbme-VNN"] = VNN()
-            # target: VC (diagnostic)
-            if "VC_unscaled" in targets[(0,0,0)]["tbme-H"]:
-                targets[(0,0,0)]["tbme-VC"] = VC(hw=hw_coul_rescaled, hw_coul=hw_coul)
-        # squared angular momenta
-        if "am-sqr" in tb_observable_sets:
-            targets[(0,0,0)]["tbme-L2"] = L2()
-            targets[(0,0,0)]["tbme-Sp2"] = Sp2()
-            targets[(0,0,0)]["tbme-Sn2"] = Sn2()
-            targets[(0,0,0)]["tbme-S2"] = S2()
-            targets[(0,0,0)]["tbme-J2"] = J2()
-        if "isospin" in tb_observable_sets:
-            targets[(0,0,0)]["tbme-T2"] = T2(A=A)
+    # optional observable sets
+    # Hamiltonian components
+    if "H-components" in tb_observable_sets:
+        # target: Trel (diagnostic)
+        targets[(0,0,0)]["tbme-Tintr"] = Tintr(A=A, hw=hw)
+        # target: Tcm (diagnostic)
+        targets[(0,0,0)]["tbme-Tcm"] = Tcm(A=A, hw=hw)
+        # target: VNN (diagnostic)
+        if "VNN" in targets[(0,0,0)]["tbme-H"]:
+            targets[(0,0,0)]["tbme-VNN"] = VNN()
+        # target: VC (diagnostic)
+        if "VC_unscaled" in targets[(0,0,0)]["tbme-H"]:
+            targets[(0,0,0)]["tbme-VC"] = VC(hw=hw_coul_rescaled, hw_coul=hw_coul)
+    # squared angular momenta
+    if "am-sqr" in tb_observable_sets:
+        targets[(0,0,0)]["tbme-L2"] = L2()
+        targets[(0,0,0)]["tbme-Sp2"] = Sp2()
+        targets[(0,0,0)]["tbme-Sn2"] = Sn2()
+        targets[(0,0,0)]["tbme-S2"] = S2()
+        targets[(0,0,0)]["tbme-J2"] = J2()
+    if "isospin" in tb_observable_sets:
+        targets[(0,0,0)]["tbme-T2"] = T2(A=A)
 
     # accumulate user observables
     for (basename, qn, operator) in task.get("tb_observables", []):
