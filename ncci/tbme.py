@@ -41,8 +41,10 @@ University of Notre Dame
 - 09/12/20 (pjf):
     + Use improved obme target/source logic.
     + Increase precision of coefficients passed to h2mixer.
-- 09/16/20 (pjf): Re-combine generate_diagonalization_tbme() and
-    generate_observable_tbme(); rename generate_tbme() to generate_tbme_targets().
+- 09/16/20 (pjf):
+    + Re-combine generate_diagonalization_tbme() and generate_observable_tbme().
+    + Rename generate_tbme() to generate_tbme_targets().
+    + Add "tbme-" to operator id.
 """
 import glob
 import os
@@ -288,7 +290,7 @@ def generate_tbme_targets(task, targets, target_qn, postfix=""):
     # targets: generate h2mixer input
     h2_extension = task.get("h2_extension", "bin")
     for (basename, operator) in targets.items():
-        lines.append("define-target work{:s}/{:s}.{:s}".format(postfix, basename, h2_extension))
+        lines.append("define-target work{:s}/tbme-{:s}.{:s}".format(postfix, basename, h2_extension))
         for (source, coefficient) in operator.items():
             lines.append("  add-source {:s} {:.17e}".format(source, coefficient))
         lines.append("")

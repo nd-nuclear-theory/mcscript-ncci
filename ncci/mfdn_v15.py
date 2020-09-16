@@ -49,8 +49,9 @@ University of Notre Dame
     + Switch to using quantum numbers to specify natorb base state.
     + Fix saving of OBDMEs.
 - 09/09/20 (pjf): Use operators module instead of tbme for operator names.
-- 09/16/20 (pjf): Check that diagonalization is enabled.
-"""
+- 09/16/20 (pjf):
+    + Check that diagonalization is enabled.
+    + Add "tbme-" to operator id to form basename."""
 import os
 import glob
 import collections
@@ -200,7 +201,10 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         inputlist["TBMEfile"] = "tbme-H"
 
         # tbo: collect tbo names
-        obs_basename_list = list(operators.tb.get_tbme_targets(task)[(0,0,0)].keys())
+        obs_basename_list = [
+            "tbme-{}".format(id_)
+            for id_ in operators.tb.get_tbme_targets(task)[(0,0,0)].keys()
+        ]
 
         # do not evaluate Hamiltonian as observable
         #  NOTE (pjf): due to possible bug/precision issues in MFDn, evaluate H
