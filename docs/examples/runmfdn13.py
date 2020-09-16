@@ -70,6 +70,7 @@ task = {
         },
 
     # diagonalization parameters
+    "diagonalization": True,
     "eigenvectors": 15,
     "initial_vector": -2,
     "max_iterations": 200,
@@ -91,8 +92,8 @@ task = {
         ],
     # two-body sources
     "tbme_sources": [
-        ("CSp3R-U", (0,0,0), {"filename": "tbme-CSp3R-U.bin"}),
-        ("CSp3R-V", (0,0,0), {"filename": "tbme-CSp3R-V.bin"}),
+        ("CSp3R-U", {"filename": "tbme-CSp3R-U.bin", "qn": (0,0,0)}),
+        ("CSp3R-V", {"filename": "tbme-CSp3R-V.bin", "qn": (0,0,0)}),
     ],
 
     # wavefunction storage
@@ -117,10 +118,9 @@ task["metadata"] = {
 ncci.radial.set_up_interaction_orbitals(task)
 ncci.radial.set_up_orbitals(task)
 ncci.radial.set_up_radial_analytic(task)
-ncci.tbme.generate_diagonalization_tbme(task)
+ncci.tbme.generate_tbme(task)
 ncci.mfdn_v15.run_mfdn(task)
 ncci.mfdn_v15.save_mfdn_task_data(task)
-ncci.postprocessing.generate_em(task)
 ncci.postprocessing.evaluate_ob_observables(task)
 # ncci.handlers.task_handler_oscillator(task)
 

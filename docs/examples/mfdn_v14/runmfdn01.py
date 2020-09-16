@@ -107,7 +107,7 @@ task["metadata"] = {
 ncci.radial.set_up_interaction_orbitals(task)
 ncci.radial.set_up_orbitals(task)
 ncci.radial.set_up_radial_analytic(task)
-ncci.tbme.generate_diagonalization_tbme(task)
+ncci.tbme.generate_tbme(task)
 ncci.mfdn_v14.run_mfdn(task)
 ncci.mfdn_v14.save_mfdn_output(task)
 

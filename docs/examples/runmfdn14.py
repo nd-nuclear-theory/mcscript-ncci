@@ -69,6 +69,7 @@ task = {
         },
 
     # diagonalization parameters
+    "diagonalization": True,
     "eigenvectors": 15,
     "initial_vector": -2,
     "max_iterations": 200,
@@ -83,7 +84,7 @@ task = {
     "ob_observable_sets": ['M1', 'E2', 'GT', 'F'],
 
     # two-body observables
-    "tb_observable_sets": ["H-components","am-sqr"],
+    "tb_observable_sets": ["H-components","am-sqr", "isospin"],
     # "tb_observable_sets": ["H-components"],
     "tb_observables": [
         ("CSp3R", (0,0,0), {"CSp3R-U": 0.5, "CSp3R-V": 1.0}),
@@ -91,20 +92,10 @@ task = {
             "U[Dlp]": 1.0, "U[Dsp]": 5.585694713, "U[Dsn]": -3.82608545
         }),
         ("UE2", (2,0,0), {"U[E2p]": 1.0}),
-        ("UGT", (1,0,1), {"U[GT]": 10}),
-        ("UF", (0,0,1), {"U[F]": 10}),
         ],
-    "tb_transitions": [
-        ((2,0,1), [(1,0,1), (2,0,1), (2,0,2)])
-    ],
+
     # sources
-    "obme_sources": [
-        # ("Dl1p", {"filename": ncci.environ.observable_me_filename("", "Dl", 1, "p"), "qn": (1,0,0)}),
-        # ("Dl1n", {"filename": ncci.environ.observable_me_filename("", "Dl", 1, "n"), "qn": (1,0,0)}),
-        # ("Ds1p", {"filename": ncci.environ.observable_me_filename("", "Ds", 1, "p"), "qn": (1,0,0)}),
-        # ("Ds1n", {"filename": ncci.environ.observable_me_filename("", "Ds", 1, "n"), "qn": (1,0,0)}),
-        # ("E2p",  {"filename": ncci.environ.observable_me_filename("", "E", 2, "p"), "qn": (2,0,0)}),
-    ],
+    "obme_sources": [],
     "tbme_sources": [
         ("CSp3R-U", {"filename": "tbme-CSp3R-U.bin", "qn": (0,0,0)}),
         ("CSp3R-V", {"filename": "tbme-CSp3R-V.bin", "qn": (0,0,0)}),
@@ -132,13 +123,10 @@ task["metadata"] = {
 ncci.radial.set_up_interaction_orbitals(task)
 ncci.radial.set_up_orbitals(task)
 ncci.radial.set_up_radial_analytic(task)
-ncci.tbme.generate_diagonalization_tbme(task)
+ncci.tbme.generate_tbme(task)
 ncci.mfdn_v15.run_mfdn(task)
-task["h2_format"] = 15200
-ncci.tbme.generate_observable_tbme(task)
-ncci.postprocessing.run_mfdn_transitions(task)
-# ncci.mfdn_v15.save_mfdn_task_data(task)
-# ncci.postprocessing.evaluate_ob_observables(task)
+ncci.postprocessing.evaluate_ob_observables(task)
+ncci.mfdn_v15.save_mfdn_task_data(task)
 # ncci.handlers.task_handler_oscillator(task)
 
 ##################################################################

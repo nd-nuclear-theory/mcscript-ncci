@@ -66,6 +66,7 @@ tasks = [{
         },
 
     # diagonalization parameters
+    "diagonalization": True,
     "eigenvectors": 2,
     "initial_vector": -2,
     "max_iterations": 200,
