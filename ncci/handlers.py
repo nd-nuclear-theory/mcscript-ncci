@@ -36,7 +36,9 @@ University of Notre Dame
     + Clean up task_handler_oscillator() to call task_handler_oscillator_mfdn().
 - 12/11/19 (pjf): Use new results storage helper functions from mcscript.
 - 06/03/20 (pjf): Make natural orbital base state selected by quantum numbers.
-- 09/16/20 (pjf): Revert to general tbme.generate_tbme().
+- 09/16/20 (pjf):
+    + Revert to general tbme.generate_tbme().
+    + Fix obdme archiving.
 """
 import os
 import glob
@@ -330,7 +332,7 @@ def archive_handler_mfdn():
             {"postfix" : "-res", "paths" : ["results/res"], "compress" : True},
             {"postfix" : "-lanczos", "paths" : ["results/lanczos"], "compress" : True},
             {"postfix" : "-task-data", "paths" : ["results/task-data"], "compress" : True},
-            {"postfix" : "-obdme", "paths" : ["results/task-data"], "compress" : True},
+            {"postfix" : "-obdme", "paths" : ["results/obdme"], "compress" : True},
             {"postfix" : "-wf", "paths" : ["results/wf"]},
         ]
     )
