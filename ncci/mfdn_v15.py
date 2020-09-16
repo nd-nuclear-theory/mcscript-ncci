@@ -51,7 +51,8 @@ University of Notre Dame
 - 09/09/20 (pjf): Use operators module instead of tbme for operator names.
 - 09/16/20 (pjf):
     + Check that diagonalization is enabled.
-    + Add "tbme-" to operator id to form basename."""
+    + Add "tbme-" to operator id to form basename.
+"""
 import os
 import glob
 import collections
