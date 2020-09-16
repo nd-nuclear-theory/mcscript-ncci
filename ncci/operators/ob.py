@@ -469,7 +469,7 @@ def get_obme_sources_h2mixer(task, targets, postfix):
     # sources which were previously a target for obmixer should now be file inputs
     #   this is achieved by erasing their dependency information; this
     #   turns them into leaf nodes
-    for identifier in (get_obme_targets_obmixer(task) & targets):
+    for identifier in (get_obme_targets_obmixer(task) & obme_sources.keys()):
         obme_sources[identifier] = {
             "filename": environ.obme_filename(postfix, identifier),
             "qn": obme_sources[identifier]["qn"]

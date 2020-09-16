@@ -559,12 +559,12 @@ def init_postprocessor_db(task):
             )
         if (bra_run_descriptor_pair is None) or (ket_run_descriptor_pair is None):
             continue
-        db.execute(
+        db.executemany(
             "INSERT INTO tb_transitions VALUES (?,?,?, ?,?,?, ?, NULL)",
             [
                 (*bra_run_descriptor_pair, bra_id_dict[bra_qn],
                 *ket_run_descriptor_pair, ket_id_dict[ket_qn],
-                operator_name, *operator_qn)
+                operator_name)
                 for operator_name in tb_observables_by_qn[operator_qn]]
             )
     db.commit()
@@ -776,7 +776,7 @@ def run_postprocessor_two_body(task, one_body=False):
         max_ket_J = max([ket_J for (ket_J,_,_) in ket_qn_list])
         min_ket_J = min([ket_J for (ket_J,_,_) in ket_qn_list])
         max_deltaJ = max(abs(max_ket_J-bra_J), max_ket_J+bra_J, abs(min_ket_J-bra_J), min_ket_J+bra_J)
-        max_J0 = max([J0 for _,(J0,_,_) in ob_observables])
+        max_J0 = max([J0 for _,(J0,_,_),_ in ob_observables])
         max2K = 2*int(min(max_deltaJ, max_J0))
         transitions_inputlist = {
             "basisfilename_bra": "{:s}/mfdn_MBgroups".format(bra_wf_prefix),
@@ -1079,13 +1079,19 @@ def run_postprocessor_one_body(task):
         task, out_file_list, task["metadata"]["descriptor"], "transitions-output", command="cp"
     )
 
+
+def save_postprocessor_obdme(task):
+    """Save postprocessor OBDMEs."""
+    # convenience variables
+    descriptor = task["metadata"]["descriptor"]
+    postfix = ""
+    work_dir = "work{:s}".format(postfix)
     # copy obdme out (if in multi-task run)
     if task.get("save_obdme"):
         archive_file_list = glob.glob(os.path.join(work_dir, "*.robdme*"))
         mcscript.task.save_results_multi(
             task, archive_file_list, descriptor, "obdme"
         )
-
 
 
 def run_postprocessor(task):
@@ -1097,3 +1103,4 @@ def run_postprocessor(task):
     run_postprocessor_two_body(task, one_body=True)
     run_postprocessor_one_body(task)
     evaluate_ob_observables(task)
+    save_postprocessor_obdme(task)
