@@ -21,6 +21,7 @@ University of Notre Dame
     + Remove electromagnetic-specific code in evaluate_ob_observables().
     + Fix input of MFDn-generated OBDMEs.
     + Include observable sets as well as user-specified observables.
+    + Stage out transitions-output and OBDMEs.
 """
 import collections
 import glob
@@ -869,12 +870,15 @@ def run_postprocessor_two_body(task, one_body=False):
         # return to task directory
         os.chdir("..")
 
-    # save out results
+    ################################
+    # output and finalization
+    ################################
     postfix=""
     filename_prefix = "{:s}-transitions-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
     res_filename = "{:s}.res".format(filename_prefix)
 
-    # get operators and loop
+    # construct res file
+    #   get operators and loop
     cursor = db.execute(
         """SELECT J0, g0, Tz0, operator_id
         FROM tb_operators
@@ -907,18 +911,16 @@ def run_postprocessor_two_body(task, one_body=False):
     mcscript.utils.write_input(res_filename, lines, verbose=False)
 
 
-    # copy results out (if in multi-task run)
-    if mcscript.task.results_dir is not None:
-        res_dir = os.path.join(mcscript.task.results_dir, "res")
-        mcscript.utils.mkdir(res_dir, exist_ok=True)
-        mcscript.call(
-            [
-            "cp",
-                "--verbose",
-                res_filename,
-                "--target-directory={}".format(res_dir)
-            ]
-        )
+    # copy results out
+    mcscript.task.save_results_single(
+        task, res_filename, res_filename, "res"
+    )
+
+    # copy transitions-output
+    out_file_list = glob.glob(os.path.join("transitions-output", "*"))
+    mcscript.task.save_results_multi(
+        task, out_file_list, descriptor, "transitions-output", command="cp"
+    )
 
 def run_postprocessor_one_body(task):
     """Evaluate one-body density matrix elements using the postprocessor.
@@ -1068,18 +1070,22 @@ def run_postprocessor_one_body(task):
         # return to task directory
         os.chdir("..")
 
-    # # copy results out (if in multi-task run)
-    # if mcscript.task.results_dir is not None:
-    #     res_dir = os.path.join(mcscript.task.results_dir, "res")
-    #     mcscript.utils.mkdir(res_dir, exist_ok=True)
-    #     mcscript.call(
-    #         [
-    #         "cp",
-    #             "--verbose",
-    #             res_filename,
-    #             "--target-directory={}".format(res_dir)
-    #         ]
-    #     )
+    ################################
+    # output and finalization
+    ################################
+    # copy transitions-output
+    out_file_list = glob.glob(os.path.join("transitions-output", "*"))
+    mcscript.task.save_results_multi(
+        task, out_file_list, task["metadata"]["descriptor"], "transitions-output", command="cp"
+    )
+
+    # copy obdme out (if in multi-task run)
+    if task.get("save_obdme"):
+        archive_file_list = glob.glob(os.path.join(work_dir, "*.robdme*"))
+        mcscript.task.save_results_multi(
+            task, archive_file_list, descriptor, "obdme"
+        )
+
 
 
 def run_postprocessor(task):
