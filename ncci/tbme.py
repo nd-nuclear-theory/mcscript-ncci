@@ -45,6 +45,7 @@ University of Notre Dame
     + Re-combine generate_diagonalization_tbme() and generate_observable_tbme().
     + Rename generate_tbme() to generate_tbme_targets().
     + Add "tbme-" to operator id.
+- 09/20/20 (pjf): Fix generate_tbme() if hw_int is not set.
 """
 import glob
 import os
@@ -172,7 +173,7 @@ def generate_tbme(task, postfix=""):
     """
     # extract parameters for convenience
     hw = task["hw"]
-    hw_int = task["hw_int"]
+    hw_int = task.get("hw_int", hw)
 
     # sanity check on hw
     if (task["basis_mode"] is modes.BasisMode.kDirect) and (hw != hw_int):
