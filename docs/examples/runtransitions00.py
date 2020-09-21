@@ -22,8 +22,6 @@ import ncci.postprocessing
 # initialize mcscript
 mcscript.init()
 
-#ncci.library.LIBRARY_BASE = "$HOME/Research/tmp/runs"
-
 ##################################################################
 # build task list
 ##################################################################

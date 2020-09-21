@@ -22,16 +22,11 @@ mcscript.init()
 ##################################################################
 
 ncci.environ.interaction_run_list = [
-    "run0164-JISP16-ob-9",
-    "run0164-JISP16-ob-13",
-    "run0164-JISP16-tb-10",
-    "run0164-JISP16-tb-20",
-    "run0306-N2LOopt500",  # up to tb-20
-    "runvc0083-Daejeon16-ob-13"
+    "example-data"
 ]
 
 ncci.environ.operator_dir_list = [
-    "symplectic-casimir"
+    "example-data"
 ]
 
 task = {
@@ -45,9 +40,9 @@ task = {
     "hw_cm": None,
 
     # input TBME parameters
-    "truncation_int": ("tb", 10),
+    "truncation_int": ("tb", 6),
     "hw_int": 20.,
-    "truncation_coul": ("tb", 10),
+    "truncation_coul": ("tb", 6),
     "hw_coul": 20.,
 
     # basis parameters
@@ -88,12 +83,15 @@ task = {
     ## "tb_observable_sets": ["H-components","am-sqr"],
     "tb_observable_sets": ["H-components", "am-sqr"],
     "tb_observables": [
-        ("CSp3R", (0,0,0), {"CSp3R-U": 0.5, "CSp3R-V": 1.0})
-        ],
+        ("CSU3",  (0,0,0), {"CSU3-U": 1/(4-1), "CSU3-V": 1.0}),
+        ("CSp3R", (0,0,0), {"CSp3R-U": 1/(4-1), "CSp3R-V": 1.0}),
+    ],
     # two-body sources
     "tbme_sources": [
-        ("CSp3R-U", {"filename": "tbme-CSp3R-U.bin", "qn": (0,0,0)}),
-        ("CSp3R-V", {"filename": "tbme-CSp3R-V.bin", "qn": (0,0,0)}),
+        ("CSU3-U", {"filename": "CSU3-U-tb-6.bin", "qn": (0,0,0)}),
+        ("CSU3-V", {"filename": "CSU3-V-tb-6.bin", "qn": (0,0,0)}),
+        ("CSp3R-U", {"filename": "CSp3R-U-tb-6.bin", "qn": (0,0,0)}),
+        ("CSp3R-V", {"filename": "CSp3R-V-tb-6.bin", "qn": (0,0,0)}),
     ],
 
     # wavefunction storage
@@ -117,7 +115,8 @@ task["metadata"] = {
 
 ncci.radial.set_up_interaction_orbitals(task)
 ncci.radial.set_up_orbitals(task)
-ncci.radial.set_up_radial_analytic(task)
+ncci.radial.set_up_xforms_analytic(task)
+ncci.radial.set_up_obme_analytic(task)
 ncci.tbme.generate_tbme(task)
 ncci.mfdn_v15.run_mfdn(task)
 ncci.mfdn_v15.save_mfdn_task_data(task)

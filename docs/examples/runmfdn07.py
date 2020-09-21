@@ -27,6 +27,7 @@ mcscript.init()
 ##################################################################
 
 ncci.environ.interaction_run_list = [
+    "example-data",
     "run0164-JISP16-ob-9",
     "run0164-JISP16-ob-13",
     "run0164-JISP16-tb-10",
@@ -46,9 +47,9 @@ task = {
     "hw_cm": None,
 
     # input TBME parameters
-    "truncation_int": ("tb", 10),
+    "truncation_int": ("tb", 6),
     "hw_int": 20.,
-    "truncation_coul": ("tb", 10),
+    "truncation_coul": ("tb", 6),
     "hw_coul": 20.,
 
     # basis parameters
@@ -108,7 +109,8 @@ task["metadata"] = {
 
 ncci.radial.set_up_interaction_orbitals(task)
 ncci.radial.set_up_orbitals(task)
-ncci.radial.set_up_radial_analytic(task)
+ncci.radial.set_up_xforms_analytic(task)
+ncci.radial.set_up_obme_analytic(task)
 ncci.tbme.generate_tbme(task)
 ncci.mfdn_v15.run_mfdn(task)
 ncci.mfdn_v15.save_mfdn_task_data(task)
