@@ -40,6 +40,7 @@ University of Notre Dame
     + Revert to general tbme.generate_tbme().
     + Fix obdme archiving.
 - 09/19/20 (pjf): Separate out calls for OBME and xform generation.
+- 09/20/20 (pjf): Add task handler for transitions runs.
 """
 import os
 import glob
@@ -49,6 +50,7 @@ from . import (
     descriptors,
     library,
     modes,
+    postprocessing,
     radial,
     tbme,
     utils,
@@ -319,6 +321,24 @@ def task_handler_natorb(task, cleanup=True):
     task_handler_post_run(
         task=task, postfix=utils.natural_orbital_indicator(1), cleanup=cleanup
         )
+
+
+################################################################
+# postprocessing run
+################################################################
+
+def task_handler_postprocessor(task, cleanup=True):
+    """Task handler for basic postprocessor run.
+
+    TODO(pjf): Add cleanup handlers for postprocessor.
+
+    Arguments:
+        task (dict): as described in module docstring
+    """
+    radial.set_up_orbitals(task)
+    radial.set_up_obme_analytic(task)
+    tbme.generate_tbme(task)
+    postprocessing.run_postprocessor(task)
 
 
 ################################################################
