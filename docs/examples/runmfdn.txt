@@ -1,91 +1,13 @@
-
-runmfdn01: harmonic oscillator direct run, i.e., with interaction
-tbmes given directly at hw
-
-    4He Nmax02 hw20 (direct)
-
-    Interaction: run0164-JISP16-tb-10
-
-    Usage: qsubm --here mfdn01
-
-    We use tb-10 as the smallest available set of files.
-
-runmfdn02: same harmonic oscillator run, but with trivial identity
-dilation
-
-    4He Nmax02 hw20 (direct)
-
-    Interaction: run0164-JISP16-tb-10
-
-    Usage: qsubm --here mfdn02
-
-    We use tb-10 as the smallest available set of files, though more
-    commonly files in ob truncation would be used for such a
-    dilation.
-
-runmfdn03: same harmonic oscillator run, but with dilation from
-hw_int=40 (at ob-13 truncation)
-
-    4He Nmax02 hw20  (from hwint=40 at ob-13)
-
-    Interaction: run0164-JISP16-ob-13
-
-    Usage: qsubm --here mfdn03
-
-runmfdn04: harmonic oscillator direct run, at higher Nmax
-
-    4He Nmax12 hw20
-
-    Interaction: run0164-JISP16-tb-20
-
-    Usage (for submission on edison):
-
-        qsubm mfdn04 debug 10 --width=120 --serialthreads=24 --nodesize=24 --opt=--mail-type=ALL
-
-runmfdn05: Nmax and hw scan demo
-
-    4He Nmax-2..20 hw=15..25:5
-
-    Interaction: JISP16/N2LOopt500
-
-    Usage (for submission on edison):
-
-        qsubm mfdn05 debug 10 --width=1 --depth=6 --pool=Nmax02-Mj0.0 --serialthreads=24 --nodesize=24
-        qsubm mfdn05 debug 10 --width=1 --depth=6 --pool=Nmax04-Mj0.0 --serialthreads=24 --nodesize=24
-        qsubm mfdn05 debug 10 --width=1 --depth=6 --pool=Nmax06-Mj0.0 --serialthreads=24 --nodesize=24
-        qsubm mfdn05 debug 10 --width=1 --depth=6 --pool=Nmax08-Mj0.0 --serialthreads=24 --nodesize=24
-        qsubm mfdn05 debug 30 --width=1 --depth=6 --pool=Nmax10-Mj0.0 --serialthreads=24 --nodesize=24
-        qsubm mfdn05 debug 30 --width=6 --depth=6 --pool=Nmax12-Mj0.0 --serialthreads=24 --nodesize=24
-        qsubm mfdn05 debug 30 --width=6 --depth=6 --pool=Nmax14-Mj0.0 --serialthreads=24 --nodesize=24
-        qsubm mfdn05 debug 30 --width=15 --depth=6 --pool=Nmax16-Mj0.0 --serialthreads=24 --nodesize=24
-        qsubm mfdn05 debug 30 --width=66 --depth=6 --pool=Nmax18-Mj0.0 --serialthreads=24 --nodesize=24
-        qsubm mfdn05 debug 30 --width=190 --depth=6 --pool=Nmax20-Mj0.0 --serialthreads=24 --nodesize=24
-
-    Then, to generate archive,
-
-        qsubm mfdn05 --archive
-
-runmfdn06: harmonic oscillator direct run + natural orbitals, with interaction
-tbmes given directly at hw
-
-    4He Nmax02 hw20 (direct)
-    4He Nmax02 hw20 (natorb)
-
-    Interaction: run0164-JISP16-tb-10
-
-    Usage: qsubm --here mfdn06
-
-    We use tb-10 as the smallest available set of files.
-
 runmfdn07: harmonic oscillator direct run with MFDn v15
 
     4He Nmax02 hw20 (direct)
 
-    Interaction: run0164-JISP16-tb-10
+    Interaction: example-data
 
     Usage: qsubm --here mfdn07
 
-    We use tb-10 as the smallest available set of files.
+    We use tb-6 from example-data. Make sure to set NCCI_DATA_DIR_H2 and
+    NCCI_LIBRARY_PATH to include `mcscript-ncci/docs/examples`.
 
 runmfdn08: harmonic oscillator direct run with MFDn v15 b01
 
@@ -113,9 +35,9 @@ runmfdn10: counting-only run with MFDn v15
 
     Usage: qsubm --here mfdn10
 
-runmfdn11: harmonic oscillator direct run with MFDn v15b01 and duct-tape postprocessor
+runmfdn11: manual orbital direct run with MFDn v15
 
-    4He Nmax02 hw20 (direct)
+    4He manual orbital file hw20 (direct)
 
     Interaction: run0164-JISP16-tb-10
 
@@ -123,23 +45,35 @@ runmfdn11: harmonic oscillator direct run with MFDn v15b01 and duct-tape postpro
 
     We use tb-10 as the smallest available set of files.
 
-runmfdn12: manual orbital direct run with MFDn v15
-
-    4He manual orbital file hw20 (direct)
-
-    Interaction: run0164-JISP16-tb-10
-
-    Usage: qsubm --here mfdn12
-
-    We use tb-10 as the smallest available set of files.
-
-runmfdn13: harmonic oscillator direct run with MFDn v15, plus custom input TBO
+runmfdn12: harmonic oscillator direct run with MFDn v15, plus custom input TBO
 
     4He Nmax02 hw20 (direct)
 
-    Interaction: run0164-JISP16-tb-10
+    Interaction: example-data
+
+    Usage: qsubm --here mfdn12
+
+    Uses example two-body operator TBMEs from example-data. Make sure to set
+    NCCI_DATA_DIR_H2 and NCCI_LIBRARY_PATH to include
+    `mcscript-ncci/docs/examples`.
+
+runmfdn13: harmonic oscillator direct run with MFDn v15, for use with postprocessor
+
+    6Li Nmax02,Nmax04 hw15,hw20 (direct)
+
+    Interaction: example-data
 
     Usage: qsubm --here mfdn13
 
-    Requires files tbme-CSp3R-U.bin and tbme-CSp3R-V.bin to exist in ${NCCI_DATA_DIR_H2}/symplectic-casimir/
+    Sets up for runtransitions00.
 
+runtransitions00: mfdn-transitions postprocessor run
+
+    6Li Nmax02,Nmax04, hw15,hw20
+
+    Interaction/operator: example-data
+
+    Usage: qsubm --here transitions00
+
+    Make sure to set NCCI_DATA_DIR_H2 and NCCI_LIBRARY_PATH to include
+    `mcscript-ncci/docs/examples`.
