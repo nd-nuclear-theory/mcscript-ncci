@@ -39,6 +39,7 @@ University of Notre Dame
 - 09/16/20 (pjf):
     + Revert to general tbme.generate_tbme().
     + Fix obdme archiving.
+- 09/19/20 (pjf): Separate out calls for OBME and xform generation.
 """
 import os
 import glob
@@ -155,7 +156,8 @@ def task_handler_oscillator_pre(task, postfix=""):
 
     radial.set_up_interaction_orbitals(task, postfix=postfix)
     radial.set_up_orbitals(task, postfix=postfix)
-    radial.set_up_radial_analytic(task, postfix=postfix)
+    radial.set_up_xforms_analytic(task, postfix=postfix)
+    radial.set_up_obme_analytic(task, postfix=postfix)
     tbme.generate_tbme(task, postfix=postfix)
     if task.get("save_tbme"):
         tbme.save_tbme(task, postfix=postfix)

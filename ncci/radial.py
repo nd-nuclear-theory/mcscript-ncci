@@ -39,6 +39,7 @@ University of Notre Dame
   + Improve source/target handling in set_up_radial_analytic().
   + Use obmixer inside set_up_radial_natorb().
   + Pass oscillator length to obmixer.
+- 09/19/20 (pjf): Break out xform generation into set_up_xforms_analytic().
 """
 import math
 import os
@@ -221,9 +222,9 @@ def set_up_natural_orbitals(task, source_postfix, target_postfix):
     )
 
 
-def set_up_radial_analytic(task, postfix=""):
-    """Generate radial integrals and overlaps by integration for MFDn run
-    in analytic basis.
+def set_up_obme_analytic(task, postfix=""):
+    """Generate one-body matrix elements by analytic formulae or integration in
+    analytic basis.
 
     Operation mode may in general be direct oscillator, dilated
     oscillator, or generic (TODO).
@@ -311,6 +312,22 @@ def set_up_radial_analytic(task, postfix=""):
         input_lines=lines
     )
 
+
+def set_up_xforms_analytic(task, postfix=""):
+    """Generate analytic transformation matrix elements (e.g. dilation or Laguerre
+    basis transformation).
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+    # validate basis mode
+    if (task["basis_mode"] not in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):  # no modes.BasisMode.kGeneric yet
+        raise ValueError("invalid basis mode {basis_mode}".format(**task))
+
+    # basis radial code -- expected by radial_utils codes
+    basis_radial_code = "oscillator"  # TODO GENERALIZE: if not oscillator basis
+
     ################################################################
     # radial-gen input
     ################################################################
@@ -341,7 +358,7 @@ def set_up_radial_analytic(task, postfix=""):
     )
 
     # interaction xform
-    b_ratio = math.sqrt(task["hw_int"]/task["hw"])
+    b_ratio = math.sqrt(task.get("hw_int", task["hw"])/task["hw"])
     lines.append(xform_target_command.format(
         scale_factor=b_ratio, bra_basis_type="oscillator",
         bra_orbital_file=environ.orbitals_int_filename(postfix),

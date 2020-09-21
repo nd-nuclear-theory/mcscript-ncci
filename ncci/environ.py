@@ -21,6 +21,7 @@ University of Notre Dame
 - 04/04/19 (pjf): Add operator_dir_list for operator TBME input file search support.
 - 05/29/19 (mac): Add mfdn_postprocessor_filename.
 - 08/23/19 (pjf): Add obme_filename.
+- 09/20/19 (pjf): Remove observable_me_filename().
 """
 
 import os
@@ -127,8 +128,6 @@ _radial_pn_olap_filename_template = "radial-pn-olap{:s}.dat"
 _radial_olap_int_filename_template = "radial-olap-int{:s}.dat"
 # filename template for overlaps from Coulomb tbme basis
 _radial_olap_coul_filename_template = "radial-olap-coul{:s}.dat"
-# filename template for observable matrix elements
-_observable_me_filename_template = "observable-me-{}{}{}{:s}.dat"  # "{}{}{}" will be replaced by {"E2p","M1n",etc.}
 # filename template for h2mixer input
 _h2mixer_filename_template = "h2mixer{:s}.in"
 # filename template for obscalc-ob input
@@ -230,18 +229,6 @@ def radial_olap_coul_filename(postfix):
     Returns: (str) filename
     """
     return _radial_olap_coul_filename_template.format(postfix)
-
-def observable_me_filename(postfix, operator_type, power, species):
-    """Construct filename for observable matrix elements.
-
-    Arguments:
-        postfix (str): string to append to end of filename
-        operator_type (str): operator code
-        power (int): radial operator power
-        species (str): species operator applies to
-    Returns: (str) filename
-    """
-    return _observable_me_filename_template.format(operator_type, power, species, postfix)
 
 def h2mixer_filename(postfix):
     """Construct filename for h2mixer input.
