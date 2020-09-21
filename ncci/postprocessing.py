@@ -22,6 +22,7 @@ University of Notre Dame
     + Fix input of MFDn-generated OBDMEs.
     + Include observable sets as well as user-specified observables.
     + Stage out transitions-output and OBDMEs.
+- 09/20/20 (pjf): Change/normalize res filenames.
 """
 import collections
 import glob
@@ -235,7 +236,7 @@ def evaluate_ob_observables(task, postfix=""):
     # copy results out (if in multi-task run)
     print("Saving basic output files...")
     descriptor = task["metadata"]["descriptor"]
-    filename_prefix = "{:s}-obscalc-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+    filename_prefix = "{:s}-transitions-ob-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
     res_filename = "{:s}.res".format(filename_prefix)
     mcscript.task.save_results_single(
         task, environ.obscalc_ob_res_filename(postfix), res_filename, "res"
@@ -844,7 +845,7 @@ def run_postprocessor_two_body(task, one_body=False):
             db.commit()
 
         # save output (for debugging)
-        filename_template = "{:s}-transitions-{:s}{:s}-{:s}.{:s}"
+        filename_template = "{:s}-transitions-tb-{:s}{:s}-{:s}.{:s}"
         transitions_output_dir = os.path.join("..", "transitions-output")
         group_hash = hashlib.sha1(
             repr(
