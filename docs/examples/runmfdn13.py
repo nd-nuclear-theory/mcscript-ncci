@@ -1,4 +1,4 @@
-""" runmfdn14.py
+""" runmfdn13.py
 
     Example diagonalization run as setup for two-body transitions. Add
     `mcscript-ncci/docs/examples` to NCCI_DATA_DIR_H2 to ensure that this
@@ -128,9 +128,8 @@ tasks = [
 
         # version parameters
         "h2_format": 15099,
-        "mfdn_executable": "v15-beta02/xmfdn-h2-lan",
+        "mfdn_executable": "18c9160/xmfdn-h2-lan",
         "mfdn_driver": ncci.mfdn_v15,
-        "mfdn-transitions_executable": "aae547b/xtransitions"
     })
     for (interaction,coulomb,truncation_int) in interaction_coulomb_truncation_list
     for Nmax in Nmax_list

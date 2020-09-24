@@ -1,6 +1,6 @@
 """ runtransitions00.py
 
-    Example run with two-body transitions. Make sure to run runmfdn14 first,
+    Example run with two-body transitions. Make sure to run runmfdn13 first,
     and that its work directory is accessible in NCCI_LIBRARY_PATH. Also add
     `mcscript-ncci/docs/examples` to NCCI_DATA_DIR_H2 to ensure that this
     script can find the relevant h2 files.
@@ -48,7 +48,7 @@ tasks = [{
     # nuclide parameters
     "nuclide": (3, 3),
 
-    "wf_source_run_list": ["mfdn14"],
+    "wf_source_run_list": ["mfdn13"],
     "wf_source_bra_selector": {
         "nuclide": (3, 3),
         "interaction": interaction,
