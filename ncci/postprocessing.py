@@ -23,6 +23,7 @@ University of Notre Dame
     + Include observable sets as well as user-specified observables.
     + Stage out transitions-output and OBDMEs.
 - 09/20/20 (pjf): Change/normalize res filenames.
+- 09/24/20 (pjf): Fix transitions-tb res filename.
 """
 import collections
 import glob
@@ -845,7 +846,7 @@ def run_postprocessor_two_body(task, one_body=False):
             db.commit()
 
         # save output (for debugging)
-        filename_template = "{:s}-transitions-tb-{:s}{:s}-{:s}.{:s}"
+        filename_template = "{:s}-transitions-{:s}{:s}-{:s}.{:s}"
         transitions_output_dir = os.path.join("..", "transitions-output")
         group_hash = hashlib.sha1(
             repr(
@@ -875,7 +876,7 @@ def run_postprocessor_two_body(task, one_body=False):
     # output and finalization
     ################################
     postfix=""
-    filename_prefix = "{:s}-transitions-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+    filename_prefix = "{:s}-transitions-tb-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
     res_filename = "{:s}.res".format(filename_prefix)
 
     # construct res file
