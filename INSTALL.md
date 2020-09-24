@@ -43,7 +43,7 @@ Prerequisites: `mcscript`, `shell`
   The environment variable `NCCI_DATA_DIR_H2` is used to tell `mcscript-ncci`
   where to find interaction TBME files.  The scripting will search for TBME
   files in the directory given by `NCCI_DATA_DIR_H2`.  This may also be given as
-  a colon-delimited list of directories to search.  More precisely, TBME files
+  a colon-separated list of directories to search.  More precisely, TBME files
   are expected to live in subdirectories, following the naming convention:
   ```<interaction_group>/<interaction_name>-<ob|tb>-<N1bmax|N2bmax>-<hw>.bin```
 
@@ -77,4 +77,4 @@ Prerequisites: `mcscript`, `shell`
   the environment variable `NCCI_LIBRARY_PATH`, to tell `mcscript-ncci` where to
   find the results of prior runs (results files, wave function files, and other
   files containing metadata about the run).  This may also be given as a
-  colon-delimited list of directories to search.
+  colon-separated list of directories to search.
