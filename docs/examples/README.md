@@ -6,8 +6,8 @@ runmfdn07: harmonic oscillator direct run with MFDn v15
 
     Usage: qsubm --here mfdn07
 
-    We use tb-6 from example-data. Make sure to set NCCI_DATA_DIR_H2 and
-    NCCI_LIBRARY_PATH to include `mcscript-ncci/docs/examples`.
+    We use tb-6 from example-data. Make sure to set NCCI_DATA_DIR_H2 to include
+    `mcscript-ncci/docs/examples`.
 
 runmfdn08: harmonic oscillator direct run with MFDn v15 b01
 
@@ -53,9 +53,8 @@ runmfdn12: harmonic oscillator direct run with MFDn v15, plus custom input TBO
 
     Usage: qsubm --here mfdn12
 
-    Uses example two-body operator TBMEs from example-data. Make sure to set
-    NCCI_DATA_DIR_H2 and NCCI_LIBRARY_PATH to include
-    `mcscript-ncci/docs/examples`.
+    Uses operator TBMEs from example-data.  Make sure to set NCCI_DATA_DIR_H2 to
+    include `mcscript-ncci/docs/examples`.
 
 runmfdn13: harmonic oscillator direct run with MFDn v15, for use with postprocessor
 
@@ -63,9 +62,15 @@ runmfdn13: harmonic oscillator direct run with MFDn v15, for use with postproces
 
     Interaction: example-data
 
-    Usage: qsubm --here mfdn13
+    Usage: qsubm --here --pool=ALL mfdn13
 
     Sets up for runtransitions00.
+
+    Uses operator TBMEs from example-data.  Make sure to set NCCI_DATA_DIR_H2 to
+    include `mcscript-ncci/docs/examples`.
+
+    Make sure to set the task dictionary parameter "mfdn-transitions" to point
+    to the mfdn executable file.
 
 runtransitions00: mfdn-transitions postprocessor run
 
@@ -73,7 +78,13 @@ runtransitions00: mfdn-transitions postprocessor run
 
     Interaction/operator: example-data
 
-    Usage: qsubm --here transitions00
+    Usage: qsubm --here --pool=ALL transitions00
 
-    Make sure to set NCCI_DATA_DIR_H2 and NCCI_LIBRARY_PATH to include
-    `mcscript-ncci/docs/examples`.
+    Uses operator TBMEs from example-data.  Make sure to set NCCI_DATA_DIR_H2 to
+    include `mcscript-ncci/docs/examples`.
+
+    Uses wave functions created by runmfdn13.  Make sure to set
+    NCCI_LIBRARY_PATH to include `mcscript-ncci/docs/examples`.
+
+    Make sure to set the task dictionary parameter "mfdn-transitions_executable"
+    to point to the mfdn-transitions executable file.
