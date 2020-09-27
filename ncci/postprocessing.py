@@ -24,6 +24,7 @@ University of Notre Dame
     + Stage out transitions-output and OBDMEs.
 - 09/20/20 (pjf): Change/normalize res filenames.
 - 09/24/20 (pjf): Fix transitions-tb res filename.
+- 09/26/20 (pjf): Avoid LIMIT with UPDATE.
 """
 import collections
 import glob
@@ -820,15 +821,15 @@ def run_postprocessor_two_body(task, one_body=False):
                 db.execute(
                     """UPDATE tb_transitions
                     SET rme = ?
-                    WHERE (bra_level_id,ket_level_id,operator_id) =
-                        (SELECT bra_level_id,ket_level_id,operator_id
+                    WHERE (bra_level_id,ket_level_id,operator_id) = (
+                        SELECT bra_level_id,ket_level_id,operator_id
                         FROM tb_transitions
                             INNER JOIN bra_levels USING(bra_level_id)
                             INNER JOIN ket_levels USING(ket_level_id)
                         WHERE (bra_J, bra_g, bra_n, ket_J, ket_g, ket_n, operator_id) =
                         (?,?,?,?,?,?,?)
-                        )
-                    LIMIT 1;
+                        LIMIT 1
+                    );
                     """,
                     (rme, *bra_qn, *ket_qn, operator_id)
                 )
