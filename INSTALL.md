@@ -73,8 +73,22 @@ Prerequisites: `mcscript`, `shell`
   export NCCI_DATA_DIR_H2="/global/cfs/cdirs/m2032/data/h2"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  If you use `mcscript-ncci` to postprocess wave functions, you also need to set
-  the environment variable `NCCI_LIBRARY_PATH`, to tell `mcscript-ncci` where to
-  find the results of prior runs (results files, wave function files, and other
-  files containing metadata about the run).  This may also be given as a
-  colon-separated list of directories to search.
+  If you use `mcscript-ncci` to postprocess wave functions, you will also need
+  to set the environment variable `NCCI_LIBRARY_PATH`, to tell `mcscript-ncci`
+  where to find the results of prior runs (that is, the results, wave function,
+  and task data files).  This may be given as a colon-separated list of
+  directories to search.  For example, if your current runs are in
+  `${SCRATCH}/runs`, runs retrieved from tape are in `${SCRATCH}/library`, and
+  the example runs are in `${HOME}/code/mcscript-ncci/docs/examples`, you might
+  define the following search path:
+  
+
+  `.cshrc`:
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  setenv NCCI_LIBRARY_PATH "${SCRATCH}/runs:${SCRATCH}/library:${HOME}/code/mcscript-ncci/docs/examples"
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  `.bashrc` or `.bash_profile`:
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  export NCCI_LIBRARY_PATH="${SCRATCH}/runs:${SCRATCH}/library:${HOME}/code/mcscript-ncci/docs/examples"
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
