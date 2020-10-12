@@ -1,3 +1,10 @@
+# Summary of example run scripts #
+
+Setup: These examples make use of small example input TBME files found in the
+subdirectory `example-data`.  In order for the scripting to find these input files,
+make sure to set the environment variable `NCCI_DATA_DIR_H2` to include
+`mcscript-ncci/docs/examples` (see `mcscript-ncci/INSTALL.md`).
+
 runmfdn07: harmonic oscillator direct run with MFDn v15
 
     4He Nmax02 hw20 (direct)
@@ -6,8 +13,8 @@ runmfdn07: harmonic oscillator direct run with MFDn v15
 
     Usage: qsubm --here mfdn07
 
-    We use tb-6 from example-data. Make sure to set NCCI_DATA_DIR_H2 to include
-    `mcscript-ncci/docs/examples`.
+    We use tb-6 from `example-data`. Make sure to set NCCI_DATA_DIR_H2 to include
+    `mcscript-ncci/docs/examples` (see `mcscript-ncci/INSTALL.md`).
 
 runmfdn08: harmonic oscillator direct run with MFDn v15 b01
 
@@ -17,7 +24,8 @@ runmfdn08: harmonic oscillator direct run with MFDn v15 b01
 
     Usage: qsubm --here mfdn08
 
-    We use tb-10 as the smallest available set of files.
+    We use tb-10 as the smallest available set of files.  These are not provided
+    in `mcscript-ncci/docs/examples`.
 
 runmfdn09: general truncation direct run with MFDn v15
 
@@ -27,7 +35,8 @@ runmfdn09: general truncation direct run with MFDn v15
 
     Usage: qsubm --here mfdn09
 
-    We use tb-10 as the smallest available set of files.
+    We use tb-10 as the smallest available set of files.  These are not provided
+    in `mcscript-ncci/docs/examples`.
 
 runmfdn10: counting-only run with MFDn v15
 
@@ -43,7 +52,8 @@ runmfdn11: manual orbital direct run with MFDn v15
 
     Usage: qsubm --here mfdn11
 
-    We use tb-10 as the smallest available set of files.
+    We use tb-10 as the smallest available set of files.  These are not provided
+    in `mcscript-ncci/docs/examples`.
 
 runmfdn12: harmonic oscillator direct run with MFDn v15, plus custom input TBO
 
@@ -53,8 +63,8 @@ runmfdn12: harmonic oscillator direct run with MFDn v15, plus custom input TBO
 
     Usage: qsubm --here mfdn12
 
-    Uses operator TBMEs from example-data.  Make sure to set NCCI_DATA_DIR_H2 to
-    include `mcscript-ncci/docs/examples`.
+    Uses operator TBMEs from `example-data`.  Make sure to set NCCI_DATA_DIR_H2 to
+    include `mcscript-ncci/docs/examples` (see `mcscript-ncci/INSTALL.md`).
 
 runmfdn13: harmonic oscillator direct run with MFDn v15, for use with postprocessor
 
@@ -62,15 +72,20 @@ runmfdn13: harmonic oscillator direct run with MFDn v15, for use with postproces
 
     Interaction: example-data
 
-    Usage: qsubm --here --pool=ALL mfdn13
+    Usage:
 
+        qsubm --here --pool=ALL mfdn13
+
+    or, for a quick test with just Nmax=2 runs
+
+        qsubm --here --pool=Nmax02 mfdn13
+           
     Sets up for runtransitions00.
 
-    Uses operator TBMEs from example-data.  Make sure to set NCCI_DATA_DIR_H2 to
-    include `mcscript-ncci/docs/examples`.
+    Uses operator TBMEs from `example-data`.  Make sure to set NCCI_DATA_DIR_H2 to
+    include `mcscript-ncci/docs/examples` (see `mcscript-ncci/INSTALL.md`).
 
-    Make sure to set the task dictionary parameter "mfdn-transitions" to point
-    to the mfdn executable file.
+    See mcscript-ncci/docs/examples/example-results for example results output.
 
 runtransitions00: mfdn-transitions postprocessor run
 
@@ -78,13 +93,22 @@ runtransitions00: mfdn-transitions postprocessor run
 
     Interaction/operator: example-data
 
-    Usage: qsubm --here --pool=ALL transitions00
+    Usage:
 
-    Uses operator TBMEs from example-data.  Make sure to set NCCI_DATA_DIR_H2 to
-    include `mcscript-ncci/docs/examples`.
+        qsubm --here --pool=ALL transitions00
+
+    or, for a quick test with just Nmax=2 runs
+
+        qsubm --here --pool=Nmax02 transitions00
+
+    Uses operator TBMEs from `example-data`.  Make sure to set NCCI_DATA_DIR_H2 to
+    include `mcscript-ncci/docs/examples` (see `mcscript-ncci/INSTALL.md`).
 
     Uses wave functions created by runmfdn13.  Make sure to set
-    NCCI_LIBRARY_PATH to include `mcscript-ncci/docs/examples`.
+    NCCI_LIBRARY_PATH to include `mcscript-ncci/docs/examples` (see `mcscript-ncci/INSTALL.md`).
 
-    Make sure to set the task dictionary parameter "mfdn-transitions_executable"
-    to point to the mfdn-transitions executable file.
+    Check that the task dictionary parameter `"mfdn-transitions_executable"` gives
+    the correct location for your mfdn-transitions executable file within your
+    mfdn installation directory.
+
+    See `mcscript-ncci/docs/examples/example-results` for example results output.

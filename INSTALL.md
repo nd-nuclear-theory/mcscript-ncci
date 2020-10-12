@@ -42,10 +42,18 @@ Prerequisites: `mcscript`, `shell`
 
   The environment variable `NCCI_DATA_DIR_H2` is used to tell `mcscript-ncci`
   where to find interaction TBME files.  The scripting will search for TBME
-  files in the directory given by `NCCI_DATA_DIR_H2`.  This may also be given as
-  a colon-separated list of directories to search.  More precisely, TBME files
-  are expected to live in subdirectories, following the naming convention:
-  ```<interaction_group>/<interaction_name>-<ob|tb>-<N1bmax|N2bmax>-<hw>.bin```
+  files in the directory given by `NCCI_DATA_DIR_H2`.  This may be given as a
+  colon-separated list of directories to search.  That is, TBME files are
+  expected to live in subdirectories of this directory, following this naming
+  convention:
+
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  <subdirectory_name>/<interaction_name>-<ob|tb>-<N1bmax|N2bmax>-<hw>.bin
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  e.g., ```run0164-JISP16-tb-20/JISP16-tb-20-20.bin```.
+  
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   #### @NDCRC: ####
   `.cshrc`:
@@ -81,7 +89,6 @@ Prerequisites: `mcscript`, `shell`
   `${SCRATCH}/runs`, runs retrieved from tape are in `${SCRATCH}/library`, and
   the example runs are in `${HOME}/code/mcscript-ncci/docs/examples`, you might
   define the following search path:
-  
 
   `.cshrc`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
