@@ -31,7 +31,7 @@ ncci.environ.operator_dir_list = [
 ]
 
 # hw -- linear mesh
-hw_range = (15, 25, 5)
+hw_range = (15, 20, 5)
 hw_list = mcscript.utils.value_range(*hw_range)
 
 # interaction
@@ -128,8 +128,8 @@ tasks = [{
     ],
 
     "h2_format": 15099,
-    "h2_extension": "dat",
-    "mfdn-transitions_executable": "d76d226/xtransitions"
+    "h2_extension": "dat",  # TODO mac (10/12/20): switch to bin when safe
+    "mfdn-transitions_executable": "xtransitions"
 
     }
     for (interaction,coulomb,truncation_int) in interaction_coulomb_truncation_list
