@@ -9,8 +9,6 @@
 
     Patrick J. Fasano, Mark A. Caprio
     University of Notre Dame
-
-    - 10/11/19 (pjf): Created, copied from runmfd13.
 """
 import math
 
@@ -44,10 +42,47 @@ interaction_coulomb_truncation_list = [
 Nmax_range = (2, 4, 2)
 Nmax_list = mcscript.utils.value_range(*Nmax_range)
 
+def mask_allow_near_yrast(task,mask_params,qn_pair,verbose=False):
+    """Mask function to allow only transitions originating (and, optionally, terminating) near the yrast line.
+
+    Mask parameters:
+        "ni_max" (int or dict): maximum ni, or dictionary Ji->ni_max
+        "nf_max" (int or dict): maximum nf, or dictionary Jf->nf_max
+
+    Arguments:
+        task (dict): task dictionary
+        mask_params (dict): parameters specific to this mask
+        qn_pair (tuple): (qnf,qni) for transition
+
+    Returns:
+        allow (bool): mask value
+
+    """
+
+    # unpack quantum numbers
+    (qnf,qni)=qn_pair
+    (Ji,gi,ni)=qni
+    (Jf,gf,nf)=qnf
+
+    # calculate mask value
+    ni_max = mask_params.get("ni_max",5)
+    if (isinstance(ni_max, dict)):
+        ni_max = ni_max.get(Ji,0)
+    nf_max = mask_params.get("nf_max",999)
+    if (isinstance(nf_max, dict)):
+        nf_max = nf_max.get(Jf,0)
+    if (verbose):
+        print("  Jf {} nf {} nf_max {} {} ; Ji {} ni {} ni_max {} {}".format(Jf,nf,nf_max,(nf<=nf_max),Ji,ni,ni_max,(ni<=ni_max)))
+    allow=(ni<=ni_max)
+    allow&=(nf<=nf_max)
+
+    return allow
+
 tasks = [{
-    # nuclide parameters
+    # nuclide parameters -- for descriptor
     "nuclide": (3, 3),
 
+    # postprocessor parameters
     "wf_source_run_list": ["mfdn13"],
     "wf_source_bra_selector": {
         "nuclide": (3, 3),
@@ -61,6 +96,11 @@ tasks = [{
         "hw": hw,
         "Nmax": Nmax,
         },
+
+    # postprocessor mask
+    "postprocessor_mask": [
+        (mask_allow_near_yrast, {"ni_max": 1, "nf_max": 1}),
+    ],
 
     # basis parameters
     "basis_mode": ncci.modes.BasisMode.kDirect,

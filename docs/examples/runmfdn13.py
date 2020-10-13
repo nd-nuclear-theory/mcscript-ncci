@@ -8,8 +8,6 @@
 
     Patrick J. Fasano, Mark A. Caprio
     University of Notre Dame
-
-    - 10/11/19 (pjf): Created, copied from runmfd13.
 """
 
 import collections
