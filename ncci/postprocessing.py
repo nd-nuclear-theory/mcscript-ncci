@@ -25,6 +25,10 @@ University of Notre Dame
 - 09/20/20 (pjf): Change/normalize res filenames.
 - 09/24/20 (pjf): Fix transitions-tb res filename.
 - 09/26/20 (pjf): Avoid LIMIT with UPDATE.
+- 10/12/20 (pjf):
+    + Improve diagnostic output when constructing transitions database.
+    + Add progress updates to postprocessor master loops.
+    + Prevent merging across nuclei.
 """
 import collections
 import glob
@@ -390,8 +394,107 @@ def init_postprocessor_db(task):
     if len(res.fetchall()):
         return db
 
-    # create tables
+    # remove and rebuild any partially constructed database
+    db.close()
+    mcscript.call(["rm", "-vf", "transitions.sqlite"])
+    db = sqlite3.connect("transitions.sqlite")
+    db.row_factory = sqlite3.Row
+
+    # enable foreign key support
     db.execute("PRAGMA foreign_keys = ON;")
+
+    ################################################################
+    # create operator table
+    ################################################################
+    db.execute(
+        """CREATE TABLE tb_operators (
+            operator_id  TEXT  NOT NULL  PRIMARY KEY  UNIQUE,
+            J0  INTEGER NOT NULL,
+            g0  INTEGER NOT NULL,
+            Tz0 INTEGER NOT NULL
+        );"""
+    )
+
+    # populate operator information
+    tb_observables_by_qn = operators.tb.get_tbme_targets(task)
+    for operator_qn in tb_observables_by_qn:
+        db.executemany(
+            "INSERT INTO tb_operators VALUES (?,?,?,?)",
+            [(operator_name, *operator_qn) for operator_name in tb_observables_by_qn[operator_qn]]
+        )
+    db.commit()
+
+    ################################################################
+    # slurp res files and create bra and ket data objects
+    ################################################################
+    SORT_KEY_DESCRIPTOR = (("lanczos", int), ("M", float))
+    UNMERGEABLE_KEYS = {"nuclide",}
+    # slurp source wave function info
+    wf_source_res_dir_list = []
+    for run in task["wf_source_run_list"]:
+        wf_source_res_dir_list += [library.get_res_directory(run)]
+    wf_source_mesh_data = mfdnres.input.slurp_res_files(wf_source_res_dir_list, filename_format="ALL", verbose=True)
+
+    # construct bra and ket info
+    bra_selector = task["wf_source_bra_selector"]
+    ket_selector = task["wf_source_ket_selector"]
+    bra_mesh_data = mfdnres.analysis.selected_mesh_data(
+        wf_source_mesh_data, bra_selector
+        )
+    if len(bra_mesh_data) == 0:
+        raise mcscript.exception.ScriptError(
+            "No MFDn res files found matching selector: "+str(bra_selector)
+        )
+    bra_mesh_data = mfdnres.analysis.sorted_mesh_data(
+        bra_mesh_data, SORT_KEY_DESCRIPTOR
+        )
+    bra_merged_data = mfdnres.analysis.merged_mesh(
+        bra_mesh_data, set(bra_selector.keys()) & UNMERGEABLE_KEYS
+        )
+    assert len(bra_merged_data) == 1
+    bra_merged_data = bra_merged_data[0]
+    if bra_selector == ket_selector:
+        # special case where bra and ket selection is equal:
+        # allow canonicalization of transitions, and don't duplicate work
+        canonicalize = True
+        ket_mesh_data = bra_mesh_data[:]
+        ket_merged_data = bra_merged_data
+    else:
+        canonicalize = False
+        ket_mesh_data = mfdnres.analysis.selected_mesh_data(
+            wf_source_mesh_data, ket_selector
+            )
+        if len(ket_mesh_data) == 0:
+            raise mcscript.exception.ScriptError(
+                "No MFDn res files found matching selector: "+str(ket_selector)
+            )
+        ket_mesh_data = mfdnres.analysis.sorted_mesh_data(
+            ket_mesh_data, SORT_KEY_DESCRIPTOR
+            )
+        ket_merged_data = mfdnres.analysis.merged_mesh(
+            ket_mesh_data, set(ket_selector.keys()) & UNMERGEABLE_KEYS
+            )
+        assert len(ket_merged_data) == 1
+        ket_merged_data = ket_merged_data[0]
+
+    # extract Tz for bra and ket for convenience
+    (bra_Z, bra_N) = bra_merged_data.params["nuclide"]
+    bra_Tz = (bra_Z - bra_N)/2
+    (ket_Z, ket_N) = ket_merged_data.params["nuclide"]
+    ket_Tz = (ket_Z - ket_N)/2
+
+    # diagnostic output
+    print("Bra mesh points:")
+    for mesh_point in bra_mesh_data:
+        print(" ", mesh_point.params.get("run"), mesh_point.params.get("descriptor"))
+    print("Ket mesh points:")
+    for mesh_point in ket_mesh_data:
+        print(" ", mesh_point.params.get("run"), mesh_point.params.get("descriptor"))
+
+
+    ################################################################
+    # create bra and ket level tables, and populate from meshes
+    ################################################################
     db.execute(
         """CREATE TABLE bra_levels (
         bra_level_id INTEGER NOT NULL  PRIMARY KEY  UNIQUE,
@@ -408,35 +511,31 @@ def init_postprocessor_db(task):
         ket_n  INTEGER NOT NULL
         );"""
     )
-    db.execute(
-        """CREATE TABLE tb_operators (
-            operator_id  TEXT  NOT NULL  PRIMARY KEY  UNIQUE,
-            J0  INTEGER NOT NULL,
-            g0  INTEGER NOT NULL,
-            Tz0 INTEGER NOT NULL
-        );"""
+
+    ################################################################
+    # populate level tables
+    ################################################################
+    db.executemany(
+        "INSERT INTO bra_levels (bra_J,bra_g,bra_n) VALUES (?,?,?)",
+        bra_merged_data.levels
     )
-    db.execute(
-        """CREATE TABLE ob_transitions (
-            bra_run        TEXT NOT NULL,
-            bra_descriptor TEXT NOT NULL,
-            bra_level_id   INTEGER  NOT NULL
-                REFERENCES bra_levels (bra_level_id)
-                ON DELETE RESTRICT
-                ON UPDATE CASCADE,
-            ket_run        TEXT NOT NULL,
-            ket_descriptor TEXT NOT NULL,
-            ket_level_id   INTEGER  NOT NULL
-                REFERENCES ket_levels (ket_level_id)
-                ON DELETE RESTRICT
-                ON UPDATE CASCADE,
-            finished BOOL,
-            CONSTRAINT uniq UNIQUE (
-                bra_run, bra_descriptor, bra_level_id,
-                ket_run, ket_descriptor, ket_level_id
-                )
-        );"""
+    bra_id_list = db.execute(
+        "SELECT bra_J,bra_g,bra_n,bra_level_id FROM bra_levels"
+        )
+    bra_id_dict = {(J,g,n): level_id for (J,g,n,level_id) in bra_id_list}
+
+    db.executemany(
+        "INSERT INTO ket_levels (ket_J,ket_g,ket_n) VALUES (?,?,?)",
+        ket_merged_data.levels
     )
+    ket_id_list = db.execute(
+        "SELECT ket_J,ket_g,ket_n,ket_level_id FROM ket_levels"
+        )
+    ket_id_dict = {(J,g,n): level_id for (J,g,n,level_id) in ket_id_list}
+
+    ################################################################
+    # create two-body transitions table
+    ################################################################
     db.execute(
         """CREATE TABLE tb_transitions (
             bra_run        TEXT NOT NULL,
@@ -459,89 +558,10 @@ def init_postprocessor_db(task):
             CONSTRAINT uniq UNIQUE (bra_level_id, ket_level_id, operator_id)
         );"""
     )
-    db.commit()
-
-    # populate operator information
-    tb_observables_by_qn = operators.tb.get_tbme_targets(task)
-    for operator_qn in tb_observables_by_qn:
-        db.executemany(
-            "INSERT INTO tb_operators VALUES (?,?,?,?)",
-            [(operator_name, *operator_qn) for operator_name in tb_observables_by_qn[operator_qn]]
-        )
 
     ################################################################
-    # populate transitions table from slurped res files
+    # populate two-body transitions table
     ################################################################
-    SORT_KEY_DESCRIPTOR = (("lanczos", int), ("M", float))
-    # slurp source wave function info
-    wf_source_res_dir_list = []
-    for run in task["wf_source_run_list"]:
-        wf_source_res_dir_list += [library.get_res_directory(run)]
-    wf_source_mesh_data = mfdnres.input.slurp_res_files(wf_source_res_dir_list, filename_format="mfdn_format_7_ho", verbose=True)
-
-    # construct bra and ket info
-    bra_selector = task["wf_source_bra_selector"]
-    ket_selector = task["wf_source_ket_selector"]
-    bra_mesh_data = mfdnres.analysis.selected_mesh_data(
-            wf_source_mesh_data, bra_selector
-        )
-    bra_mesh_data = mfdnres.analysis.sorted_mesh_data(
-            bra_mesh_data, SORT_KEY_DESCRIPTOR
-        )
-    bra_merged_data = mfdnres.analysis.merged_mesh(
-            bra_mesh_data, bra_selector.keys()
-        )
-    assert len(bra_merged_data) == 1
-    bra_merged_data = bra_merged_data[0]
-    if bra_selector == ket_selector:
-        # special case where bra and ket selection is equal:
-        # allow canonicalization of transitions, and don't duplicate work
-        canonicalize = True
-        ket_mesh_data = bra_mesh_data[:]
-        ket_merged_data = bra_merged_data
-    else:
-        canonicalize = False
-        ket_mesh_data = mfdnres.analysis.selected_mesh_data(
-            wf_source_mesh_data, ket_selector
-            )
-        ket_mesh_data = mfdnres.analysis.sorted_mesh_data(
-            ket_mesh_data, SORT_KEY_DESCRIPTOR
-            )
-        ket_merged_data = mfdnres.analysis.merged_mesh(
-            ket_mesh_data, ket_selector.keys()
-            )
-        assert len(ket_merged_data) == 1
-        ket_merged_data = ket_merged_data[0]
-
-    # populate level tables
-    db.executemany(
-        "INSERT INTO bra_levels (bra_J,bra_g,bra_n) VALUES (?,?,?)",
-        bra_merged_data.levels
-    )
-    bra_id_list = db.execute(
-        "SELECT bra_J,bra_g,bra_n,bra_level_id FROM bra_levels"
-        )
-    bra_id_dict = {(J,g,n): level_id for (J,g,n,level_id) in bra_id_list}
-
-    db.executemany(
-        "INSERT INTO ket_levels (ket_J,ket_g,ket_n) VALUES (?,?,?)",
-        ket_merged_data.levels
-    )
-    ket_id_list = db.execute(
-        "SELECT ket_J,ket_g,ket_n,ket_level_id FROM ket_levels"
-        )
-    ket_id_dict = {(J,g,n): level_id for (J,g,n,level_id) in ket_id_list}
-
-    # # augment wf info as needed
-    # for wf_source_info in wf_source_info_list:
-    #     ncci.library.generate_smwf_info_in_library(wf_source_info)
-
-    # extract Tz for bra and ket
-    (bra_Z, bra_N) = bra_merged_data.params["nuclide"]
-    bra_Tz = (bra_Z - bra_N)/2
-    (ket_Z, ket_N) = ket_merged_data.params["nuclide"]
-    ket_Tz = (ket_Z - ket_N)/2
-
     # construct list of (bra,ket,tbo) tuples
     bra_ket_tbo_product = itertools.product(
         bra_merged_data.levels, ket_merged_data.levels, tb_observables_by_qn.keys()
@@ -572,6 +592,34 @@ def init_postprocessor_db(task):
             )
     db.commit()
 
+    ################################################################
+    # create one-body transitions table
+    ################################################################
+    db.execute(
+        """CREATE TABLE ob_transitions (
+            bra_run        TEXT NOT NULL,
+            bra_descriptor TEXT NOT NULL,
+            bra_level_id   INTEGER  NOT NULL
+                REFERENCES bra_levels (bra_level_id)
+                ON DELETE RESTRICT
+                ON UPDATE CASCADE,
+            ket_run        TEXT NOT NULL,
+            ket_descriptor TEXT NOT NULL,
+            ket_level_id   INTEGER  NOT NULL
+                REFERENCES ket_levels (ket_level_id)
+                ON DELETE RESTRICT
+                ON UPDATE CASCADE,
+            finished BOOL,
+            CONSTRAINT uniq UNIQUE (
+                bra_run, bra_descriptor, bra_level_id,
+                ket_run, ket_descriptor, ket_level_id
+                )
+        );"""
+    )
+
+    ################################################################
+    # populate one-body transitions table
+    ################################################################
     # construct list of (bra,ket,ob_qn) tuples
     ob_observables = operators.ob.generate_ob_observable_sets(task)[0]
     ob_observables += task.get("ob_observables", [])
@@ -680,11 +728,25 @@ def run_postprocessor_two_body(task, one_body=False):
         )
     operator_qn_list = list(cursor)
 
+    # get total count of tb transitions
+    (total_count,) = db.execute(
+        "SELECT COUNT(*) FROM `tb_transitions`;"
+    ).fetchone()
+
     ################################################################
     # begin master loop for two-body operators
     ################################################################
     timer = mcscript.utils.TaskTimer(remaining_time=mcscript.parameters.run.get_remaining_time())
     while db.execute("SELECT * FROM `tb_transitions` WHERE rme is NULL;").fetchone():
+        # print status message
+        (incomplete_count,) = db.execute(
+            "SELECT COUNT(*) FROM `tb_transitions` WHERE rme is NULL;"
+        ).fetchone()
+        print("-"*64)
+        print("Remaining two-body transitions: {:d}/{:d}".format(incomplete_count, total_count))
+        print("-"*64)
+
+        # start run timer (may raise exception if insufficient time remaining)
         timer.start_timer()
 
         # go to work directory
@@ -950,11 +1012,25 @@ def run_postprocessor_one_body(task):
     # open database
     db = init_postprocessor_db(task)
 
+    # get total count of ob transition densities
+    (total_count,) = db.execute(
+        "SELECT COUNT(*) FROM `ob_transitions`;"
+    ).fetchone()
+
     ################################################################
     # begin master loop for one-body operators
     ################################################################
     timer = mcscript.utils.TaskTimer(remaining_time=mcscript.parameters.run.get_remaining_time())
     while db.execute("SELECT * FROM `ob_transitions` WHERE finished is NULL;").fetchone():
+        # print status message
+        (incomplete_count,) = db.execute(
+            "SELECT COUNT(*) FROM `ob_transitions` WHERE finished is NULL;"
+        ).fetchone()
+        print("-"*64)
+        print("Remaining one-body transitions: {:d}/{:d}".format(incomplete_count, total_count))
+        print("-"*64)
+
+        # start run timer (may raise exception if insufficient time remaining)
         timer.start_timer()
 
         # go to work directory
