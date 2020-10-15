@@ -29,7 +29,9 @@ University of Notre Dame
     + Improve diagnostic output when constructing transitions database.
     + Add progress updates to postprocessor master loops.
     + Prevent merging across nuclei.
-- 10/14/20 (pjf): Fix unpacking of J0 from ob_observables.
+- 10/14/20 (pjf):
+    + Fix unpacking of J0 from ob_observables.
+    + Suppress empty transitions-tb res file.
 """
 import collections
 import glob
@@ -976,11 +978,12 @@ def run_postprocessor_two_body(task, one_body=False):
         lines += [""]
     mcscript.utils.write_input(res_filename, lines, verbose=False)
 
-
-    # copy results out
-    mcscript.task.save_results_single(
-        task, res_filename, res_filename, "res"
-    )
+    # only copy out res file if it contains more than a single newline
+    if len(lines) > 1:
+        # copy results out
+        mcscript.task.save_results_single(
+            task, res_filename, res_filename, "res"
+        )
 
     # copy transitions-output
     out_file_list = glob.glob(os.path.join("transitions-output", "*"))
