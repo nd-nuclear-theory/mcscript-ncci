@@ -29,6 +29,7 @@ University of Notre Dame
     + Improve diagnostic output when constructing transitions database.
     + Add progress updates to postprocessor master loops.
     + Prevent merging across nuclei.
+- 10/14/20 (pjf): Fix unpacking of J0 from ob_observables.
 """
 import collections
 import glob
@@ -1082,7 +1083,7 @@ def run_postprocessor_one_body(task):
         max_ket_J = max([ket_J for (ket_J,_,_) in ket_qn_list])
         min_ket_J = min([ket_J for (ket_J,_,_) in ket_qn_list])
         max_deltaJ = max(abs(max_ket_J-bra_J), max_ket_J+bra_J, abs(min_ket_J-bra_J), min_ket_J+bra_J)
-        max_J0 = max([J0 for _,(J0,_,_) in ob_observables])
+        max_J0 = max([J0 for _,(J0,_,_),_ in ob_observables])
         max2K = 2*int(min(max_deltaJ, max_J0))
         transitions_inputlist = {
             "basisfilename_bra": "{:s}/mfdn_MBgroups".format(bra_wf_prefix),
