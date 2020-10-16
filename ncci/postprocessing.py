@@ -32,6 +32,7 @@ University of Notre Dame
 - 10/14/20 (pjf):
     + Fix unpacking of J0 from ob_observables.
     + Suppress empty transitions-tb res file.
+- 10/16/20 (pjf): Raise exception if no transitions are to be done.
 """
 import collections
 import glob
@@ -652,6 +653,21 @@ def init_postprocessor_db(task):
             *ket_run_descriptor_pair, ket_id_dict[ket_qn])
             )
         db.commit()
+
+
+    # sanity check -- raise exception if nothing to do in task
+    #   get total count of tb transitions
+    (tb_count,) = db.execute(
+        "SELECT COUNT(*) FROM `tb_transitions`;"
+    ).fetchone()
+    # get total count of tb transitions
+    (ob_count,) = db.execute(
+        "SELECT COUNT(*) FROM `ob_transitions`;"
+    ).fetchone()
+    if (tb_count + ob_count) == 0:
+        raise mcscript.exception.ScriptError(
+            "No transitions to be calculated."
+        )
 
 
     return db
