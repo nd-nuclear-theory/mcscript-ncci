@@ -17,6 +17,7 @@ University of Notre Dame
     + Make NCCI_LIBRARY_PATH a colon-delimited list.
 - 09/07/20 (pjf): Fix hard-coded file format in get_res_data().
 - 10/09/20 (mac): Fix hard-coded file format in get_res_data(), again.
+- 10/16/20 (pjf): Add (pass-thru) verbose option to path utilities.
 """
 
 import glob
@@ -205,12 +206,13 @@ def recover_from_hsi(year,run,date,target_base):
 
 LIBRARY_BASE = os.environ.get("NCCI_LIBRARY_PATH", "").split(":")
 
-def get_res_directory(run, library_base=None):
+def get_res_directory(run, library_base=None, verbose=True):
     """Construct directory for MFDn res directory in library.
 
     Arguments:
         run (str): run identifier
         library_base (str,optional): root for library tree
+        verbose (bool, optional): whether to print log messages
 
     Returns:
         res_directory (str): Filename
@@ -219,17 +221,19 @@ def get_res_directory(run, library_base=None):
         library_base = LIBRARY_BASE
     res_directory = mcscript.utils.search_in_subdirectories(
         mcscript.utils.expand_path(library_base),
-        "run{run:s}".format(run=run), "results", "res"
+        "run{run:s}".format(run=run), "results", "res",
+        verbose=verbose
     )
     return res_directory
 
-def get_res_filename(run, descriptor, library_base=None):
+def get_res_filename(run, descriptor, library_base=None, verbose=True):
     """ Construct filename for mfdn res file in library.
 
     Arguments:
         run (str): run identifier
         descriptor (str): task descriptor
         library_base (str,optional): root for library tree
+        verbose (bool, optional): whether to print log messages
 
     Returns:
         res_filename (str): Filename
@@ -239,17 +243,19 @@ def get_res_filename(run, descriptor, library_base=None):
     res_filename = mcscript.utils.search_in_subdirectories(
         mcscript.utils.expand_path(library_base),
         "run{run:s}".format(run=run), "results", "res",
-        "run{run:s}-mfdn15-{descriptor:s}.res".format(run=run, descriptor=descriptor)
+        "run{run:s}-mfdn15-{descriptor:s}.res".format(run=run, descriptor=descriptor),
+        verbose=verbose
     )
     return res_filename
 
-def get_res_data(run, descriptor, library_base=None):
+def get_res_data(run, descriptor, library_base=None, verbose=True):
     """Get results data object for given run and descriptor.
 
     Arguments:
         run (str): run identifier
         descriptor (str): task descriptor
         library_base (str,optional): root for library tree
+        verbose (bool, optional): whether to print log messages
 
     Returns:
         res_data (MFDnResultsData): Data object
@@ -258,17 +264,18 @@ def get_res_data(run, descriptor, library_base=None):
         library_base = LIBRARY_BASE
 
     import mfdnres
-    res_filename = get_res_filename(run,descriptor,library_base=library_base)
+    res_filename = get_res_filename(run,descriptor,library_base=library_base,verbose=verbose)
     res_data = mfdnres.input.read_file(res_filename,filename_format="ALL")[0]
     return res_data
 
-def get_task_data_prefix(run, descriptor, library_base=None):
+def get_task_data_prefix(run, descriptor, library_base=None, verbose=True):
     """ Construct prefix for wf dir in library.
 
     Arguments:
         run (str): run identifier
         descriptor (str): task descriptor
         library_base (str,optional): root for library tree
+        verbose (bool, optional): whether to print log messages
 
     Returns:
         task_data_prefix (str): Directory name
@@ -277,17 +284,19 @@ def get_task_data_prefix(run, descriptor, library_base=None):
         library_base = LIBRARY_BASE
     task_data_prefix = mcscript.utils.search_in_subdirectories(
         mcscript.utils.expand_path(library_base),
-        "run{run:s}".format(run=run), "results", "task-data", descriptor
+        "run{run:s}".format(run=run), "results", "task-data", descriptor,
+        verbose=verbose
     )
     return task_data_prefix
 
-def get_wf_prefix(run, descriptor, library_base=None):
+def get_wf_prefix(run, descriptor, library_base=None, verbose=True):
     """ Construct prefix for wf dir in library.
 
     Arguments:
         run (str): run identifier
         descriptor (str): task descriptor
         library_base (str,optional): root for library tree
+        verbose (bool, optional): whether to print log messages
 
     Returns:
         wf_prefix (str): Directory name
@@ -296,7 +305,8 @@ def get_wf_prefix(run, descriptor, library_base=None):
         library_base = LIBRARY_BASE
     wf_prefix = mcscript.utils.search_in_subdirectories(
         mcscript.utils.expand_path(library_base),
-        "run{run:s}".format(run=run), "results", "wf", descriptor
+        "run{run:s}".format(run=run), "results", "wf", descriptor,
+        verbose=verbose
     )
     return wf_prefix
 
