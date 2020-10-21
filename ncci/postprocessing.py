@@ -33,6 +33,7 @@ University of Notre Dame
     + Fix unpacking of J0 from ob_observables.
     + Suppress empty transitions-tb res file.
 - 10/16/20 (pjf): Raise exception if no transitions are to be done.
+- 10/21/20 (pjf): Factor out db construction from db connection.
 """
 import collections
 import glob
@@ -381,25 +382,9 @@ def init_postprocessor_db(task):
 
     Arguments:
         task (dict): as described in module docstring
-
-    Returns:
-        db (sqlite3.Connection): database connection
     """
 
-    # connect to database
-    db = sqlite3.connect("transitions.sqlite")
-    db.row_factory = sqlite3.Row
-
-    # check if two-body transition table exists
-    res = db.execute(
-        """SELECT name FROM sqlite_master
-        WHERE type='table' AND name='tb_transitions';"""
-        )
-    if len(res.fetchall()):
-        return db
-
-    # remove and rebuild any partially constructed database
-    db.close()
+    # remove and rebuild any previously constructed database
     mcscript.call(["rm", "-vf", "transitions.sqlite"])
     db = sqlite3.connect("transitions.sqlite")
     db.row_factory = sqlite3.Row
@@ -669,6 +654,28 @@ def init_postprocessor_db(task):
             "No transitions to be calculated."
         )
 
+    # close (and finalize) database
+    db.close()
+
+
+def get_postprocessor_db_connection():
+    """Connect to sqlite3 database for postprocessor runs.
+
+    Returns:
+        db (sqlite3.Connection): database connection
+    """
+
+    # connect to database
+    db = sqlite3.connect("transitions.sqlite")
+    db.row_factory = sqlite3.Row
+
+    # check if two-body transition table exists
+    res = db.execute(
+        """SELECT name FROM sqlite_master
+        WHERE type='table' AND name='tb_transitions';"""
+        )
+    if len(res.fetchall()) == 0:
+        raise mcscript.exception.ScriptError("postprocessor database not correctly initialized")
 
     return db
 
@@ -736,7 +743,7 @@ def run_postprocessor_two_body(task, one_body=False):
     mcscript.utils.mkdir("transitions-output", exist_ok=True)
 
     # open database
-    db = init_postprocessor_db(task)
+    db = get_postprocessor_db_connection(task)
 
     # get set of operator quantum numbers
     cursor = db.execute(
@@ -1030,7 +1037,7 @@ def run_postprocessor_one_body(task):
     mcscript.utils.mkdir("transitions-output", exist_ok=True)
 
     # open database
-    db = init_postprocessor_db(task)
+    db = get_postprocessor_db_connection(task)
 
     # get total count of ob transition densities
     (total_count,) = db.execute(

@@ -41,6 +41,9 @@ University of Notre Dame
     + Fix obdme archiving.
 - 09/19/20 (pjf): Separate out calls for OBME and xform generation.
 - 09/20/20 (pjf): Add task handler for transitions runs.
+- 10/21/20 (pjf):
+    + Split out pre and post phases from task_handler_postprocessor().
+    + Add explicit call to postprocessing.init_postprocessor_db().
 """
 import os
 import glob
@@ -327,10 +330,8 @@ def task_handler_natorb(task, cleanup=True):
 # postprocessing run
 ################################################################
 
-def task_handler_postprocessor(task, cleanup=True):
-    """Task handler for basic postprocessor run.
-
-    TODO(pjf): Add cleanup handlers for postprocessor.
+def task_handler_postprocessor_pre(task):
+    """Task handler for components before postprocessor run.
 
     Arguments:
         task (dict): as described in module docstring
@@ -338,7 +339,27 @@ def task_handler_postprocessor(task, cleanup=True):
     radial.set_up_orbitals(task)
     radial.set_up_obme_analytic(task)
     tbme.generate_tbme(task)
+    postprocessing.init_postprocessor_db(task)
+
+def task_handler_postprocessor_post(task, cleanup=True):
+    """Task handler for components after postprocessor run.
+
+    TODO(pjf): Implement.
+
+    Arguments:
+        task (dict): as described in module docstring
+    """
+    pass
+
+def task_handler_postprocessor(task, cleanup=True):
+    """Task handler for basic postprocessor run.
+
+    Arguments:
+        task (dict): as described in module docstring
+    """
+    task_handler_postprocessor_pre(task)
     postprocessing.run_postprocessor(task)
+    task_handler_postprocessor_post(task, cleanup)
 
 
 ################################################################
