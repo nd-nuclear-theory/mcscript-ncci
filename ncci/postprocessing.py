@@ -743,7 +743,7 @@ def run_postprocessor_two_body(task, one_body=False):
     mcscript.utils.mkdir("transitions-output", exist_ok=True)
 
     # open database
-    db = get_postprocessor_db_connection(task)
+    db = get_postprocessor_db_connection()
 
     # get set of operator quantum numbers
     cursor = db.execute(
@@ -1037,7 +1037,7 @@ def run_postprocessor_one_body(task):
     mcscript.utils.mkdir("transitions-output", exist_ok=True)
 
     # open database
-    db = get_postprocessor_db_connection(task)
+    db = get_postprocessor_db_connection()
 
     # get total count of ob transition densities
     (total_count,) = db.execute(
