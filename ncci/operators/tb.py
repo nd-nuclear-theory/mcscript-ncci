@@ -48,6 +48,7 @@ University of Notre Dame
     - 11/15/20 (pjf):
         + Make hw dependence consistent across operators.
         + Remove unused kwargs from operators.
+        + Add Nex operator.
 """
 import collections
 import math
@@ -231,6 +232,18 @@ def Ntotal(A, hw):
     out += ((1/2)*bsqr) * Uksqr()
     out += (-3/2*A) * identity()
     return out
+
+def Nex(nuclide, hw):
+    """Number of oscillator excitation quanta.
+
+    Arguments:
+        nuclide (tuple of int): (Z,N) for nuclide
+        hw (float): hw of operator-defining oscillator Hamiltonian
+
+    Returns:
+        CoefficientDict containing coefficients for Nex operator.
+    """
+    return Ntotal(A=sum(nuclide), hw=hw) - utils.N0_for_nuclide(nuclide)*identity()
 
 def Nintr(A, hw):
     """Number of oscillator quanta in the intrinsic frame.
