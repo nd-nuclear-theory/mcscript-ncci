@@ -4,6 +4,9 @@
     - 09/05/19 (pjf): Add Nv_for_nuclide.
     - 06/03/20 (pjf): Add check_natorb_base_state.
     - 11/13/20 (pjf): Move physical constants to separate module.
+    - 11/14/20 (pjf):
+        + Add nuclide_string function.
+        + Add N0_for_nuclide function (copied from mfdnres).
 """
 
 import math
@@ -15,6 +18,19 @@ from . import constants
 ################################################################
 # utility calculations
 ################################################################
+
+def nuclide_string(nuclide, **kwargs):
+    """Convert (Z,N) to "ZXX-NXX" string.
+
+    Note: This function can be called directly on a task dict. For example:
+    >>> nuclide_string(**task)
+        "Z02-N02"
+
+    Arguments:
+        nuclide (tuple of int): (Z,N) of nuclide
+    """
+    return "Z{:02d}-N{:02d}".format(*nuclide)
+
 
 def weight_max_string(truncation):
     """Convert (rank,cutoff) to "wp wn wpp wnn wpn" string.
@@ -100,6 +116,44 @@ def Nv_for_nuclide(nuclide):
             eta += 1
 
     return Nv
+
+################################################################
+# shell model N0
+################################################################
+
+def N0_for_nuclide(nuclide):
+    """Calculate quanta in lowest oscillator configuration for given nuclide.
+
+    Natural parity grade can then be obtained as N0_for_nuclide(nuclide)%2.
+
+    Inspired by spncci lgi::Nsigma0ForNuclide.
+
+    Arguments:
+        nuclide (tuple): (Z,N) for nuclide
+
+    Returns:
+        N0 (int): number of quanta
+    """
+
+    # each major shell eta=2*n+l (for a spin-1/2 fermion) contains (eta+1)*(eta+2) substates
+
+    N0 = 0;
+    for species_index in (0,1):
+        num_particles = nuclide[species_index]
+        eta=0
+        while(num_particles>0):
+            # add contribution from particles in shell
+            shell_degeneracy = (eta+1)*(eta+2)
+            num_particles_in_shell = min(num_particles,shell_degeneracy)
+            N0 += num_particles_in_shell*eta
+
+            # discard particles in shell
+            num_particles -= num_particles_in_shell
+
+            # move to next shell
+            eta += 1
+
+    return N0
 
 ################################################################
 # consistency checks
