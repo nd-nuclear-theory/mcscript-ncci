@@ -49,6 +49,7 @@ University of Notre Dame
 - 09/16/20 (pjf):
     + Check that diagonalization is enabled.
     + Add "tbme-" to operator id to form basename.
+- 11/13/20 (pjf): Use constants module.
 """
 import os
 import glob
@@ -56,7 +57,13 @@ import warnings
 
 import mcscript
 
-from . import utils, modes, environ, operators
+from . import (
+    constants,
+    environ,
+    modes,
+    operators,
+    utils,
+)
 
 
 def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
@@ -123,7 +130,7 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     lines.append("{eigenvectors:d} {max_iterations:d} {initial_vector:d} {tolerance:e}  # number of eigenvalues/vectors, max number of its, ...)".format(**task))
     lines.append("{:d} {:d}  # rank of input Hamiltonian/interaction".format(2, 2))
     lines.append("{hw_for_trans:g} {k_mN_csqr:g}  # h-bar*omega, Nucleon mass (MeV) ".format(
-        hw_for_trans=hw_for_trans, k_mN_csqr=utils.k_mN_csqr, **task
+        hw_for_trans=hw_for_trans, k_mN_csqr=constants.k_mN_csqr, **task
     ))
 
     # tbo: collect tbo names

@@ -3,19 +3,14 @@
     - 02/20/17 (pjf): Created, extracted from mfdn.py.
     - 09/05/19 (pjf): Add Nv_for_nuclide.
     - 06/03/20 (pjf): Add check_natorb_base_state.
+    - 11/13/20 (pjf): Move physical constants to separate module.
 """
 
 import math
 
 import mcscript
 
-################################################################
-# physical constants
-################################################################
-
-k_mN_csqr = 938.92  # (m_N c^2)~938.92 MeV
-k_hbar_c = 197.327  # (hbar c)~197.327 Mev fm
-
+from . import constants
 
 ################################################################
 # utility calculations
@@ -61,7 +56,7 @@ def oscillator_length(hw):
     Returns:
         (float): b in fm
     """
-    return k_hbar_c/math.sqrt(k_mN_csqr*hw)
+    return constants.k_hbar_c/math.sqrt(constants.k_mN_csqr*hw)
 
 
 def natural_orbital_indicator(natural_orbital_iteration):

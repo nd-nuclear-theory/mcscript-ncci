@@ -37,11 +37,36 @@
     - 09/22/17 (pjf): Take "observables" as list of tuples instead of dict.
     - 09/24/17 (pjf): Add option to save wavefunctions for postprocessing.
     - 10/25/17 (pjf): Rename "observables" to "tb_observables".
-    - 12/19/17 (pjf): Rename mfdn back to ncci
+    - 12/19/17 (pjf): Rename mfdn back to ncci.
+    - 11/14/20 (pjf): Update main module imports.
 """
 
-__ALL__ = ['descriptors', 'handlers', 'radial', 'operators', 'tbme', 'utils', 'modes', 'environ', 'library']
-from . import descriptors, handlers, radial, operators, tbme, utils, modes, postprocessing, environ, library
+__ALL__ = [
+    'descriptors',
+    'handlers',
+    'radial',
+    'operators',
+    'tbme',
+    'utils',
+    'modes',
+    'postprocessing',
+    'environ',
+    'library',
+    'constants',
+]
+from . import (
+    descriptors,
+    handlers,
+    radial,
+    operators,
+    tbme,
+    utils,
+    modes,
+    postprocessing,
+    environ,
+    library,
+    constants,
+)
 
 if (__name__ == "__MAIN__"):
     pass

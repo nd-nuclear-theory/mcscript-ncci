@@ -22,6 +22,7 @@ University of Notre Dame
 
 - 09/09/20 (pjf): Created, with some content from operators.py
 - 09/12/20 (pjf): Overhaul logic for generating one-body targets and sources.
+- 11/13/20 (pjf): Use constants module.
 """
 import collections
 import math
@@ -30,6 +31,7 @@ import re
 import mcscript.utils
 
 from .. import (
+    constants,
     environ,
     utils,
     modes,
@@ -234,8 +236,8 @@ def generate_ob_observable_sets(task):
                 "linear-combination": {
                     "Dlp": 1.0,
                     # "Dln": 0.0,
-                    "Dsp": 5.5856946893,  # NIST CODATA 2018
-                    "Dsn": -3.82608545,   # NIST CODATA 2018
+                    "Dsp": constants.k_gp,
+                    "Dsn": constants.k_gn,
                 },
                 "qn": qn,
             }
