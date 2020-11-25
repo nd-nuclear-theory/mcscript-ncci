@@ -46,6 +46,7 @@ University of Notre Dame
     + Rename generate_tbme() to generate_tbme_targets().
     + Add "tbme-" to operator id.
 - 09/20/20 (pjf): Fix generate_tbme() if hw_int is not set.
+- 11/22/20 (pjf): Always pass orbital filename for h2mixer builtins.
 """
 import glob
 import os
@@ -60,7 +61,7 @@ from . import (
     operators,
 )
 
-def generate_h2mixer_obme_source_lines(identifier, parameters):
+def generate_h2mixer_obme_source_lines(identifier, parameters, postfix):
     """
     """
     filename = parameters.get("filename")
@@ -79,7 +80,7 @@ def generate_h2mixer_obme_source_lines(identifier, parameters):
             j0=j0, g0=g0, tz0=tz0
         )]
     elif identifier in operators.ob.k_h2mixer_builtin:
-        orbital_filename = parameters.get("orbital_filename", "")
+        orbital_filename = parameters.get("orbital_filename", environ.orbitals_filename(postfix))
         lines += ["define-ob-source builtin {id:s} {orbital_filename:s}".format(
             id=identifier, orbital_filename=orbital_filename
         ).rstrip()]
@@ -103,7 +104,7 @@ def generate_h2mixer_obme_source_lines(identifier, parameters):
     return lines
 
 
-def generate_h2mixer_tbme_source_lines(identifier, parameters):
+def generate_h2mixer_tbme_source_lines(identifier, parameters, postfix):
     """Generate input line for h2mixer source channel.
 
     Arguments:
@@ -278,13 +279,13 @@ def generate_tbme_targets(task, targets, target_qn, postfix=""):
 
     # obme sources: generate h2mixer input (in reverse topological order)
     for obme_id,obme_source in obme_sources.items():
-        lines.extend(generate_h2mixer_obme_source_lines(obme_id, obme_source))
+        lines.extend(generate_h2mixer_obme_source_lines(obme_id, obme_source, postfix))
 
     lines.append("")
 
     # sources: generate h2mixer input
     for id_ in sorted(required_tbme_sources):
-        lines.extend(generate_h2mixer_tbme_source_lines(id_, tbme_sources[id_]))
+        lines.extend(generate_h2mixer_tbme_source_lines(id_, tbme_sources[id_], postfix))
 
     lines.append("")
 
