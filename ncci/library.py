@@ -19,6 +19,7 @@ University of Notre Dame
 - 10/09/20 (mac): Fix hard-coded file format in get_res_data(), again.
 - 10/16/20 (pjf): Add (pass-thru) verbose option to path utilities.
 - 11/22/20 (pjf): Add get_obdme_prefix().
+- 11/24/20 (pjf): Add retrieve_natorb_obdme().
 """
 
 import glob
@@ -27,6 +28,7 @@ import os
 import mcscript
 
 from . import (
+    environ,
     mfdn_v15,
 )
 
@@ -331,6 +333,77 @@ def get_wf_prefix(run, descriptor, library_base=None, verbose=True):
         verbose=verbose
     )
     return wf_prefix
+
+def retrieve_natorb_obdme(
+    run, descriptor, qn, source_postfix="", target_postfix="",
+    library_base=None, verbose=True
+):
+    """Retrieve natorb OBDMEs from library and place in current working directory.
+
+    First checks res/task-data, then checks res/obdme.
+
+    Arguments:
+        run (str): run identifier
+        descriptor (str): task descriptor
+        qn (tuple): quantum numbers of natural orbital base state
+        source_postfix (str, optional):
+        library_base (str, optional): root for library tree
+        verbose (bool, optional): whether to print log messages
+    """
+    natorb_obdme_filename = environ.natorb_obdme_filename(source_postfix)
+    natorb_obdme_info_filename = environ.natorb_info_filename(source_postfix)
+
+    # first check for extracted obdmes
+    try:
+        task_data_dir = get_task_data_prefix(
+            run, descriptor+source_postfix, library_base, verbose=verbose
+        )
+    except mcscript.exception.ScriptError:
+        # fail gracefully if obdmes not found in task-data
+        print("INFO: task-data not found for run {} descriptor {}".format(run, descriptor+source_postfix))
+    else:
+        natorb_obdme_path = os.path.join(task_data_dir, natorb_obdme_filename)
+        natorb_obdme_info_path = os.path.join(task_data_dir, natorb_obdme_info_filename)
+        if os.path.exists(natorb_obdme_path) and os.path.exists(natorb_obdme_info_path):
+            mcscript.call([
+                "cp", "--verbose",
+                natorb_obdme_path,
+                natorb_obdme_filename
+            ])
+
+            mcscript.call([
+                "cp", "--verbose",
+                natorb_obdme_info_path,
+                natorb_obdme_info_filename
+            ])
+
+            return
+
+    # look in saved obdmes
+    obdme_dir = get_obdme_prefix(run, descriptor+source_postfix, library_base, verbose)
+    obdme_info_filename = glob.glob(os.path.join(obdme_dir, "mfdn.rppobdme.info"))
+    (J, g, n) = qn
+    obdme_filename = glob.glob(
+        os.path.join(obdme_dir, "mfdn.statrobdme.seq*.2J{:02d}.n{:02d}.2T*".format(int(2*J), n))
+        )
+    if (len(obdme_filename) == 1) and (len(obdme_info_filename) == 1):
+        mcscript.call([
+            "cp", "--verbose",
+            obdme_filename[0],
+            natorb_obdme_filename
+        ])
+
+        mcscript.call([
+            "cp", "--verbose",
+            obdme_info_filename[0],
+            natorb_obdme_info_filename
+        ])
+
+        return
+
+    # should not get here
+    raise mcscript.exception.ScriptError("unable to find natorb obdmes")
+
 
 ################################################################
 # mfdnv5b00/b01 wf support
