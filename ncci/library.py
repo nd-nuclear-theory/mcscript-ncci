@@ -18,6 +18,7 @@ University of Notre Dame
 - 09/07/20 (pjf): Fix hard-coded file format in get_res_data().
 - 10/09/20 (mac): Fix hard-coded file format in get_res_data(), again.
 - 10/16/20 (pjf): Add (pass-thru) verbose option to path utilities.
+- 11/22/20 (pjf): Add get_obdme_prefix().
 """
 
 import glob
@@ -268,8 +269,29 @@ def get_res_data(run, descriptor, library_base=None, verbose=True):
     res_data = mfdnres.input.read_file(res_filename,filename_format="ALL")[0]
     return res_data
 
+def get_obdme_prefix(run, descriptor, library_base=None, verbose=True):
+    """ Construct prefix for obdme dir in library.
+
+    Arguments:
+        run (str): run identifier
+        descriptor (str): task descriptor
+        library_base (str,optional): root for library tree
+        verbose (bool, optional): whether to print log messages
+
+    Returns:
+        task_data_prefix (str): Directory name
+    """
+    if library_base is None:
+        library_base = LIBRARY_BASE
+    obdme_prefix = mcscript.utils.search_in_subdirectories(
+        mcscript.utils.expand_path(library_base),
+        "run{run:s}".format(run=run), "results", "obdme", descriptor,
+        verbose=verbose
+    )
+    return obdme_prefix
+
 def get_task_data_prefix(run, descriptor, library_base=None, verbose=True):
-    """ Construct prefix for wf dir in library.
+    """ Construct prefix for task-data dir in library.
 
     Arguments:
         run (str): run identifier
