@@ -52,6 +52,7 @@ University of Notre Dame
 - 09/16/20 (pjf):
     + Check that diagonalization is enabled.
     + Add "tbme-" to operator id to form basename.
+- 11/24/20 (pjf): Fix natorb filename globbing for non-integer J.
 """
 import os
 import glob
@@ -327,7 +328,7 @@ def extract_natural_orbitals(task, postfix=""):
     obdme_info_filename = "mfdn.rppobdme.info"
     (J, g, n) = task["natorb_base_state"]
     obdme_filename = glob.glob(
-        "{:s}/mfdn.statrobdme.seq*.2J{:02d}.n{:02d}.2T*".format(work_dir, 2*J, n)
+        "{:s}/mfdn.statrobdme.seq*.2J{:02d}.n{:02d}.2T*".format(work_dir, int(2*J), n)
         )
 
     print("Saving OBDME files for natural orbital generation...")
