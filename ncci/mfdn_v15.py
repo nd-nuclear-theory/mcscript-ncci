@@ -53,6 +53,7 @@ University of Notre Dame
     + Check that diagonalization is enabled.
     + Add "tbme-" to operator id to form basename.
 - 11/24/20 (pjf): Fix natorb filename globbing for non-integer J.
+- 11/30/20 (pjf): Add "calculate_tbo" task option.
 """
 import os
 import glob
@@ -221,8 +222,9 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         if num_obs > 32:
             raise mcscript.exception.ScriptError("Too many observables for MFDn v15")
 
-        inputlist["numTBops"] = num_obs
-        obslist["TBMEoperators"] = obs_basename_list
+        if task.get("calculate_tbo", True):
+            inputlist["numTBops"] = num_obs
+            obslist["TBMEoperators"] = obs_basename_list
 
         # obdme: parameters
         inputlist["obdme"] = task.get("calculate_obdme", True)
