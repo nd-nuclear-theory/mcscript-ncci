@@ -15,6 +15,7 @@ University of Notre Dame
 - 04/23/19 (pjf): Make task_descriptor_c1 use two-digit Z and N fields.
 - 12/26/19 (mac): Add task_descriptor_7_trans.
 - 08/13/20 (pjf): Fix passing M to task_descriptor_7_trans
+- 12/02/20 (pjf): Add natural orbital base state info to task_descriptor_7.
 """
 import mcscript.exception
 import mcscript.utils
@@ -61,7 +62,10 @@ def task_descriptor_7(task):
         fci_indicator = ""
     mixed_parity_indicator = mcscript.utils.ifelse(truncation_parameters.get("Nstep",2) == 1, "x", "")
     coulomb_flag = int(task["use_coulomb"])
-    natural_orbital_indicator = mcscript.utils.ifelse(task.get("natural_orbitals"), "-natorb", "")
+    if task.get("natural_orbitals"):
+        natural_orbital_indicator = "-natorb-J{:04.1f}-g{:1d}-n{:02d}".format(*task["natorb_base_state"])
+    else:
+        natural_orbital_indicator = ""
 
     descriptor = template_string.format(
         coulomb_flag=coulomb_flag,
