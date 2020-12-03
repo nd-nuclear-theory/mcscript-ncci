@@ -7,6 +7,7 @@
     - 11/14/20 (pjf):
         + Add nuclide_string function.
         + Add N0_for_nuclide function (copied from mfdnres).
+    - 12/02/20 (pjf): Allow J<M natorb base states.
 """
 
 import math
@@ -168,7 +169,7 @@ def check_natorb_base_state(task):
     except TypeError:
         raise mcscript.exception.ScriptError(
             "invalid natorb_base_state: {}".format(natorb_base_state))
-    if (J < abs(M)) or (abs(int(2*J)%2) != abs(int(2*M)%2)):
+    if abs(int(2*J)%2) != abs(int(2*M)%2):
         raise mcscript.exception.ScriptError(
             "invalid natorb base state J={:3.1f} M={:3.1f}".format(J,M)
         )
