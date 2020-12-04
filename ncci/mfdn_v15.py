@@ -54,6 +54,8 @@ University of Notre Dame
     + Add "tbme-" to operator id to form basename.
 - 11/24/20 (pjf): Fix natorb filename globbing for non-integer J.
 - 11/30/20 (pjf): Add "calculate_tbo" task option.
+- 12/04/20 (pjf): Remove leftover mfdn.res and mfdn.out files before launching
+    MFDn.
 """
 import os
 import glob
@@ -276,6 +278,12 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
 
     # enter work directory
     os.chdir(work_dir)
+
+    # remove any stray files from a previous run
+    if os.path.exists("mfdn.out"):
+        mcscript.call(["rm", "-v", "mfdn.out"])
+    if os.path.exists("mfdn.res"):
+        mcscript.call(["rm", "-v", "mfdn.res"])
 
     # invoke MFDn
     mcscript.call(
