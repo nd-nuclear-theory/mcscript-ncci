@@ -16,6 +16,7 @@ University of Notre Dame
 - 12/26/19 (mac): Add task_descriptor_7_trans.
 - 08/13/20 (pjf): Fix passing M to task_descriptor_7_trans
 - 12/02/20 (pjf): Add natural orbital base state info to task_descriptor_7.
+- 01/13/21 (pjf): Add task_descriptor_decomposition_1.
 """
 import mcscript.exception
 import mcscript.utils
@@ -243,6 +244,26 @@ def task_descriptor_9(task):
         natural_orbital_indicator=natural_orbital_indicator,
         **mcscript.utils.dict_union(task, truncation_parameters)
         )
+
+    return descriptor
+
+
+def task_descriptor_decomposition_1(task):
+    """Task descriptor for decomposition.
+
+    Requires task to have "wf_source_info" with "descriptor" function.
+    """
+
+    template_string = (
+        "{source_wf_descriptor:s}"
+        "-J{source_wf_qn[0]:04.1f}-g{source_wf_qn[1]:1d}-n{source_wf_qn[2]:02d}"
+        "-op{decomposition_operator_name:s}-dlan{max_iterations:d}"
+    )
+
+    descriptor = template_string.format(
+        source_wf_descriptor=task["wf_source_info"]["descriptor"](task["wf_source_info"]),
+        **task
+    )
 
     return descriptor
 
