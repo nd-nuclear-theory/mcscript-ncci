@@ -79,13 +79,29 @@ runmfdn13: harmonic oscillator direct run with MFDn v15, for use with postproces
     or, for a quick test with just Nmax=2 runs
 
         qsubm --here --pool=Nmax02 mfdn13
-           
+
     Sets up for runtransitions00.
 
     Uses operator TBMEs from `example-data`.  Make sure to set NCCI_DATA_DIR_H2 to
     include `mcscript-ncci/docs/examples` (see `mcscript-ncci/INSTALL.md`).
 
     See mcscript-ncci/docs/examples/example-results for example results output.
+
+runmfdn14: harmonic oscillator Lanczos decomposition run with MFDn v15
+
+    6Li Nmax02,Nmax04 hw15,hw20 (direct) op L2,S2,Nex
+
+    Usage:
+
+        qsubm --here --pool=ALL mfdn14
+
+    or, for a quick test with just Nmax=2, M=1.0 runs
+
+        qsubm --here --pool=Nmax02-M1.0 mfdn14
+
+    Uses wave functions created by runmfdn13.  Make sure to set
+    NCCI_LIBRARY_PATH to include `mcscript-ncci/docs/examples`
+    (see `mcscript-ncci/INSTALL.md`).
 
 runtransitions00: mfdn-transitions postprocessor run
 
