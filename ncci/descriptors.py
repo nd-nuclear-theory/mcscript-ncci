@@ -258,6 +258,9 @@ def task_descriptor_decomposition_1(task):
         "{source_wf_descriptor:s}"
         "-J{source_wf_qn[0]:04.1f}-g{source_wf_qn[1]:1d}-n{source_wf_qn[2]:02d}"
         "-op{decomposition_operator_name:s}-dlan{max_iterations:d}"
+        # 01/19/21 (mac): However, we propose moving away from calling this an "operator",
+        # but rather a decomposition type.  See runmac0566.py.  "-{decomposition_name:s}".
+        # How does this interact with the "decomposition" flag in the format 7 mfdnres parser?
     )
 
     descriptor = template_string.format(
