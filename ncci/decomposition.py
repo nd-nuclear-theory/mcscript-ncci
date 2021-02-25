@@ -4,6 +4,9 @@ Mark A. Caprio
 University of Notre Dame
 
 - 02/23/21 (mac): Created, with refactored code from runaem0110.
+- 02/22/21 (aem): 
+            +  Add U3LS type operators
+            +  Add option to search list of paths for decomposition coefficients. 
 """
 
 import glob
@@ -34,14 +37,28 @@ def read_decomposition_operator_coefs(
         nuclide (tuple): (Z,N) of nuclide
         Nmax (int): Nmax
         decomposition_type (str): identifier for decomposition type (e.g., "U3SpSnS")
-        decomposition_path (str): path to decomposition files
+        decomposition_path (str,list[str]): path to decomposition files
         coef_filename_format (str, optional): format template for coef filename
 
     Returns:
         coefs (np.array): vector of coefficients
     """
+
+
     coef_filename = coef_filename_format.format(nuclide=nuclide,Nmax=Nmax,decomposition_type=decomposition_type)
-    coefs = np.loadtxt(os.path.join(decomposition_path,coef_filename))
+    if type(decomposition_path)==str:
+        coefs = np.loadtxt(os.path.join(decomposition_path,coef_filename))
+    else:
+        coefs = np.loadtxt(
+            mcscript.utils.search_in_subdirectories(
+                    "",
+                    decomposition_path,
+                    coef_filename,
+                    error_message="file not found",
+                    verbose=False
+                )
+        )
+
     if (verbose):
         print("nuclide {}, Nmax {}, operator {}: {}".format(nuclide,Nmax,decomposition_type,coefs))
     return coefs
@@ -86,11 +103,23 @@ def U3S_operator(nuclide,Nmax,hw,coefs):
             [operators.tb.Nex(nuclide, hw), CSU3_operator(nuclide,Nmax,hw), operators.tb.S2()],
             coefs
             )
+def U3LS_operator(nuclide,Nmax,hw,coefs):
+    return mcscript.utils.dot(
+            [operators.tb.Nex(nuclide, hw), CSU3_operator(nuclide,Nmax,hw), operators.tb.S2(),operators.tb.L2()],
+            coefs
+            )
+
 def U3SpSnS_operator(nuclide,Nmax,hw,coefs):
     return mcscript.utils.dot(
             [operators.tb.Nex(nuclide, hw), CSU3_operator(nuclide,Nmax,hw), operators.tb.Sp2(), operators.tb.Sn2(), operators.tb.S2()],
             coefs
             )
+def U3LSpSnS_operator(nuclide,Nmax,hw,coefs):
+    return mcscript.utils.dot(
+            [operators.tb.Nex(nuclide, hw), CSU3_operator(nuclide,Nmax,hw), operators.tb.Sp2(), operators.tb.Sn2(), operators.tb.S2(),operators.tb.L2()],
+            coefs
+            )
+
 def Sp3RS_operator(nuclide,Nmax,hw,coefs):
     return mcscript.utils.dot(
             [CSp3R_operator(nuclide,Nmax,hw), operators.tb.S2()],
@@ -115,7 +144,9 @@ decomposition_operator_registry={
     "SU3": (CSU3_operator,False),
     "Sp3R": (CSp3R_operator,False),
     "U3S": (U3S_operator,True),
+    "U3LS": (U3LS_operator,True),
     "U3SpSnS": (U3SpSnS_operator,True),
+    "U3LSpSnS": (U3LSpSnS_operator,True),
     "Sp3RS": (U3S_operator,True),
     "Sp3RSpSnS": (U3SpSnS_operator,True),
 }
@@ -140,7 +171,7 @@ def decomposition_operator(
         nuclide (tuple): (Z,N) of nuclide
         Nmax (int): Nmax
         decomposition_type (str): identifier for decomposition type (e.g., "U3SpSnS")
-        decomposition_path (str): path to decomposition files
+        decomposition_path (str,list[str]): path to decomposition files
         coef_filename_format (str, optional): format template for coef filename
     """
     
