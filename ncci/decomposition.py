@@ -3,10 +3,12 @@
 Mark A. Caprio
 University of Notre Dame
 
-- 02/23/21 (mac): Created, with refactored code from runaem0110.
-- 02/22/21 (aem): 
-            +  Add U3LS type operators
-            +  Add option to search list of paths for decomposition coefficients. 
+    - 02/23/21 (mac): Created, with refactored code from runaem0110.
+    - 02/22/21 (aem): 
+        +  Add U3LS type operators
+        +  Add option to search list of paths for decomposition coefficients. 
+    - 02/26/21 (mac): Fix operator mapping for Sp3RS and Sp3RSpSnS decompositions.
+
 """
 
 import glob
@@ -147,8 +149,8 @@ decomposition_operator_registry={
     "U3LS": (U3LS_operator,True),
     "U3SpSnS": (U3SpSnS_operator,True),
     "U3LSpSnS": (U3LSpSnS_operator,True),
-    "Sp3RS": (U3S_operator,True),
-    "Sp3RSpSnS": (U3SpSnS_operator,True),
+    "Sp3RS": (Sp3RS_operator,True),
+    "Sp3RSpSnS": (Sp3RSpSnS_operator,True),
 }
     
 
