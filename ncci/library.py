@@ -205,6 +205,7 @@ def recover_from_hsi(year,run,date,target_base,repo_str="m2032"):
         mcscript.call(["rm","-v",filename])
 
     # make retrieved results available to group
+    target_run_top_prefix = os.path.join(target_base,"run{run}".format(run=run))
     mcscript.call([
         "chown","--recursive",":{}".format(repo_str),target_run_top_prefix
     ])
