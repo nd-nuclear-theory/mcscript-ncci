@@ -42,6 +42,7 @@ University of Notre Dame
     mcscript.control.FileWatchdog on mfdn.out.
 - 06/11/19 (pjf): Save task-data archives to correct place (under results_dir).
 + 09/04/19 (pjf): Rename Trel->Tintr.
+- 05/13/21 (mac): Fix many-body parity handling for FCI runs.
 """
 import os
 import glob
@@ -111,13 +112,11 @@ def set_up_FCI_truncation(task, inputlist):
     # maximum weight of an orbital is either Nmax or sp_weight_max
     if task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kNmax:
         max_sp_weight = truncation_parameters["Nmax"]
-        parity = (-1)**(truncation_parameters["Nmax"] % truncation_parameters["Nstep"])
     else:
         max_sp_weight = truncation_parameters["sp_weight_max"]
-        parity = truncation_parameters.get("parity", 0)
 
     inputlist["WTmax"] = sum(task["nuclide"])*max_sp_weight
-    inputlist["parity"] = int(parity)
+    inputlist["parity"] = int(truncation_parameters["parity"])
     inputlist["TwoMj"] = int(2*truncation_parameters["M"])
 
 
