@@ -126,13 +126,11 @@ def set_up_FCI_truncation(task, inputlist):
     # maximum weight of an orbital is either Nmax or sp_weight_max
     if task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kNmax:
         max_sp_weight = truncation_parameters["Nmax"]
-        parity = (-1)**(truncation_parameters["Nmax"] % truncation_parameters["Nstep"])
     else:
         max_sp_weight = truncation_parameters["sp_weight_max"]
-        parity = truncation_parameters.get("parity", 0)
 
     inputlist["WTmax"] = sum(task["nuclide"])*max_sp_weight
-    inputlist["parity"] = int(parity)
+    inputlist["parity"] = int(truncation_parameters["parity"])
     inputlist["TwoMj"] = int(2*truncation_parameters["M"])
 
 
