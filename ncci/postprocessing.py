@@ -34,6 +34,8 @@ University of Notre Dame
     + Suppress empty transitions-tb res file.
 - 10/16/20 (pjf): Raise exception if no transitions are to be done.
 - 10/21/20 (pjf): Factor out db construction from db connection.
+- 05/14/21 (pjf):
+    + Pass hw to mfdn-transitions.
 """
 import collections
 import glob
@@ -884,6 +886,7 @@ def run_postprocessor_two_body(task, one_body=False):
 
             "obdme": True if num_free_obdmes > 0 else False,
             "max2K": max2K,
+            "hbomeg": task.get("hw", 0.0),
             "numTBtrans": len(operator_id_list),
             "TBMEoperators": ["tbme-{}".format(basename) for basename in operator_id_list],
         }
@@ -1125,7 +1128,8 @@ def run_postprocessor_one_body(task):
             "n_ket": [int(ket_n) for (ket_J,ket_g,ket_n) in ket_qn_list],
 
             "obdme": True,
-            "max2K": max2K
+            "max2K": max2K,
+            "hbomeg": task.get("hw", 0.0),
         }
         mcscript.utils.write_namelist(
             "transitions.input",
