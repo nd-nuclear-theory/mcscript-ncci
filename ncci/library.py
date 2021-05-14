@@ -20,6 +20,7 @@ University of Notre Dame
 - 10/16/20 (pjf): Add (pass-thru) verbose option to path utilities.
 - 11/22/20 (pjf): Add get_obdme_prefix().
 - 11/24/20 (pjf): Add retrieve_natorb_obdme().
+- 02/17/21 (mac): Fix chown to act on whole run directory.
 """
 
 import glob
@@ -36,17 +37,22 @@ from . import (
 # HSI run retrieval scripting -- legacy
 ################################################################
 
-def recover_from_hsi_legacy(year,run,date,target_base,keep_archives=False,keep_metadata=False):
+def recover_from_hsi_legacy(year,run,date,target_base,keep_archives=False,keep_metadata=False,repo_str="m2032"):
     """Extract results subarchives from hsi for "legacy" archives (until 2018), before archives
     were broken down by results type.
+
+    The archives should be <basename>.tgz for everything except wave functions
+    and <basename>-wf.tar for wavefunctions.
 
     Args
         year (str): year code (for archive file hsi subdirectory)
         run (str): run name
         date (str): date code (for archive filename)
         target_base (str): path to library directory
-        keep_archives (bool, optional): whether or not to save unextracted archives (useful in debugging)
-        keep_metadata (bool, optional): whether or not to keep flags/batch/output directories
+        keep_archives (bool, optional): whether or not to save unextracted archives (useful in debugging this scripting)
+        keep_metadata (bool, optional): whether or not to keep flags/batch/output directories (useful for diagnostics)
+        repo_str (str): group name for file permissions
+
     """
 
     # set up general paths
@@ -127,10 +133,10 @@ def recover_from_hsi_legacy(year,run,date,target_base,keep_archives=False,keep_m
 
     # make retrieved results available to group
     mcscript.call([
-        "chown","--recursive",":m2032",target_run_results_prefix
+        "chown","--recursive",":{}".format(repo_str),target_run_top_prefix
     ])
     mcscript.call([
-        "chmod","--recursive","g+rX",target_run_results_prefix
+        "chmod","--recursive","g+rX",target_run_top_prefix
     ])
 
     os.chdir(target_base)
@@ -140,18 +146,23 @@ def recover_from_hsi_legacy(year,run,date,target_base,keep_archives=False,keep_m
 # HSI run retrieval scripting
 ################################################################
 
-def recover_from_hsi(year,run,date,target_base):
+def recover_from_hsi(year,run,date,target_base,repo_str="m2032"):
     """Extract results subarchives from hsi.
 
     Limitation: This routine fails for legacy archives where the results
     directory was not broken down by results type, and thus neither was the
     archive.
 
+    The archives should be <basename>-{res,task-data,wf}.<ext>, where <ext> can
+    be any of {tar,tar.gz,.tgz}.  Automatic support is still provided for
+    extracting individual task task-data tarballs (legacy).
+
     Args
         year (str): year code (for archive file hsi subdirectory)
         run (str): run name
         date (str): date code (for archive filename)
         target_base (str): path to library directory
+        repo_str (str): group name for file permissions
 
     """
 
@@ -194,11 +205,12 @@ def recover_from_hsi(year,run,date,target_base):
         mcscript.call(["rm","-v",filename])
 
     # make retrieved results available to group
+    target_run_top_prefix = os.path.join(target_base,"run{run}".format(run=run))
     mcscript.call([
-        "chown","--recursive",":m2032",target_run_results_prefix
+        "chown","--recursive",":{}".format(repo_str),target_run_top_prefix
     ])
     mcscript.call([
-        "chmod","--recursive","g+rX",target_run_results_prefix
+        "chmod","--recursive","g+rX",target_run_top_prefix
     ])
 
     os.chdir(target_base)

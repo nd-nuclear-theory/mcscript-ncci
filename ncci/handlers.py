@@ -186,7 +186,6 @@ def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
     """Task handler for MFDn Lanczos decomposition, assuming oscillator basis.
 
     Task fields:
-       "decomposition_operator_name"
        "source_wf_qn"
        "wf_source_info"
 
