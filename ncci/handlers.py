@@ -44,6 +44,7 @@ University of Notre Dame
 - 10/21/20 (pjf):
     + Split out pre and post phases from task_handler_postprocessor().
     + Add explicit call to postprocessing.init_postprocessor_db().
+- 05/14/21 (pjf): Use partitioning from task-data for decompositions.
 """
 import os
 import glob
@@ -207,6 +208,15 @@ def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
     levels = res_data.levels
     level_seq_lookup = dict(map(reversed,enumerate(levels,1)))
 
+    # get partitioning info
+    #  TODO(pjf) eventually this should be handled by MFDn reading mfdn_smwf.info
+    task_data_prefix = library.get_task_data_prefix(ket_run, ket_descriptor)
+    partition_filename = os.path.join(task_data_prefix, "mfdn_partitioning.info")
+    if not os.path.exists(partition_filename):
+        partition_filename = task.get("partition_filename")
+        if partition_filename is not None:
+            print("WARN: using manually-provided partitioning {}".format(partition_filename))
+
     # set up run parameters
     qn = task["source_wf_qn"]
     ket_wf_prefix = library.get_wf_prefix(ket_run, ket_descriptor)
@@ -215,6 +225,7 @@ def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
         "initvec_index": level_seq_lookup[qn],
         "initvec_smwffilename": os.path.join(ket_wf_prefix, "mfdn_smwf"),
     }
+    task["partition_filename"] = partition_filename
 
     # run MFDn
     mfdn_driver = task.get("mfdn_driver")
