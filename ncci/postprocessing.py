@@ -36,11 +36,13 @@ University of Notre Dame
 - 10/21/20 (pjf): Factor out db construction from db connection.
 - 05/14/21 (pjf):
     + Pass hw to mfdn-transitions.
+    + Check parsed RME for NaN.
 """
 import collections
 import glob
 import hashlib
 import itertools
+import math
 import os
 import re
 import sqlite3
@@ -692,6 +694,8 @@ def parse_two_body_observable(res, tokenized_lines):
         qnf = (float(tokenized_line[0]), int(tokenized_line[1]), int(tokenized_line[2]))
         qni = (float(tokenized_line[3]), int(tokenized_line[4]), int(tokenized_line[5]))
         rme = float(tokenized_line[6])
+        if math.isnan(rme) or math.isinf(rme):
+            raise ValueError("invalid rme: {}".format(rme))
         transition_dict[(qnf,qni)] = rme
 
 
