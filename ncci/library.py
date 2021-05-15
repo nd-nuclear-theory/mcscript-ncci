@@ -256,7 +256,7 @@ def hsi_retrieval_handler(task):
         # keep archives to facilitate resumption on error; keep metadata to facilitate rebundling into modern archive
         recover_from_hsi_legacy(year,run,date,library_base,repo_str=repo_str,keep_archives=True,keep_metadata=True)
     else:
-        ncci.library.recover_from_hsi(year,run,date,library_base,repo_str=repo_str)
+        recover_from_hsi(year,run,date,library_base,repo_str=repo_str)
 
 def hsi_retrieval_task_descriptor(task):
     """ Provide task descriptor for HSI run retrieval.
