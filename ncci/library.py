@@ -21,6 +21,7 @@ University of Notre Dame
 - 11/22/20 (pjf): Add get_obdme_prefix().
 - 11/24/20 (pjf): Add retrieve_natorb_obdme().
 - 02/17/21 (mac): Fix chown to act on whole run directory.
+- 05/14/21 (mac): Provide task handler for HSI retrieval.
 """
 
 import glob
@@ -37,7 +38,7 @@ from . import (
 # HSI run retrieval scripting -- legacy
 ################################################################
 
-def recover_from_hsi_legacy(year,run,date,target_base,keep_archives=False,keep_metadata=False,repo_str="m2032"):
+def recover_from_hsi_legacy(year,run,date,library_base,keep_archives=False,keep_metadata=False,repo_str=None):
     """Extract results subarchives from hsi for "legacy" archives (until 2018), before archives
     were broken down by results type.
 
@@ -48,20 +49,20 @@ def recover_from_hsi_legacy(year,run,date,target_base,keep_archives=False,keep_m
         year (str): year code (for archive file hsi subdirectory)
         run (str): run name
         date (str): date code (for archive filename)
-        target_base (str): path to library directory
+        library_base (str): path to library directory
         keep_archives (bool, optional): whether or not to save unextracted archives (useful in debugging this scripting)
         keep_metadata (bool, optional): whether or not to keep flags/batch/output directories (useful for diagnostics)
-        repo_str (str): group name for file permissions
+        repo_str (str,optional): group name for file permissions
 
     """
 
     # set up general paths
-    target_run_top_prefix = os.path.join(target_base,"run{run}".format(run=run))
-    target_run_results_prefix = os.path.join(target_base,"run{run}".format(run=run),"results")
+    target_run_top_prefix = os.path.join(library_base,"run{run}".format(run=run))
+    target_run_results_prefix = os.path.join(library_base,"run{run}".format(run=run),"results")
 
     # go to base directory for extraction
-    mcscript.utils.mkdir(target_base,exist_ok=True,parents=True)
-    os.chdir(target_base)
+    mcscript.utils.mkdir(library_base,exist_ok=True,parents=True)
+    os.chdir(library_base)
 
     print("Retrieving {}...".format((year,run,date)))
 
@@ -104,7 +105,7 @@ def recover_from_hsi_legacy(year,run,date,target_base,keep_archives=False,keep_m
 
     # relocate old wave functions to results subdirectory
     mcscript.utils.mkdir(os.path.join(target_run_results_prefix,"wf"),exist_ok=True,parents=True)
-    target_run_old_wavefunctions_prefix = os.path.join(target_base,"run{run}".format(run=run),"wavefunctions")
+    target_run_old_wavefunctions_prefix = os.path.join(library_base,"run{run}".format(run=run),"wavefunctions")
     for filename in glob.glob(os.path.join(target_run_old_wavefunctions_prefix,"*.tar")):
         mcscript.call([
             "mv","-v",filename,os.path.join(target_run_results_prefix,"wf")
@@ -132,21 +133,22 @@ def recover_from_hsi_legacy(year,run,date,target_base,keep_archives=False,keep_m
         mcscript.call(["rm","-v",filename])
 
     # make retrieved results available to group
-    mcscript.call([
-        "chown","--recursive",":{}".format(repo_str),target_run_top_prefix
-    ])
-    mcscript.call([
-        "chmod","--recursive","g+rX",target_run_top_prefix
-    ])
+    if repo_str is not None:
+        mcscript.call([
+            "chown","--recursive",":{}".format(repo_str),target_run_top_prefix
+        ])
+        mcscript.call([
+            "chmod","--recursive","g+rX",target_run_top_prefix
+        ])
 
-    os.chdir(target_base)
+    os.chdir(library_base)
 
 
 ################################################################
 # HSI run retrieval scripting
 ################################################################
 
-def recover_from_hsi(year,run,date,target_base,repo_str="m2032"):
+def recover_from_hsi(year,run,date,library_base,repo_str=None):
     """Extract results subarchives from hsi.
 
     Limitation: This routine fails for legacy archives where the results
@@ -161,14 +163,14 @@ def recover_from_hsi(year,run,date,target_base,repo_str="m2032"):
         year (str): year code (for archive file hsi subdirectory)
         run (str): run name
         date (str): date code (for archive filename)
-        target_base (str): path to library directory
-        repo_str (str): group name for file permissions
+        library_base (str): path to library directory
+        repo_str (str,optional): group name for file permissions
 
     """
 
     # go to base directory for extraction
-    mcscript.utils.mkdir(target_base,exist_ok=True,parents=True)
-    os.chdir(target_base)
+    mcscript.utils.mkdir(library_base,exist_ok=True,parents=True)
+    os.chdir(library_base)
 
     print("Retrieving {}...".format((year,run,date)))
 
@@ -186,7 +188,7 @@ def recover_from_hsi(year,run,date,target_base,repo_str="m2032"):
                 mcscript.call(["rm",archive_filename],check_return=False)
 
     # extract individual task tarballs (legacy)
-    target_run_results_prefix = os.path.join(target_base,"run{run}".format(run=run),"results")
+    target_run_results_prefix = os.path.join(library_base,"run{run}".format(run=run),"results")
     os.chdir(os.path.join(target_run_results_prefix,"task-data"))
     for filename in glob.glob("*.tgz"):
         mcscript.call([
@@ -205,16 +207,64 @@ def recover_from_hsi(year,run,date,target_base,repo_str="m2032"):
         mcscript.call(["rm","-v",filename])
 
     # make retrieved results available to group
-    target_run_top_prefix = os.path.join(target_base,"run{run}".format(run=run))
-    mcscript.call([
-        "chown","--recursive",":{}".format(repo_str),target_run_top_prefix
-    ])
-    mcscript.call([
-        "chmod","--recursive","g+rX",target_run_top_prefix
-    ])
+    target_run_top_prefix = os.path.join(library_base,"run{run}".format(run=run))
+    if repo_str is not None:
+        mcscript.call([
+            "chown","--recursive",":{}".format(repo_str),target_run_top_prefix
+        ])
+        mcscript.call([
+            "chmod","--recursive","g+rX",target_run_top_prefix
+        ])
 
-    os.chdir(target_base)
+    os.chdir(library_base)
 
+################################################################
+# HSI run retrieval task handler
+################################################################
+
+def hsi_retrieval_handler(task):
+    """ Task handler for HSI run retrieval.
+    
+    Task dictionary:
+
+        run (str): run name
+        legacy (bool): if legacy format (pre-subarchives)
+        year (str): year code (for archive file hsi subdirectory)
+        date (str): date code (for archive filename)
+        library_base (str): path to library directory
+        repo_str (str): group name for file permissions
+
+    Example:
+
+      {
+          "run": "mac0451", "legacy": False, "year": "2020", "date": "200501",
+          "library_base": library_base, "repo_str": "m2032"
+      }
+
+    Arguments:
+        task (dict): as described above
+    """
+
+    run = task["run"]
+    legacy = task["legacy"]
+    year = task["year"]
+    date = task["date"]
+    library_base= task["library_base"]
+    repo_str = task["repo_str"]
+    
+    if task["legacy"]:
+        # keep archives to facilitate resumption on error; keep metadata to facilitate rebundling into modern archive
+        recover_from_hsi_legacy(year,run,date,library_base,repo_str=repo_str,keep_archives=True,keep_metadata=True)
+    else:
+        ncci.library.recover_from_hsi(year,run,date,library_base,repo_str=repo_str)
+
+def hsi_retrieval_task_descriptor(task):
+    """ Provide task descriptor for HSI run retrieval.
+
+    Also useful as task pool.
+    """
+    return task["run"]
+    
 ################################################################
 # library accessors
 ################################################################
