@@ -13,6 +13,7 @@ University of Notre Dame
 - 10/04/17 (pjf): Add counting-only descriptor.
 - 01/04/18 (pjf): Add task_descriptor_9 for manual orbitals.
 - 04/23/19 (pjf): Make task_descriptor_c1 use two-digit Z and N fields.
+- 05/27/21 (pjf): Fix mixed parity indicator in task_descriptor_7.
 """
 import mcscript.exception
 import mcscript.utils
@@ -56,7 +57,10 @@ def task_descriptor_7(task):
         fci_indicator = "-fci"
     else:
         fci_indicator = ""
-    mixed_parity_indicator = mcscript.utils.ifelse(truncation_parameters["Nstep"] == 1, "x", "")
+    if (truncation_parameters.get("Nstep") == 1) or (truncation_parameters.get("parity") == 0):
+        mixed_parity_indicator = "x"
+    else:
+        mixed_parity_indicator = ""
     coulomb_flag = int(task["use_coulomb"])
     natural_orbital_indicator = mcscript.utils.ifelse(task.get("natural_orbitals"), "-natorb", "")
 
