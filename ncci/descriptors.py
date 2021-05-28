@@ -17,6 +17,7 @@ University of Notre Dame
 - 08/13/20 (pjf): Fix passing M to task_descriptor_7_trans
 - 12/02/20 (pjf): Add natural orbital base state info to task_descriptor_7.
 - 01/13/21 (pjf): Add task_descriptor_decomposition_1.
+- 05/27/21 (pjf): Fix mixed parity indicator in task_descriptor_7.
 """
 import mcscript.exception
 import mcscript.utils
@@ -61,7 +62,10 @@ def task_descriptor_7(task):
         fci_indicator = "-fci"
     else:
         fci_indicator = ""
-    mixed_parity_indicator = mcscript.utils.ifelse(truncation_parameters.get("Nstep",2) == 1, "x", "")
+    if (truncation_parameters.get("Nstep") == 1) or (truncation_parameters.get("parity") == 0):
+        mixed_parity_indicator = "x"
+    else:
+        mixed_parity_indicator = ""
     coulomb_flag = int(task["use_coulomb"])
     if task.get("natural_orbitals"):
         natural_orbital_indicator = "-natorb-J{:04.1f}-g{:1d}-n{:02d}".format(*task["natorb_base_state"])
