@@ -27,26 +27,42 @@ University of Notre Dame
 - 06/02/19 (mac): Rename save_mfdn_output to save_mfdn_task_data.
 - 07/03/19 (mac): Restore task_handler_post_run_no_cleanup().
 - 07/14/19 (mac): Update archive_handler_mfdn() to use archive_handler_subarchives().
+- 10/10/19 (pjf):
+    + Change default MFDn driver to mfdn_v15.
+    + Use tbme.generate_diagonalization_tbme() instead of tbme.generate_tbme().
 - 10/24/19 (mac):
     + Add task_handler_oscillator_mfdn_decomposition().
     + Update archive_handler_mfdn() to archive lanczos files.
     + Clean up task_handler_oscillator() to call task_handler_oscillator_mfdn().
 - 12/11/19 (pjf): Use new results storage helper functions from mcscript.
+- 06/03/20 (pjf): Make natural orbital base state selected by quantum numbers.
+- 09/16/20 (pjf):
+    + Revert to general tbme.generate_tbme().
+    + Fix obdme archiving.
+- 09/19/20 (pjf): Separate out calls for OBME and xform generation.
+- 09/20/20 (pjf): Add task handler for transitions runs.
+- 10/21/20 (pjf):
+    + Split out pre and post phases from task_handler_postprocessor().
+    + Add explicit call to postprocessing.init_postprocessor_db().
+- 05/14/21 (pjf): Use partitioning from task-data for decompositions.
 """
 import os
 import glob
 import mcscript
 
 from . import (
+    descriptors,
+    library,
     modes,
+    postprocessing,
     radial,
     tbme,
     utils,
-    mfdn_v14,
+    mfdn_v15,
 )
 
 # set default MFDn driver
-default_mfdn_driver = mfdn_v14
+default_mfdn_driver = mfdn_v15
 
 ################################################################
 # counting-only run
@@ -146,8 +162,11 @@ def task_handler_oscillator_pre(task, postfix=""):
 
     radial.set_up_interaction_orbitals(task, postfix=postfix)
     radial.set_up_orbitals(task, postfix=postfix)
-    radial.set_up_radial_analytic(task, postfix=postfix)
+    radial.set_up_xforms_analytic(task, postfix=postfix)
+    radial.set_up_obme_analytic(task, postfix=postfix)
     tbme.generate_tbme(task, postfix=postfix)
+    if task.get("save_tbme"):
+        tbme.save_tbme(task, postfix=postfix)
 
 def task_handler_oscillator_mfdn(task, postfix=""):
     """Task handler for MFDn phase of oscillator basis run.
@@ -166,34 +185,47 @@ def task_handler_oscillator_mfdn(task, postfix=""):
 def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
     """Task handler for MFDn Lanczos decomposition, assuming oscillator basis.
 
+    Task fields:
+       "source_wf_qn"
+       "wf_source_info"
+
     Arguments:
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
 
-    # read in level set
+    # process source wave function task/descriptor info
+    wf_source_info = task["wf_source_info"]
+    wf_source_info.setdefault("metadata",{})
+    wf_source_info["metadata"]["descriptor"] = wf_source_info["descriptor"](wf_source_info)
+
+    # retrieve level data
     import mfdnres
-    res_filename = mcscript.utils.expand_path("$SCRATCH/runs/library/run{run:s}/res/run{run:s}-mfdn15-{descriptor:s}.res".format(
-        run=task["source_wf_descriptor"][0],
-        descriptor=task["source_wf_descriptor"][1]
-    ))
-    print("Reading {}...".format(res_filename))
-    res_data = mfdnres.res.read_file(res_filename, "mfdn_v15")[0]
+    ket_run = wf_source_info["run"]
+    ket_descriptor = wf_source_info["metadata"]["descriptor"]
+    res_data = library.get_res_data(ket_run,ket_descriptor)
     levels = res_data.levels
-    print(levels)
-    seq_lookup = dict(map(reversed,enumerate(levels,1)))
-    print(seq_lookup)
-    
+    level_seq_lookup = dict(map(reversed,enumerate(levels,1)))
+
+    # get partitioning info
+    #  TODO(pjf) eventually this should be handled by MFDn reading mfdn_smwf.info
+    task_data_prefix = library.get_task_data_prefix(ket_run, ket_descriptor)
+    partition_filename = os.path.join(task_data_prefix, "mfdn_partitioning.info")
+    if not os.path.exists(partition_filename):
+        partition_filename = task.get("partition_filename")
+        if partition_filename is not None:
+            print("WARN: using manually-provided partitioning {}".format(partition_filename))
+
     # set up run parameters
+    qn = task["source_wf_qn"]
+    ket_wf_prefix = library.get_wf_prefix(ket_run, ket_descriptor)
     task["mfdn_inputlist"] = {
         "selectpiv" : 4,
-        "initvec_index": seq_lookup[task["source_wf_qn"]],
-        "initvec_smwffilename": mcscript.utils.expand_path("$SCRATCH/runs/library/run{run:s}/wf/{descriptor:s}/mfdn_smwf".format(
-            run=task["source_wf_descriptor"][0],
-            descriptor=task["source_wf_descriptor"][1]
-        )),
+        "initvec_index": level_seq_lookup[qn],
+        "initvec_smwffilename": os.path.join(ket_wf_prefix, "mfdn_smwf"),
     }
-    
+    task["partition_filename"] = partition_filename
+
     # run MFDn
     mfdn_driver = task.get("mfdn_driver")
     if mfdn_driver is None:
@@ -209,7 +241,7 @@ def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
     mcscript.task.save_results_single(
         task, lanczos_source_filename, lanczos_target_filename, "lanczos"
     )
-    
+
 def task_handler_oscillator(task, postfix=""):
     """Task handler for complete oscillator basis run, including serial pre and post
     steps.
@@ -241,11 +273,7 @@ def task_handler_natorb_pre(task, source_postfix="", target_postfix=""):
     # sanity checks
     if not task.get("natural_orbitals"):
         raise mcscript.exception.ScriptError("natural orbitals not enabled")
-
-    natorb_base_state = task.get("natorb_base_state")
-    if not isinstance(natorb_base_state, int):
-        raise mcscript.exception.ScriptError(
-            "invalid natorb_base_state: {}".format(natorb_base_state))
+    utils.check_natorb_base_state(task)
 
     # set correct basis mode
     task["basis_mode"] = modes.BasisMode.kGeneric
@@ -272,11 +300,7 @@ def task_handler_natorb_run(task, postfix):
     # sanity checks
     if not task.get("natural_orbitals"):
         raise mcscript.exception.ScriptError("natural orbitals not enabled")
-
-    natorb_base_state = task.get("natorb_base_state")
-    if not isinstance(natorb_base_state, int):
-        raise mcscript.exception.ScriptError(
-            "invalid natorb_base_state: {}".format(natorb_base_state))
+    utils.check_natorb_base_state(task)
 
     mfdn_driver = task.get("mfdn_driver")
     if mfdn_driver is None:
@@ -287,7 +311,7 @@ def task_handler_natorb_run(task, postfix):
     mfdn_driver.run_mfdn(task=task, postfix=postfix)
 
 
-def task_handler_natorb(task):
+def task_handler_natorb(task, cleanup=True):
     """Task handler for basic oscillator+natural orbital run.
 
     Arguments:
@@ -296,11 +320,7 @@ def task_handler_natorb(task):
     # sanity checks
     if not task.get("natural_orbitals"):
         raise mcscript.exception.ScriptError("natural orbitals not enabled")
-
-    natorb_base_state = task.get("natorb_base_state")
-    if not isinstance(natorb_base_state, int):
-        raise mcscript.exception.ScriptError(
-            "invalid natorb_base_state: {}".format(natorb_base_state))
+    utils.check_natorb_base_state(task)
 
     # first do base oscillator run
     task_handler_oscillator(task, postfix=utils.natural_orbital_indicator(0))
@@ -312,8 +332,44 @@ def task_handler_natorb(task):
         )
     task_handler_natorb_run(task=task, postfix=utils.natural_orbital_indicator(1))
     task_handler_post_run(
-        task=task, postfix=utils.natural_orbital_indicator(1)
+        task=task, postfix=utils.natural_orbital_indicator(1), cleanup=cleanup
         )
+
+
+################################################################
+# postprocessing run
+################################################################
+
+def task_handler_postprocessor_pre(task):
+    """Task handler for components before postprocessor run.
+
+    Arguments:
+        task (dict): as described in module docstring
+    """
+    radial.set_up_orbitals(task)
+    radial.set_up_obme_analytic(task)
+    tbme.generate_tbme(task)
+    postprocessing.init_postprocessor_db(task)
+
+def task_handler_postprocessor_post(task, cleanup=True):
+    """Task handler for components after postprocessor run.
+
+    TODO(pjf): Implement.
+
+    Arguments:
+        task (dict): as described in module docstring
+    """
+    pass
+
+def task_handler_postprocessor(task, cleanup=True):
+    """Task handler for basic postprocessor run.
+
+    Arguments:
+        task (dict): as described in module docstring
+    """
+    task_handler_postprocessor_pre(task)
+    postprocessing.run_postprocessor(task)
+    task_handler_postprocessor_post(task, cleanup)
 
 
 ################################################################
@@ -328,7 +384,8 @@ def archive_handler_mfdn():
             {"postfix" : "-out", "paths" : ["results/out"], "compress" : True, "include_metadata" : True},
             {"postfix" : "-res", "paths" : ["results/res"], "compress" : True},
             {"postfix" : "-lanczos", "paths" : ["results/lanczos"], "compress" : True},
-            {"postfix" : "-task-data", "paths" : ["results/task-data"]},
+            {"postfix" : "-task-data", "paths" : ["results/task-data"], "compress" : True},
+            {"postfix" : "-obdme", "paths" : ["results/obdme"], "compress" : True},
             {"postfix" : "-wf", "paths" : ["results/wf"]},
         ]
     )
@@ -344,6 +401,7 @@ def archive_handler_mfdn_lightweight():
         [
             {"postfix" : "-out", "paths" : ["results/out"], "compress" : True, "include_metadata" : True},
             {"postfix" : "-res", "paths" : ["results/res"], "compress" : True},
+            {"postfix" : "-lanczos", "paths" : ["results/lanczos"], "compress" : True},
         ]
     )
     return archive_filename_list

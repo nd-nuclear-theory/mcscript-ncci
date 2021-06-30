@@ -39,11 +39,18 @@ University of Notre Dame
 - 06/04/19 (pjf): Save mfdn.out and mfdn.res to subdirectories of results.
 - 06/07/19 (pjf): Check that MFDn launches successfully with
     mcscript.control.FileWatchdog on mfdn.out.
-+ 09/04/19 (pjf): Rename Trel->Tintr.
+- 09/04/19 (pjf): Rename Trel->Tintr.
 - 09/07/19 (pjf): Remove Nv from truncation_parameters.
+- 10/10/19 (pjf): Get tbo basenames from tbme.get_tbme_targets().
 - 12/11/19 (pjf):
     + Use new results storage helper functions from mcscript.
     + Deprecate save_mfdn_task_data().
+- 09/09/20 (pjf): Use operators module instead of tbme for operator names.
+- 09/16/20 (pjf):
+    + Check that diagonalization is enabled.
+    + Add "tbme-" to operator id to form basename.
+- 11/13/20 (pjf): Use constants module.
+- 11/24/20 (pjf): Fix natorb filename globbing for non-integer J.
 """
 import os
 import glob
@@ -51,7 +58,13 @@ import warnings
 
 import mcscript
 
-from . import utils, modes, environ
+from . import (
+    constants,
+    environ,
+    modes,
+    operators,
+    utils,
+)
 
 
 def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
@@ -65,6 +78,12 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     Raises:
         mcscript.exception.ScriptError: if MFDn output not found
     """
+    # check that diagonalization is enabled
+    if not task.get("diagonalization"):
+        raise mcscript.exception.ScriptError(
+            'Task dictionary "diagonalization" flag not enabled.'
+        )
+
     # validate truncation modes
     allowed_sp_truncations = (modes.SingleParticleTruncationMode.kNmax,)
     allowed_mb_truncations = (modes.ManyBodyTruncationMode.kNmax, modes.ManyBodyTruncationMode.kFCI)
@@ -112,21 +131,17 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     lines.append("{eigenvectors:d} {max_iterations:d} {initial_vector:d} {tolerance:e}  # number of eigenvalues/vectors, max number of its, ...)".format(**task))
     lines.append("{:d} {:d}  # rank of input Hamiltonian/interaction".format(2, 2))
     lines.append("{hw_for_trans:g} {k_mN_csqr:g}  # h-bar*omega, Nucleon mass (MeV) ".format(
-        hw_for_trans=hw_for_trans, k_mN_csqr=utils.k_mN_csqr, **task
+        hw_for_trans=hw_for_trans, k_mN_csqr=constants.k_mN_csqr, **task
     ))
 
     # tbo: collect tbo names
-    obs_basename_list = ["tbme-rrel2", "tbme-Ncm"]
-    if ("H-components" in task["observable_sets"]):
-        obs_basename_list += ["tbme-Tintr", "tbme-Tcm", "tbme-VNN"]
-        if (task["use_coulomb"]):
-            obs_basename_list += ["tbme-VC"]
-    if ("am-sqr" in task["observable_sets"]):
-        obs_basename_list += ["tbme-L2", "tbme-Sp2", "tbme-Sn2", "tbme-S2", "tbme-J2"]
-    if ("isospin" in task["observable_sets"]):
-        obs_basename_list += ["tbme-T2"]
-    if ("tb_observables" in task):
-        obs_basename_list += ["tbme-{}".format(basename) for (basename, operator) in task["tb_observables"]]
+    obs_basename_list = [
+        "tbme-{}".format(id_)
+        for id_ in operators.tb.get_tbme_targets(task)[(0,0,0)].keys()
+    ]
+
+    # do not evaluate Hamiltonian as observable
+    obs_basename_list.remove("tbme-H")
 
     # tbo: log tbo names in separate file to aid future data analysis
     mcscript.utils.write_input("tbo_names{:s}.dat".format(postfix), input_lines=obs_basename_list)
@@ -244,7 +259,7 @@ def extract_natural_orbitals(task, postfix=""):
     try:
         (J, g, n) = task["natorb_base_state"]
         obdme_filename = glob.glob(
-            "{:s}/mfdn.statrobdme.seq*.2J{:02d}.p*.n{:02d}.2T*".format(work_dir, 2*J, n)
+            "{:s}/mfdn.statrobdme.seq*.2J{:02d}.p*.n{:02d}.2T*".format(work_dir, int(2*J), n)
             )
     except TypeError:
         obdme_filename = glob.glob(

@@ -8,7 +8,10 @@ setup(
     license="MIT",
     packages=['ncci'],
     install_requires=[
+        "deprecated>=1.2.10",
         "mcscript>=0.1.0",
+        "am",
+        "mfdnres",
     ],
     classifiers=[],
 )

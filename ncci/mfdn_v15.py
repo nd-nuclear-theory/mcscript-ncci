@@ -41,9 +41,21 @@ University of Notre Dame
 - 06/07/19 (pjf): Check that MFDn launches successfully with
     mcscript.control.FileWatchdog on mfdn.out.
 - 06/11/19 (pjf): Save task-data archives to correct place (under results_dir).
-+ 09/04/19 (pjf): Rename Trel->Tintr.
-+ 12/11/19 (pjf): Use new results storage helper functions from mcscript.
-- 05/13/21 (mac): Fix many-body parity handling for FCI runs.
+- 09/04/19 (pjf): Rename Trel->Tintr.
+- 10/10/19 (pjf): Implement generation of mfdn_smwf.info from old runs.
+- 10/13/19 (pjf): Fix inclusion of partitioning into mfdn_smwf.info.
+- 12/11/19 (pjf): Use new results storage helper functions from mcscript.
+- 06/03/20 (pjf):
+    + Switch to using quantum numbers to specify natorb base state.
+    + Fix saving of OBDMEs.
+- 09/09/20 (pjf): Use operators module instead of tbme for operator names.
+- 09/16/20 (pjf):
+    + Check that diagonalization is enabled.
+    + Add "tbme-" to operator id to form basename.
+- 11/24/20 (pjf): Fix natorb filename globbing for non-integer J.
+- 11/30/20 (pjf): Add "calculate_tbo" task option.
+- 12/04/20 (pjf): Remove leftover mfdn.res and mfdn.out files before launching
+    MFDn.
 """
 import os
 import glob
@@ -52,7 +64,7 @@ import warnings
 
 import mcscript
 
-from . import modes, environ
+from . import modes, environ, operators
 
 
 def set_up_Nmax_truncation(task, inputlist):
@@ -140,6 +152,12 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     Raises:
         mcscript.exception.ScriptError: if MFDn output not found
     """
+    # check that diagonalization is enabled
+    if not task.get("diagonalization"):
+        raise mcscript.exception.ScriptError(
+            'Task dictionary "diagonalization" flag not enabled.'
+        )
+
     # create work directory if it doesn't exist yet
     work_dir = "work{:s}".format(postfix)
     mcscript.utils.mkdir(work_dir, exist_ok=True, parents=True)
@@ -156,7 +174,7 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         inputlist["IFLAG_mode"] = int(modes.MFDnRunMode.kNormal)
     else:
         inputlist["IFLAG_mode"] = int(run_mode)
-        
+
     # nucleus
     inputlist["Nprotons"], inputlist["Nneutrons"] = task["nuclide"]
 
@@ -186,18 +204,15 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         inputlist["TBMEfile"] = "tbme-H"
 
         # tbo: collect tbo names
-        obs_basename_list = ["tbme-rrel2", "tbme-Ncm"]
-        observable_sets = task.get("observable_sets", [])
-        if "H-components" in observable_sets:
-            obs_basename_list += ["tbme-Tintr", "tbme-Tcm", "tbme-VNN"]
-            if task.get("use_coulomb"):
-                obs_basename_list += ["tbme-VC"]
-        if "am-sqr" in observable_sets:
-            obs_basename_list += ["tbme-L2", "tbme-Sp2", "tbme-Sn2", "tbme-S2", "tbme-J2"]
-        if "isospin" in observable_sets:
-            obs_basename_list += ["tbme-T2"]
-        tb_observables = task.get("tb_observables", [])
-        obs_basename_list += ["tbme-{}".format(basename) for (basename, operator) in tb_observables]
+        obs_basename_list = [
+            "tbme-{}".format(id_)
+            for id_ in operators.tb.get_tbme_targets(task)[(0,0,0)].keys()
+        ]
+
+        # do not evaluate Hamiltonian as observable
+        #  NOTE (pjf): due to possible bug/precision issues in MFDn, evaluate H
+        #    as a consistency check
+        ##obs_basename_list.remove("tbme-H")
 
         # tbo: log tbo names in separate file to aid future data analysis
         mcscript.utils.write_input("tbo_names{:s}.dat".format(postfix), input_lines=obs_basename_list)
@@ -207,8 +222,9 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         if num_obs > 32:
             raise mcscript.exception.ScriptError("Too many observables for MFDn v15")
 
-        inputlist["numTBops"] = num_obs
-        obslist["TBMEoperators"] = obs_basename_list
+        if task.get("calculate_tbo", True):
+            inputlist["numTBops"] = num_obs
+            obslist["TBMEoperators"] = obs_basename_list
 
         # obdme: parameters
         inputlist["obdme"] = task.get("calculate_obdme", True)
@@ -261,6 +277,12 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     # enter work directory
     os.chdir(work_dir)
 
+    # remove any stray files from a previous run
+    if os.path.exists("mfdn.out"):
+        mcscript.call(["rm", "-v", "mfdn.out"])
+    if os.path.exists("mfdn.res"):
+        mcscript.call(["rm", "-v", "mfdn.res"])
+
     # invoke MFDn
     mcscript.call(
         [
@@ -298,7 +320,7 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         task, os.path.join(work_dir, "mfdn.out"), out_filename, "out"
     )
 
-            
+
 def extract_natural_orbitals(task, postfix=""):
     """Extract OBDME files for subsequent natural orbital iterations.
 
@@ -312,15 +334,10 @@ def extract_natural_orbitals(task, postfix=""):
 
     work_dir = "work{:s}".format(postfix)
     obdme_info_filename = "mfdn.rppobdme.info"
-    try:
-        (J, g, n) = task["natorb_base_state"]
-        obdme_filename = glob.glob(
-            "{:s}/mfdn.statrobdme.seq*.2J{:02d}.n{:02d}.2T*".format(work_dir, 2*J, n)
-            )
-    except TypeError:
-        obdme_filename = glob.glob(
-            "{:s}/mfdn.statrobdme.seq{:03d}*".format(work_dir, task["natorb_base_state"])
-            )
+    (J, g, n) = task["natorb_base_state"]
+    obdme_filename = glob.glob(
+        "{:s}/mfdn.statrobdme.seq*.2J{:02d}.n{:02d}.2T*".format(work_dir, int(2*J), n)
+        )
 
     print("Saving OBDME files for natural orbital generation...")
     mcscript.call(
@@ -414,7 +431,7 @@ def save_mfdn_obdme(task, postfix=""):
     work_dir = "work{:s}".format(postfix)
 
     # do nothing is obdme saving is turned off
-    if (not task.get("save_obdme")) or (not task.get("calculate_obdme")):
+    if (not task.get("save_obdme")) or (not task.get("calculate_obdme",True)):
         print("Cowardly refusing to save obdme...")
         return
 
@@ -595,3 +612,95 @@ def extract_wavefunctions(
 
     # remove temporary directories
     mcscript.call(["rm", "-vfd", extracted_dir, run_name])
+
+
+def generate_smwf_info(task, orbital_filename, partitioning_filename, res_filename, info_filename='mfdn_smwf.info'):
+    """Generate SMWF info file from given MFDn input files.
+
+    Arguments:
+        task (dict): as described in module docstring
+        orbital_filename (str): name of orbital file to be included
+        partitioning_filename (str): name of partitioning file to be included
+        res_filename (str): name of results file to be parsed for state info
+        info_filename (str): output info filename
+    """
+
+    import mfdnres
+    import re
+
+    lines = []
+    lines.append("   15200    ! Version Number")
+    lines.append(
+        " {Z:>3d} {N:>3d} {TwoM:>3d}    ! Z, N, 2Mj".format(
+            Z=task["nuclide"][0], N=task["nuclide"][1], TwoM=int(2*task["truncation_parameters"]["M"])
+        )
+    )
+    lines.append(" {:127s}".format(task["metadata"]["descriptor"]))
+
+    # blank line
+    lines.append("")
+
+    # convert orbitals to 15200
+    mcscript.call(
+        [
+            environ.shell_filename("orbital-gen"),
+            "--convert",
+            "15099", "{:s}".format(orbital_filename),
+            "15200", "{:s}".format(orbital_filename+"15200"),
+        ],
+        mode=mcscript.CallMode.kSerial
+    )
+
+    # append orbitals to info file
+    with open(orbital_filename+"15200") as orbital_fp:
+        for line in orbital_fp:
+            if line.lstrip()[0] == '#':
+                continue
+            if line.lstrip().rstrip() == '15200':
+                continue
+            lines.append(line.rstrip())
+
+    # remove temporary orbital file
+    mcscript.call(["rm","-v",orbital_filename+"15200"])
+
+    # blank line
+    lines.append("")
+
+    # append partitioning
+    with open(partitioning_filename) as partitioning_fp:
+        for line in partitioning_fp:
+            # ignore lines containing anything other than numbers and whitespace
+            if not re.search(r"[^0-9\s]", line):
+                lines.append(line.rstrip())
+
+    # blank line
+    lines.append("")
+
+    # parse res file
+    res_data = mfdnres.res.read_file(res_filename, "mfdn_v15")[0]
+    levels = res_data.levels
+
+    # basis information
+    lines.append(" {:>3d}  {:>12.4f} {:>15d} {:>7d}    ! Par, WTm, Dim, Npe".format(
+        res_data.params["parity"], res_data.params["WTmax"],
+        res_data.params["dimension"], res_data.params["ndiags"]
+    ))
+
+    # blank line
+    lines.append("")
+
+    # state table
+    lines.append(" {:7d}    ! n_states, followed by (i, 2J, nJ, T, -Eb, res)".format(
+        len(levels)
+    ))
+    for index, level in enumerate(levels):
+        (J, g, n) = level
+        T = res_data.get_isospin(level)
+        en = res_data.get_energy(level)
+        residual = res_data.residuals[level]
+        lines.append(" {:>7d} {:>7d} {:>7d} {:>7.2f} {:>15.4f} {:>15.2e}".format(
+            index+1, int(2*J), n, T, en, residual
+        ))
+
+    mcscript.utils.write_input(info_filename, input_lines=lines, verbose=False)
+

@@ -1,12 +1,11 @@
-""" runmfdn13.py
+""" runmfdn14.py
 
-    Example diagonalization run as setup for two-body transitions. Add
-    `mcscript-ncci/docs/examples` to NCCI_DATA_DIR_H2 to ensure that this
-    script can find the relevant h2 files.
+    Example Lanczos decomposition run using L^2 and S^2. Ensure that the output
+    of runmfdn13.py is in the current NCCI_LIBRARY_PATH.
 
     See runmfdn.txt for full description.
 
-    Patrick J. Fasano, Mark A. Caprio
+    Patrick J. Fasano
     University of Notre Dame
 """
 
@@ -15,7 +14,6 @@ import collections
 import mcscript
 import ncci
 import ncci.mfdn_v15
-import ncci.postprocessing
 
 # initialize mcscript
 mcscript.init()
@@ -32,13 +30,12 @@ ncci.environ.operator_dir_list = [
     "example-data"
 ]
 
+# nuclide
+nuclide = (3, 3)
+
 # hw -- linear mesh
 hw_range = (15, 20, 5)
 hw_list = mcscript.utils.value_range(*hw_range)
-
-# hw -- log mesh
-## hw_log_range = (5, 40, 8)
-## hw_list = mcscript.utils.log_range(*hw_log_range)
 
 # interaction
 interaction_coulomb_truncation_list = [
@@ -53,16 +50,59 @@ Nmax_list = mcscript.utils.value_range(*Nmax_range)
 # M
 M_list = [0.0, 1.0]
 
+# states to be decomposed
+qn_list_by_Nmax={
+    Nmax: [
+        (1.0,0,1),
+        (3.0,0,1),
+        (0.0,0,1),
+    ]
+    for Nmax in Nmax_list
+}
+
+# decomposition operators
+decomposition_operator_by_name={
+    "L2": lambda nuclide, hw, **kwargs: ncci.operators.tb.L2(),
+    "S2": lambda nuclide, hw, **kwargs: ncci.operators.tb.S2(),
+    "Nex": lambda nuclide, hw, **kwargs: ncci.operators.tb.Nex(nuclide, hw),
+}
+
 tasks = [
     collections.OrderedDict({
         # nuclide parameters
-        "nuclide": (3, 3),
+        "nuclide": nuclide,
 
-        # Hamiltonian parameters
+        # Hamiltonian parameters -- for descriptor
         "interaction": interaction,
         "use_coulomb": coulomb,
         "a_cm": 40.,
         "hw_cm": None,
+
+        # decomposition
+        "hamiltonian": decomposition_operator_function(
+            nuclide=nuclide, Nmax=Nmax, hw=hw
+        ),
+        "decomposition_operator_name": decomposition_operator_name,
+        "source_wf_qn": qn,
+        "wf_source_info": {
+                "run": "mfdn13",
+                "nuclide": nuclide,
+                "interaction": interaction,
+                "use_coulomb": coulomb,
+                "hw": hw,
+                "truncation_parameters": {
+                    "M": M,
+                    "Nmax": Nmax
+                },
+                "a_cm": 40.,
+                "max_iterations": 200,
+                "tolerance": 1e-6,
+                # required modes to keep task descriptor function happy
+                "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
+                "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
+                "basis_mode": ncci.modes.BasisMode.kDirect,
+                "descriptor": ncci.descriptors.task_descriptor_7
+            },
 
         # input TBME parameters
         "truncation_int": truncation_int,
@@ -91,38 +131,17 @@ tasks = [
 
         # diagonalization parameters
         "diagonalization": True,
-        "eigenvectors": 15,
+        "eigenvectors": 0,
         "initial_vector": -2,
-        "max_iterations": 200,
-        "tolerance": 1e-6,
+        "max_iterations": 800,
+        "tolerance": 0,
         "partition_filename": None,
 
         # obdme parameters
-        ## "hw_for_trans": 20,
-        "obdme_multipolarity": 2,
-        # "obdme_reference_state_list": [(0.0, 0, 1)],
-        "save_obdme": True,
-        "ob_observable_sets": ['M1', 'E2'],
-
-        # two-body observables
-        "tb_observable_sets": ["H-components","am-sqr", "isospin"],
-        # "tb_observable_sets": ["H-components"],
-        "tb_observables": [
-            ("CSU3",  (0,0,0), {"CSU3-U": 1/(6-1), "CSU3-V": 1.0}),
-            ("CSp3R", (0,0,0), {"CSp3R-U": 1/(6-1), "CSp3R-V": 1.0}),
-            ],
-
-        # sources
-        "obme_sources": [],
-        "tbme_sources": [
-            ("CSU3-U", {"filename": "CSU3-U-tb-6.bin", "qn": (0,0,0)}),
-            ("CSU3-V", {"filename": "CSU3-V-tb-6.bin", "qn": (0,0,0)}),
-            ("CSp3R-U", {"filename": "CSp3R-U-tb-6.bin", "qn": (0,0,0)}),
-            ("CSp3R-V", {"filename": "CSp3R-V-tb-6.bin", "qn": (0,0,0)}),
-        ],
+        "calculate_obdme": False,
 
         # wavefunction storage
-        "save_wavefunctions": True,
+        "save_wavefunctions": False,
 
         # version parameters
         "h2_format": 15099,
@@ -133,40 +152,29 @@ tasks = [
     for Nmax in Nmax_list
     for M in M_list
     for hw in hw_list
+    for qn in qn_list_by_Nmax[Nmax]
+    for (decomposition_operator_name,decomposition_operator_function) in decomposition_operator_by_name.items()
+    if qn[0]>=abs(M)
 ]
-
-################################################################
-# run control
-################################################################
-
-# add task descriptor metadata field (needed for filenames)
-# task["metadata"] = {
-#     "descriptor": ncci.descriptors.task_descriptor_7(task)
-#     }
-
-# ncci.radial.set_up_interaction_orbitals(task)
-# ncci.radial.set_up_orbitals(task)
-# ncci.radial.set_up_xforms_analytic(task)
-# ncci.radial.set_up_obme_analytic(task)
-# ncci.tbme.generate_tbme(task)
-# ncci.mfdn_v15.run_mfdn(task)
-# ncci.postprocessing.evaluate_ob_observables(task)
-# ncci.mfdn_v15.save_mfdn_task_data(task)
-# ncci.handlers.task_handler_oscillator(task)
 
 ##################################################################
 # task control
 ##################################################################
 
 def task_pool(current_task):
-    pool = "Nmax{truncation_parameters[Nmax]:02d}".format(**current_task)
+    ## pool = "Nmax{truncation_parameters[Nmax]:02d}".format(**current_task)
+    pool = "Nmax{truncation_parameters[Nmax]:02d}-M{truncation_parameters[M]:.1f}".format(**current_task)
     return pool
 
 mcscript.task.init(
     tasks,
-    task_descriptor=ncci.descriptors.task_descriptor_7,
+    task_descriptor=ncci.descriptors.task_descriptor_decomposition_1,
     task_pool=task_pool,
-    phase_handler_list=[ncci.handlers.task_handler_oscillator]
+    phase_handler_list=[
+        ncci.handlers.task_handler_oscillator_pre,
+        ncci.handlers.task_handler_oscillator_mfdn_decomposition
+        ],
+    archive_phase_handler_list=[],
     )
 
 ################################################################
