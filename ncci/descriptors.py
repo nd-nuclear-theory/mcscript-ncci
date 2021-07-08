@@ -18,6 +18,7 @@ University of Notre Dame
 - 12/02/20 (pjf): Add natural orbital base state info to task_descriptor_7.
 - 01/13/21 (pjf): Add task_descriptor_decomposition_1.
 - 05/27/21 (pjf): Fix mixed parity indicator in task_descriptor_7.
+- 07/08/21 (pjf): Add natural_orbital_indicator to task_descriptor_7_trans.
 """
 import mcscript.exception
 import mcscript.utils
@@ -135,7 +136,7 @@ def task_descriptor_7_trans(task):
         - Remove max_iterations, and tolerance dependence.
         - Make M dependence optional.
         - Strip mixed parity and fci indicators.
-        - Remove a_cm and natural_orbitals fields (may need to restore later).
+        - Remove a_cm field (may need to restore later).
         - Provide subsetting index.
     """
     truncation_parameters = task["truncation_parameters"]
@@ -146,17 +147,22 @@ def task_descriptor_7_trans(task):
         "-Nmax{Nmax:02d}"
         "{M_field}"
         "{subset_field}"
-        ##"{natural_orbital_indicator}"
+        "{natural_orbital_indicator}"
     )
 
     coulomb_flag = int(task["use_coulomb"])
     ##natural_orbital_indicator = mcscript.utils.ifelse(task.get("natural_orbitals"), "-natorb", "")
     M_field = "-Mj{M:03.1f}".format(**truncation_parameters) if (truncation_parameters.get("M") is not None) else ""
     subset_field = "-subset{subset[0]:03d}".format(**task) if (task.get("subset") is not None) else ""
+    if task.get("natural_orbitals"):
+        natural_orbital_indicator = "-natorb-J{:04.1f}-g{:1d}-n{:02d}".format(*task["natorb_base_state"])
+    else:
+        natural_orbital_indicator = ""
     descriptor = template_string.format(
         coulomb_flag=coulomb_flag,
         M_field=M_field,
         subset_field=subset_field,
+        natural_orbital_indicator=natural_orbital_indicator,
         **mcscript.utils.dict_union(task, truncation_parameters)
     )
 
