@@ -8,6 +8,7 @@
         + Add nuclide_string function.
         + Add N0_for_nuclide function (copied from mfdnres).
     - 12/02/20 (pjf): Allow J<M natorb base states.
+    - 07/08/21 (pjf): Check that J of natorb base state matches nuclide.
 """
 
 import math
@@ -162,16 +163,16 @@ def N0_for_nuclide(nuclide):
 
 def check_natorb_base_state(task):
     """Perform sanity checks on natural orbital base state quantum numbers."""
+    nuclide = task["nuclide"]
     natorb_base_state = task.get("natorb_base_state")
     try:
         (J, g, n) = natorb_base_state
-        M = task["truncation_parameters"]["M"]
     except TypeError:
         raise mcscript.exception.ScriptError(
             "invalid natorb_base_state: {}".format(natorb_base_state))
-    if abs(int(2*J)%2) != abs(int(2*M)%2):
+    if int(2*J)%2 != sum(nuclide)%2:
         raise mcscript.exception.ScriptError(
-            "invalid natorb base state J={:3.1f} M={:3.1f}".format(J,M)
+            "invalid natorb base state J={:3.1f}".format(J)
         )
     if g not in (0,1):
         raise mcscript.exception.ScriptError(
