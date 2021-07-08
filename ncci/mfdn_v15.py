@@ -617,6 +617,9 @@ def extract_wavefunctions(
 def generate_smwf_info(task, orbital_filename, partitioning_filename, res_filename, info_filename='mfdn_smwf.info'):
     """Generate SMWF info file from given MFDn input files.
 
+    Requires information from task dictionary:
+      "nuclide", "truncation_parameters":"M", "metadata":"descriptor"
+
     Arguments:
         task (dict): as described in module docstring
         orbital_filename (str): name of orbital file to be included
@@ -697,7 +700,7 @@ def generate_smwf_info(task, orbital_filename, partitioning_filename, res_filena
         (J, g, n) = level
         T = res_data.get_isospin(level)
         en = res_data.get_energy(level)
-        residual = res_data.residuals[level]
+        residual = res_data.mfdn_level_residuals[level]
         lines.append(" {:>7d} {:>7d} {:>7d} {:>7.2f} {:>15.4f} {:>15.2e}".format(
             index+1, int(2*J), n, T, en, residual
         ))

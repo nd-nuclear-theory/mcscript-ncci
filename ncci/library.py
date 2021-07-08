@@ -22,12 +22,14 @@ University of Notre Dame
 - 11/24/20 (pjf): Add retrieve_natorb_obdme().
 - 02/17/21 (mac): Fix chown to act on whole run directory.
 - 05/14/21 (mac): Provide task handler for HSI retrieval.
+- 07/07/21 (mac): Add legacy mfdnv5b00/b01 wf support to hsi extraction handler.
 """
 
 import glob
 import os
 
 import mcscript
+import mfdnres
 
 from . import (
     environ,
@@ -132,15 +134,6 @@ def recover_from_hsi_legacy(year,run,date,library_base,keep_archives=False,keep_
         ])
         mcscript.call(["rm","-v",filename])
 
-    # make retrieved results available to group
-    if repo_str is not None:
-        mcscript.call([
-            "chown","--recursive",":{}".format(repo_str),target_run_top_prefix
-        ])
-        mcscript.call([
-            "chmod","--recursive","g+rX",target_run_top_prefix
-        ])
-
     os.chdir(library_base)
 
 
@@ -206,16 +199,6 @@ def recover_from_hsi(year,run,date,library_base,repo_str=None):
         ])
         mcscript.call(["rm","-v",filename])
 
-    # make retrieved results available to group
-    target_run_top_prefix = os.path.join(library_base,"run{run}".format(run=run))
-    if repo_str is not None:
-        mcscript.call([
-            "chown","--recursive",":{}".format(repo_str),target_run_top_prefix
-        ])
-        mcscript.call([
-            "chmod","--recursive","g+rX",target_run_top_prefix
-        ])
-
     os.chdir(library_base)
 
 ################################################################
@@ -245,19 +228,38 @@ def hsi_retrieval_handler(task):
         task (dict): as described above
     """
 
+    # extract run retrieval parameters from task dictionary
     run = task["run"]
     legacy = task["legacy"]
     year = task["year"]
     date = task["date"]
     library_base= task["library_base"]
     repo_str = task["repo_str"]
+
+    # construct paths
+    target_run_top_prefix = os.path.join(library_base,"run{run}".format(run=run))
+    target_run_results_prefix = os.path.join(target_run_top_prefix,"results")
     
+    # call hsi extraction handler
     if task["legacy"]:
         # keep archives to facilitate resumption on error; keep metadata to facilitate rebundling into modern archive
         recover_from_hsi_legacy(year,run,date,library_base,repo_str=repo_str,keep_archives=True,keep_metadata=True)
     else:
         recover_from_hsi(year,run,date,library_base,repo_str=repo_str)
 
+    # provide wf info files if needed (for mfdn v15b00/b01)
+    generate_smwf_info_in_library(target_run_results_prefix)
+
+    # make retrieved results available to group
+    if repo_str is not None:
+        mcscript.call([
+            "chown","--recursive",":{}".format(repo_str),target_run_top_prefix
+        ])
+        mcscript.call([
+            "chmod","--recursive","g+rX",target_run_top_prefix
+        ])
+
+        
 def hsi_retrieval_task_descriptor(task):
     """ Provide task descriptor for HSI run retrieval.
 
@@ -471,55 +473,151 @@ def retrieve_natorb_obdme(
 # mfdnv5b00/b01 wf support
 ################################################################
 
-def generate_smwf_info_in_library(wf_source_info):
+def generate_smwf_info_in_library(results_prefix):
     """Generate missing swmf_info file in situ in library.
 
     This is for mfdnv15b00/b01 legacy runs.  The swmf_info file is generated
     from the results file (in res) and partitioning (in task_data).
 
+    As byproduct, provides task-data/mfdn_partitioning.info, if not already available.
+
+    Caution: The code for generating swmf_info files involves calls to compiled
+    utilities from shell (orbital-gen).  If you are running on a front end
+    machine (e.g., xfer queue at NERSC), make sure shell is compiled for the
+    appropriate architecture (e.g., haswell), and that the appropriate module
+    environment is loaded for that architecture.
 
     Arguments:
-        wf_source_info (dict): task-like dictionary with wf source task info
+        results_prefix (str): Path to run results directory
 
     """
 
-    # set up paths
-    run = wf_source_info["run"]
-    descriptor = wf_source_info["metadata"]["descriptor"]
-
-    res_filename = get_res_filename(run,descriptor)
-    task_data_prefix = get_task_data_prefix(run,descriptor)
-    wf_prefix = get_wf_prefix(run,descriptor)
-    if (not os.path.isfile(res_filename)):
-        raise mcscript.exception.ScriptError("Missing res file {}".format(res_filename))
+    # set up subdirectory paths
+    res_prefix = os.path.join(results_prefix,"res")
+    task_data_prefix = os.path.join(results_prefix,"task-data")
+    wf_prefix = os.path.join(results_prefix,"wf")
+    if (not os.path.isdir(res_prefix)):
+        raise mcscript.exception.ScriptError("Missing res directory {}".format(task_data_prefix))
     if (not os.path.isdir(task_data_prefix)):
         raise mcscript.exception.ScriptError("Missing task_data directory {}".format(task_data_prefix))
     if (not os.path.isdir(wf_prefix)):
         raise mcscript.exception.ScriptError("Missing wf directory {}".format(wf_prefix))
+    
+    # slurp res files
+    res_format = "mfdn_v15"  # this function is mfdn_v15 specific
+    filename_format="mfdn_format_7_ho"  # probably all legacy runs used this filename format, but might need to override
+    mesh_data = mfdnres.res.slurp_res_files(
+        res_prefix,res_format,filename_format,glob_pattern="*.res",verbose=False
+    )
 
-    # short circuit if info file exists
-    if (os.path.isfile(os.path.join(wf_prefix,"mfdn_smwf.info"))):
-        return
+    # iterate over tasks
+    for results_data in mesh_data:
 
-    # ensure partitioning file exists
-    #
-    # If no mfdn_partitioning.info was provided at run time, none will be in
-    # archive.  Must provide it from mfdn_partitioning.generated.
-    if not os.path.isfile(os.path.join(task_data_prefix,"mfdn_partitioning.info")):
+        # extract descriptor
+        descriptor = results_data.params["descriptor"]
+
+        # set up task-specific filenames
+        res_filename = results_data.params["filename"]
+        orbital_filename=os.path.join(task_data_prefix,descriptor,"orbitals.dat")
+        partitioning_filename=os.path.join(task_data_prefix,descriptor,"mfdn_partitioning.info")
+        info_filename = os.path.join(wf_prefix,descriptor,"mfdn_swmf.info")
+
+        # short circuit if info file exists
+        if (os.path.isfile(info_filename)):
+            continue
+        print("Creating smwf_info file for {}...".format(descriptor))
+
+        # validate existence of subdirectory and file paths
+        #
+        # The subdirectory paths are redundant to the file paths, but flagging
+        # missing subdirectories is helpful for providing more useful error
+        # messages.
+        if (not os.path.isfile(res_filename)):
+            raise mcscript.exception.ScriptError("Missing res file {}".format(res_filename))  # twilight zone -- should exist by construction
+        if (not os.path.isdir(os.path.join(task_data_prefix,descriptor))):
+            raise mcscript.exception.ScriptError("Missing task_data subdirectory for present descriptor {}".format(os.path.join(task_data_prefix,descriptor)))
+        if (not os.path.isdir(os.path.join(wf_prefix,descriptor))):
+            raise mcscript.exception.ScriptError("Missing wf subdirectory for present descriptor {}".format(os.path.join(wf_prefix,descriptor)))
+        if (not os.path.isfile(orbital_filename)):
+            raise mcscript.exception.ScriptError("Missing orbital file {}".format(orbital_filename))
+
+        # ensure partitioning file exists
+        #
+        # If no mfdn_partitioning.info was provided at run time, none will be in
+        # archive.  Must provide it from mfdn_partitioning.generated.
+        if not os.path.isfile(partitioning_filename):
+            generated_partitioning_filename = os.path.join(task_data_prefix,descriptor,"mfdn_partitioning.generated")
+            if (not os.path.isfile(generated_partitioning_filename)):
+                raise mcscript.exception.ScriptError("Missing generated partition file {}".format(generated_partitioning_filename))
+            mcscript.call([
+                "cp", "--verbose",
+                generated_partitioning_filename,
+                partitioning_filename
+            ])
+
+        # populate task dictionary
+        #
+        # ncci.mfdn_v15.generate_smwf_info requires task data:
+        #     "nuclide", "truncation_parameters":"M", "metadata":"descriptor"
+        task = dict()
+        task["nuclide"] = results_data.params["nuclide"]
+        task["truncation_parameters"] = dict(M=results_data.params["M"])
+        task["metadata"] = dict(descriptor=results_data.params["descriptor"])
+    
+        # generate wf info file
+        mfdn_v15.generate_smwf_info(
+            task=task,
+            orbital_filename=orbital_filename,
+            partitioning_filename=partitioning_filename,
+            res_filename=res_filename,
+            info_filename=info_filename
+        )
+    
+def generate_smwf_info_in_library_handler(task):
+    """Task handler for ad hoc run to supply missing smwf_info files in an already-extracted run.
+
+    Since smwf_info files are now provided as part of the hsi extraction
+    handler, this handler should NOT be useful past initial testing (7/21).
+    
+    Task dictionary:
+
+        run (str): run name
+        legacy (bool): if legacy format (pre-subarchives)
+        year (str): year code (for archive file hsi subdirectory)
+        date (str): date code (for archive filename)
+        library_base (str): path to library directory
+        repo_str (str): group name for file permissions
+
+    Example:
+
+      {
+          "run": "mac0451", "legacy": False, "year": "2020", "date": "200501",
+          "library_base": library_base, "repo_str": "m2032"
+      }
+
+    Arguments:
+        task (dict): as described above
+
+    """
+
+    # extract run retrieval parameters from task dictionary
+    run = task["run"]
+    library_base= task["library_base"]
+    repo_str = task["repo_str"]
+
+    # construct paths
+    target_run_top_prefix = os.path.join(library_base,"run{run}".format(run=run))
+    target_run_results_prefix = os.path.join(target_run_top_prefix,"results")
+    
+    # provide wf info files if needed (for mfdn v15b00/b01)
+    generate_smwf_info_in_library(target_run_results_prefix)
+
+    # make retrieved results available to group
+    if repo_str is not None:
         mcscript.call([
-            "cp", "--verbose",
-            os.path.join(task_data_prefix,"mfdn_partitioning.generated"),
-            os.path.join(task_data_prefix,"mfdn_partitioning.info")
+            "chown","--recursive",":{}".format(repo_str),target_run_top_prefix
+        ])
+        mcscript.call([
+            "chmod","--recursive","g+rX",target_run_top_prefix
         ])
 
-    # generate wf info file
-    #
-    # ncci.mfdn_v15.generate_smwf_info requires task data:
-    #     "nuclide", "truncation_parameters":"M", "metadata":"descriptor"
-    mfdn_v15.generate_smwf_info(
-        wf_source_info,
-        orbital_filename=os.path.join(task_data_prefix,"orbitals.dat"),
-        partitioning_filename=os.path.join(task_data_prefix,"mfdn_partitioning.info"),
-        res_filename=res_filename,
-        info_filename=os.path.join(wf_prefix,"mfdn_smwf.info")
-    )
