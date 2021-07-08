@@ -37,6 +37,7 @@ University of Notre Dame
 - 05/14/21 (pjf):
     + Pass hw to mfdn-transitions.
     + Check parsed RME for NaN.
+- 07/08/21 (pjf): Add support for postfixes.
 """
 import collections
 import glob
@@ -207,7 +208,7 @@ def evaluate_ob_observables(task, postfix=""):
         obdme_files[qn_pair] = (filename, info["code"])
 
     # sort by sequence number of final state, then sequence number of initial state
-    for qn_pair,(filename,code) in obdme_files.items():
+    for qn_pair,(filename,code) in sorted(obdme_files.items()):
         ((J_bra, g_bra, n_bra), (J_ket, g_ket, n_ket)) = qn_pair
         if code == "mfdn":
             lines.append(
@@ -378,7 +379,7 @@ def get_run_descriptor_pair(bra_mesh_data, ket_mesh_data, qn_pair, operator_qn):
 
     return (bra_run_descriptor_pair, ket_run_descriptor_pair)
 
-def init_postprocessor_db(task):
+def init_postprocessor_db(task, postfix=""):
     """Initialize sqlite3 database for postprocessor runs.
 
     Sets up database structure and populates it with operators, and (bra,ket)
@@ -386,11 +387,12 @@ def init_postprocessor_db(task):
 
     Arguments:
         task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
     """
 
     # remove and rebuild any previously constructed database
-    mcscript.call(["rm", "-vf", "transitions.sqlite"])
-    db = sqlite3.connect("transitions.sqlite")
+    mcscript.call(["rm", "-vf", "transitions{}.sqlite".format(postfix)])
+    db = sqlite3.connect("transitions{}.sqlite".format(postfix))
     db.row_factory = sqlite3.Row
 
     # enable foreign key support
@@ -421,7 +423,7 @@ def init_postprocessor_db(task):
     # slurp res files and create bra and ket data objects
     ################################################################
     SORT_KEY_DESCRIPTOR = (("lanczos", int), ("M", float))
-    UNMERGEABLE_KEYS = {"nuclide",}
+    UNMERGEABLE_KEYS = {"nuclide","natorb_base_state","natural_orbital_iteration"}
     # slurp source wave function info
     wf_source_res_dir_list = []
     for run in task["wf_source_run_list"]:
@@ -662,15 +664,16 @@ def init_postprocessor_db(task):
     db.close()
 
 
-def get_postprocessor_db_connection():
+def get_postprocessor_db_connection(postfix=""):
     """Connect to sqlite3 database for postprocessor runs.
 
     Returns:
         db (sqlite3.Connection): database connection
+        postfix (string, optional): identifier to add to generated files
     """
 
     # connect to database
-    db = sqlite3.connect("transitions.sqlite")
+    db = sqlite3.connect("transitions{}.sqlite".format(postfix))
     db.row_factory = sqlite3.Row
 
     # check if two-body transition table exists
@@ -723,18 +726,18 @@ def parse_transitions_results(in_file, verbose=False):
     return res
 
 
-def run_postprocessor_two_body(task, one_body=False):
+def run_postprocessor_two_body(task, postfix="", one_body=False):
     """Evaluate matrix elements of two-body operators using mfdn-transitions.
 
     This handler calls initialize_postprocessor_db().
 
     Arguments:
         task (dict): as described in module docstring
-        one_body (bool): calculate incidental one-body densities
+        postfix (string, optional): identifier to add to generated files
+        one_body (bool, optional): calculate incidental one-body densities
     """
     # convenience variables
     descriptor = task["metadata"]["descriptor"]
-    postfix = ""
     work_dir = "work{:s}".format(postfix)
     transitions_executable = environ.mfdn_postprocessor_filename(
         task.get("mfdn-transitions_executable", "xtransitions")
@@ -749,7 +752,7 @@ def run_postprocessor_two_body(task, one_body=False):
     mcscript.utils.mkdir("transitions-output", exist_ok=True)
 
     # open database
-    db = get_postprocessor_db_connection()
+    db = get_postprocessor_db_connection(postfix)
 
     # get set of operator quantum numbers
     cursor = db.execute(
@@ -971,7 +974,6 @@ def run_postprocessor_two_body(task, one_body=False):
     ################################
     # output and finalization
     ################################
-    postfix=""
     filename_prefix = "{:s}-transitions-tb-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
     res_filename = "{:s}.res".format(filename_prefix)
 
@@ -1021,15 +1023,15 @@ def run_postprocessor_two_body(task, one_body=False):
         task, out_file_list, descriptor, "transitions-output", command="cp"
     )
 
-def run_postprocessor_one_body(task):
+def run_postprocessor_one_body(task, postfix=""):
     """Evaluate one-body density matrix elements using the postprocessor.
 
     Arguments:
         task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
     """
     # convenience variables
     descriptor = task["metadata"]["descriptor"]
-    postfix = ""
     work_dir = "work{:s}".format(postfix)
     transitions_executable = environ.mfdn_postprocessor_filename(
         task.get("mfdn-transitions_executable", "xtransitions")
@@ -1044,7 +1046,7 @@ def run_postprocessor_one_body(task):
     mcscript.utils.mkdir("transitions-output", exist_ok=True)
 
     # open database
-    db = get_postprocessor_db_connection()
+    db = get_postprocessor_db_connection(postfix)
 
     # get total count of ob transition densities
     (total_count,) = db.execute(
@@ -1194,11 +1196,10 @@ def run_postprocessor_one_body(task):
     )
 
 
-def save_postprocessor_obdme(task):
+def save_postprocessor_obdme(task, postfix=""):
     """Save postprocessor OBDMEs."""
     # convenience variables
     descriptor = task["metadata"]["descriptor"]
-    postfix = ""
     work_dir = "work{:s}".format(postfix)
     # copy obdme out (if in multi-task run)
     if task.get("save_obdme"):
@@ -1208,13 +1209,14 @@ def save_postprocessor_obdme(task):
         )
 
 
-def run_postprocessor(task):
+def run_postprocessor(task, postfix=""):
     """Execute both phases of postprocessor.
 
     Arguments:
         task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
     """
-    run_postprocessor_two_body(task, one_body=True)
-    run_postprocessor_one_body(task)
-    evaluate_ob_observables(task)
-    save_postprocessor_obdme(task)
+    run_postprocessor_two_body(task, postfix=postfix, one_body=True)
+    run_postprocessor_one_body(task, postfix=postfix)
+    evaluate_ob_observables(task, postfix=postfix)
+    save_postprocessor_obdme(task, postfix=postfix)
