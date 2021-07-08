@@ -40,6 +40,8 @@ University of Notre Dame
   + Use obmixer inside set_up_radial_natorb().
   + Pass oscillator length to obmixer.
 - 09/19/20 (pjf): Break out xform generation into set_up_xforms_analytic().
+- 07/08/21 (pjf): Only generate interaction and Coulomb xforms if needed for
+    tbme sources.
 """
 import math
 import os
@@ -328,6 +330,12 @@ def set_up_xforms_analytic(task, postfix=""):
     # basis radial code -- expected by radial_utils codes
     basis_radial_code = "oscillator"  # TODO GENERALIZE: if not oscillator basis
 
+    # get tbme sources
+    targets_by_qn = operators.tb.get_tbme_targets(task)
+    tbme_sources = {}
+    for targets in targets_by_qn.values():
+        tbme_sources.update(operators.tb.get_tbme_sources(task, targets, postfix))
+
     ################################################################
     # radial-gen input
     ################################################################
@@ -357,14 +365,15 @@ def set_up_xforms_analytic(task, postfix=""):
         )
     )
 
-    # interaction xform
-    b_ratio = math.sqrt(task.get("hw_int", task["hw"])/task["hw"])
-    lines.append(xform_target_command.format(
-        scale_factor=b_ratio, bra_basis_type="oscillator",
-        bra_orbital_file=environ.orbitals_int_filename(postfix),
-        output_filename=environ.radial_olap_int_filename(postfix)
-    ))
-    if (task["use_coulomb"]):
+    if "VNN" in tbme_sources:
+        # interaction xform
+        b_ratio = math.sqrt(task.get("hw_int", task["hw"])/task["hw"])
+        lines.append(xform_target_command.format(
+            scale_factor=b_ratio, bra_basis_type="oscillator",
+            bra_orbital_file=environ.orbitals_int_filename(postfix),
+            output_filename=environ.radial_olap_int_filename(postfix)
+        ))
+    if task.get("use_coulomb", False) and ("VC_unscaled" in tbme_sources):
         if task.get("hw_coul_rescaled") is None:
             b_ratio = 1
         else:
@@ -399,6 +408,12 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
     if not task.get("natural_orbitals"):
         raise mcscript.exception.ScriptError("natural orbitals are not enabled")
 
+    # get tbme sources
+    targets_by_qn = operators.tb.get_tbme_targets(task)
+    tbme_sources = {}
+    for targets in targets_by_qn.values():
+        tbme_sources.update(operators.tb.get_tbme_sources(task, targets, target_postfix))
+
     # compose radial transform
     mcscript.call(
         [
@@ -410,19 +425,20 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
         mode=mcscript.CallMode.kSerial
     )
 
-    # compose interaction transform
-    mcscript.call(
-        [
-            environ.shell_filename("radial-compose"),
-            environ.radial_olap_int_filename(source_postfix),
-            environ.natorb_xform_filename(target_postfix),
-            environ.radial_olap_int_filename(target_postfix)
-        ],
-        mode=mcscript.CallMode.kSerial
-    )
+    if "VNN" in tbme_sources:
+        # compose interaction transform
+        mcscript.call(
+            [
+                environ.shell_filename("radial-compose"),
+                environ.radial_olap_int_filename(source_postfix),
+                environ.natorb_xform_filename(target_postfix),
+                environ.radial_olap_int_filename(target_postfix)
+            ],
+            mode=mcscript.CallMode.kSerial
+        )
 
     # compose Coulomb transform
-    if (task["use_coulomb"]):
+    if task.get("use_coulomb", False) and ("VC_unscaled" in tbme_sources):
         mcscript.call(
             [
                 environ.shell_filename("radial-compose"),
