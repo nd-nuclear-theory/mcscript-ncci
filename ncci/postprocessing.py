@@ -37,7 +37,9 @@ University of Notre Dame
 - 05/14/21 (pjf):
     + Pass hw to mfdn-transitions.
     + Check parsed RME for NaN.
-- 07/08/21 (pjf): Add support for postfixes.
+- 07/08/21 (pjf):
+    + Add support for postfixes.
+    + Ignore non-half-integer J values.
 """
 import collections
 import glob
@@ -512,7 +514,7 @@ def init_postprocessor_db(task, postfix=""):
     ################################################################
     db.executemany(
         "INSERT INTO bra_levels (bra_J,bra_g,bra_n) VALUES (?,?,?)",
-        bra_merged_data.levels
+        [(J,g,n) for (J,g,n) in bra_merged_data.levels if abs(int(2*J)-2*J)<=0.1]
     )
     bra_id_list = db.execute(
         "SELECT bra_J,bra_g,bra_n,bra_level_id FROM bra_levels"
@@ -521,7 +523,7 @@ def init_postprocessor_db(task, postfix=""):
 
     db.executemany(
         "INSERT INTO ket_levels (ket_J,ket_g,ket_n) VALUES (?,?,?)",
-        ket_merged_data.levels
+        [(J,g,n) for (J,g,n) in ket_merged_data.levels if abs(int(2*J)-2*J)<=0.1]
     )
     ket_id_list = db.execute(
         "SELECT ket_J,ket_g,ket_n,ket_level_id FROM ket_levels"
@@ -559,7 +561,7 @@ def init_postprocessor_db(task, postfix=""):
     ################################################################
     # construct list of (bra,ket,tbo) tuples
     bra_ket_tbo_product = itertools.product(
-        bra_merged_data.levels, ket_merged_data.levels, tb_observables_by_qn.keys()
+        bra_id_dict.keys(), ket_id_dict.keys(), tb_observables_by_qn.keys()
         )
     for (bra_qn, ket_qn, operator_qn) in bra_ket_tbo_product:
         # check canonical order
@@ -619,7 +621,7 @@ def init_postprocessor_db(task, postfix=""):
     ob_observables = operators.ob.generate_ob_observable_sets(task)[0]
     ob_observables += task.get("ob_observables", [])
     bra_ket_ob_qn_product = itertools.product(
-        bra_merged_data.levels, ket_merged_data.levels,
+        bra_id_dict.keys(), ket_id_dict.keys(),
         {operator_qn for (_,operator_qn,_) in ob_observables}
     )
     for (bra_qn, ket_qn, operator_qn) in bra_ket_ob_qn_product:
