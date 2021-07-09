@@ -49,10 +49,12 @@ University of Notre Dame
         + Make hw dependence consistent across operators.
         + Remove unused kwargs from operators.
         + Add Nex operator.
+    - 07/09/21 (pjf): Add intrinsic operators:
+        + Sp, Sn, S, Siv, Lintr, Livintr, Lpintr, Lnintr, M1intr
+        + Qintr, Qivintr, Qpintr, Qnintr
 """
 import collections
 import math
-import os
 import re
 
 import mcscript.utils
@@ -119,11 +121,23 @@ def Vk1k2():
 def L2():
     return mcscript.utils.CoefficientDict({"U[l2]":1., "V[l,l]":2*-math.sqrt(3)})
 
+def Sp():
+    return mcscript.utils.CoefficientDict({"U[sp]":1.})
+
 def Sp2():
     return mcscript.utils.CoefficientDict({"U[sp2]":1., "V[sp,sp]":2*-math.sqrt(3)})
 
+def Sn():
+    return mcscript.utils.CoefficientDict({"U[sn]":1.})
+
 def Sn2():
     return mcscript.utils.CoefficientDict({"U[sn2]":1., "V[sn,sn]":2*-math.sqrt(3)})
+
+def S():
+    return mcscript.utils.CoefficientDict({"U[s]":1.})
+
+def Siv():
+    return mcscript.utils.CoefficientDict({"U[stz]":2.})
 
 def S2():
     return mcscript.utils.CoefficientDict({"U[s2]":1., "V[s,s]":2*-math.sqrt(3)})
@@ -283,6 +297,141 @@ def Tcm(A):
     out = mcscript.utils.CoefficientDict()
     out += (1/(2*A)) * (constants.k_hbar_c**2/constants.k_mN_csqr) * Uksqr()
     out += (1/A) * (constants.k_hbar_c**2/constants.k_mN_csqr) * Vk1k2()
+    return out
+
+def Lintr(A):
+    """Two-body intrinsic L operator.
+
+    Arguments:
+        A (int): mass number
+
+    Returns:
+        CoefficientDict containing coefficients for Lintr operator.
+    """
+    out = mcscript.utils.CoefficientDict({
+        "U[l]": 1.-(1./A),
+        "V[r,ik]": 2*math.sqrt(2)/A
+        })
+    return out
+
+def Livintr(nuclide):
+    """Two-body intrinsic isovector L operator.
+
+    Arguments:
+        nuclide (tuple of int): nuclide N and Z
+
+    Returns:
+        CoefficientDict containing coefficients for Livintr operator.
+    """
+    (Z,N) = nuclide
+    A = Z+N
+    out = 2*mcscript.utils.CoefficientDict({  # overall factor of 2 from tz vs. \tau_0
+        "U[ltz]": 1-2/A,
+        "V[rtz,ik]": 2*math.sqrt(2)/A,
+        "V[r,iktz]": 2*math.sqrt(2)/A,
+        })
+    out += mcscript.utils.CoefficientDict({
+        "U[l]": (Z-N)/A**2,
+        "V[r,ik]": -2*math.sqrt(2)*(Z-N)/A**2,
+        })
+    return out
+
+def Lpintr(nuclide):
+    """Two-body intrinsic proton L operator.
+
+    Arguments:
+        nuclide (tuple of int): nuclide N and Z
+
+    Returns:
+        CoefficientDict containing coefficients for Lpintr operator.
+    """
+    out = (Lintr(sum(nuclide)) + Livintr(nuclide))/2
+    return out
+
+def Lnintr(nuclide):
+    """Two-body intrinsic neutron L operator.
+
+    Arguments:
+        nuclide (tuple of int): nuclide N and Z
+
+    Returns:
+        CoefficientDict containing coefficients for Lnintr operator.
+    """
+    out = (Lintr(sum(nuclide)) - Livintr(nuclide))/2
+    return out
+
+def M1intr(nuclide):
+    """Two-body intrinsic M1 operator.
+
+    Arguments:
+        nuclide (tuple of int): nuclide N and Z
+
+    Returns:
+        CoefficientDict containing coefficients for M1intr operator.
+    """
+    out = Lpintr(nuclide) + constants.k_gp*(S()+Siv())/2 + constants.k_gn*(S()-Siv())/2
+    out *= math.sqrt(3/(4*math.pi))
+    return out
+
+def Qintr(A):
+    """Two-body intrinsic quadrupole operator.
+
+    Arguments:
+        A (int): mass number
+
+    Returns:
+        CoefficientDict containing coefficients for Lintr operator.
+    """
+    out = mcscript.utils.CoefficientDict({
+        "U[r2Y2]": 1.-(1./A),
+        "V[r,r]": -2*math.sqrt(15/(8*math.pi))/A
+        })
+    return out
+
+def Qivintr(nuclide):
+    """Two-body intrinsic isovector quadrupole operator.
+
+    Arguments:
+        nuclide (tuple of int): nuclide N and Z
+
+    Returns:
+        CoefficientDict containing coefficients for Livintr operator.
+    """
+    (Z,N) = nuclide
+    A = Z+N
+    out = 2*mcscript.utils.CoefficientDict({  # overall factor of 2 from tz vs. \tau_0
+        "U[r2Y2tz]": 1-2/A,
+        "V[rtz,r]": -2*math.sqrt(15/(8*math.pi))/A,
+        "V[r,rtz]": -2*math.sqrt(15/(8*math.pi))/A
+        })
+    out += mcscript.utils.CoefficientDict({
+        "U[r2Y2]": (Z-N)/A**2,
+        "V[r,r]": 2*math.sqrt(15/(8*math.pi))*(Z-N)/A**2
+        })
+    return out
+
+def Qpintr(nuclide):
+    """Two-body intrinsic proton quadrupole operator.
+
+    Arguments:
+        nuclide (tuple of int): nuclide N and Z
+
+    Returns:
+        CoefficientDict containing coefficients for Qpintr operator.
+    """
+    out = (Qintr(sum(nuclide)) + Qivintr(nuclide))/2
+    return out
+
+def Qnintr(nuclide):
+    """Two-body intrinsic neutron quadrupole operator.
+
+    Arguments:
+        nuclide (tuple of int): nuclide N and Z
+
+    Returns:
+        CoefficientDict containing coefficients for Qnintr operator.
+    """
+    out = (Qintr(sum(nuclide)) - Qivintr(nuclide))/2
     return out
 
 
