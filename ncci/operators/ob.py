@@ -23,6 +23,8 @@ University of Notre Dame
 - 09/09/20 (pjf): Created, with some content from operators.py
 - 09/12/20 (pjf): Overhaul logic for generating one-body targets and sources.
 - 11/13/20 (pjf): Use constants module.
+- 07/09/21 (pjf):
+    + Fix EL scaling.
 """
 import collections
 import math
@@ -164,7 +166,6 @@ def generate_ob_observable_sets(task):
         # special case for E0
         if name == "E0":
             qn = (0,0,0)
-            coefficient = utils.oscillator_length(task["hw"])**2
             ob_observables += [
                 ("E0p", qn, "E0p"),
                 ("E0n", qn, "E0p"),
@@ -172,12 +173,10 @@ def generate_ob_observable_sets(task):
             obme_sources["r.r"] = k_kinematic_operators["r.r"]
             obme_sources["E0p"] = {
                 "tensor-product": ["delta_p", "r.r"],
-                "coefficient": coefficient,
                 "qn": qn
             }
             obme_sources["E0n"] = {
                 "tensor-product": ["delta_n", "r.r"],
-                "coefficient": coefficient,
                 "qn": qn
             }
             continue
@@ -188,7 +187,6 @@ def generate_ob_observable_sets(task):
             order = int(match.group(1))
             qn = (order,order%2,0)
             (j0, _, _) = qn
-            coefficient = utils.oscillator_length(task["hw"])**order
             ob_observables += [
                 ("E{}p".format(order), qn, "E{}p".format(order)),
                 ("E{}n".format(order), qn, "E{}n".format(order)),
@@ -197,12 +195,10 @@ def generate_ob_observable_sets(task):
             obme_sources[solid_harmonic_id] = solid_harmonic_def
             obme_sources["E{}p".format(order)] = {
                 "tensor-product": ["delta_p", solid_harmonic_id],
-                "coefficient": coefficient,
                 "qn": qn
             }
             obme_sources["E{}n".format(order)] = {
                 "tensor-product": ["delta_n", solid_harmonic_id],
-                "coefficient": coefficient,
                 "qn": qn
             }
             continue
