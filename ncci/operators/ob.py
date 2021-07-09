@@ -25,6 +25,10 @@ University of Notre Dame
 - 11/13/20 (pjf): Use constants module.
 - 07/09/21 (pjf):
     + Fix EL scaling.
+    + Add definitions for rtz, iktz, ltz, stz.
+    + Fix solid_harmonic_source for ik solid harmonics.
+    + Use pattern matching for setting up solid harmonic sources.
+    + Print warning when overriding with user-defined sources.
 """
 import collections
 import math
@@ -50,6 +54,8 @@ k_kinematic_operators = {
     "r.r":      {"builtin": "kinematic", "qn": (0,0,0)},
     "ik":       {"builtin": "kinematic", "qn": (1,1,0)},
     "ik.ik":    {"builtin": "kinematic", "qn": (0,0,0)},
+    "rtz":      {"tensor-product": ["r","tz"], "qn": (1,1,0)},
+    "iktz":     {"tensor-product": ["ik","tz"], "qn": (1,1,0)},
 }
 
 ################################################################
@@ -63,6 +69,8 @@ k_am_operators = {
     "l2": {"builtin": "am", "qn": (1,0,0)},
     "s":  {"builtin": "am", "qn": (1,0,0)},
     "s2": {"builtin": "am", "qn": (1,0,0)},
+    "ltz": {"tensor-product": ["l", "tz"], "qn": (1,0,0)},
+    "stz": {"tensor-product": ["s", "tz"], "qn": (1,0,0)},
     "sp": {"tensor-product": ["delta_p", "s"], "qn": (1,0,0)},
     "sn": {"tensor-product": ["delta_n", "s"], "qn": (1,0,0)},
     "sp2": {"tensor-product": ["delta_p", "s2"], "qn": (0,0,0)},
@@ -138,7 +146,7 @@ def solid_harmonic_source(coordinate, order, j0=None):
     qn = (j0,j0%2,0)  # (j0,g0,tz0)
     identifier = "{:s}{:d}Y{:d}".format(coordinate, order, j0)
     source_dict = {
-        "builtin": "solid-harmonic", "coordinate": "r", "order": order, "qn": qn
+        "builtin": "solid-harmonic", "coordinate": coordinate, "order": order, "qn": qn
     }
     return (identifier, source_dict)
 
@@ -191,8 +199,7 @@ def generate_ob_observable_sets(task):
                 ("E{}p".format(order), qn, "E{}p".format(order)),
                 ("E{}n".format(order), qn, "E{}n".format(order)),
             ]
-            (solid_harmonic_id, solid_harmonic_def) = solid_harmonic_source("r", order, j0)
-            obme_sources[solid_harmonic_id] = solid_harmonic_def
+            solid_harmonic_id = "r{:d}Y{:d}".format(order, j0)
             obme_sources["E{}p".format(order)] = {
                 "tensor-product": ["delta_p", solid_harmonic_id],
                 "qn": qn
@@ -257,8 +264,7 @@ def generate_ob_observable_sets(task):
             ]
             obme_sources["l"] = k_am_operators["l"]
             obme_sources["s"] = k_am_operators["s"]
-            (solid_harmonic_id, solid_harmonic_def) = solid_harmonic_source("r", order-1, j0-1)
-            obme_sources[solid_harmonic_id] = solid_harmonic_def
+            solid_harmonic_id = "r{:d}Y{:d}".format(order-1, j0-1)
             obme_sources["l"+solid_harmonic_id] = {
                 "tensor-product": ["l", solid_harmonic_id], "qn": qn
             }
@@ -289,8 +295,8 @@ def generate_ob_observable_sets(task):
                 "linear-combination": {
                     "M{}lp".format(order): 1.0,
                     # "M{}ln".format(order): 0.0,
-                    "M{}sp".format(order): 5.5856946893,  # NIST CODATA 2018
-                    "M{}sn".format(order): -3.82608545,   # NIST CODATA 2018
+                    "M{}sp".format(order): constants.k_gp,
+                    "M{}sn".format(order): constants.k_gn,
                 },
                 "qn": qn,
             }
@@ -416,13 +422,55 @@ def get_obme_sources(task, targets):
     else:
         obme_sources.update(**ladder_operators_generic(task["hw"]))
 
-
     # add sources from observable sets
     obme_sources.update(**generate_ob_observable_sets(task)[1])
+
+    # set up solid harmonics
+    solid_harmonic_re = re.compile(r"(r|ik)([0-9]+)Y([0-9]+)")
+    iv_solid_harmonic_re = re.compile(r"(r|ik)([0-9]+)Y([0-9]+)tz")
+    required_solid_harmonics = set()
+    for target_id in targets:
+        match = solid_harmonic_re.match(target_id)
+        if match:
+            required_solid_harmonics.add(match.group(0))
+        match = iv_solid_harmonic_re.match(target_id)
+        if match:
+            required_solid_harmonics.add(match.group(0))
+    for source in obme_sources.values():
+        for source_id in list(source.get("linear-combination", {}).keys()) + source.get("tensor-product", []):
+            match = solid_harmonic_re.match(source_id)
+            if match:
+                required_solid_harmonics.add(match.group(0))
+            match = iv_solid_harmonic_re.match(source_id)
+            if match:
+                required_solid_harmonics.add(match.group(0))
+    for solid_harmonic_id in required_solid_harmonics:
+        match = solid_harmonic_re.fullmatch(solid_harmonic_id)
+        if match:
+            coordinate = match.group(1)
+            order = int(match.group(2))
+            j0 = int(match.group(3))
+            (source_id, source) = solid_harmonic_source(coordinate, order, j0)
+            assert source_id == solid_harmonic_id
+            obme_sources[source_id] = source
+
+        match = iv_solid_harmonic_re.fullmatch(solid_harmonic_id)
+        if match:
+            coordinate = match.group(1)
+            order = int(match.group(2))
+            j0 = int(match.group(3))
+            (source_id, source) = solid_harmonic_source(coordinate, order, j0)
+            assert source_id+"tz" == solid_harmonic_id
+            obme_sources[solid_harmonic_id] = {
+                "tensor-product": [source_id, "tz"],
+                "qn": source["qn"],
+            }
 
     # override with user-defined sources
     user_obme_sources = task.get("obme_sources", [])
     for (source_id, source) in user_obme_sources:
+        if source_id in obme_sources:
+            print("WARN: overriding obme source '{:s}' with {}".format(source_id, source))
         obme_sources[source_id] = source
 
     # construct dependency graph
