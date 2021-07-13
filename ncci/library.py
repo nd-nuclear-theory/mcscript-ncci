@@ -23,6 +23,7 @@ University of Notre Dame
 - 02/17/21 (mac): Fix chown to act on whole run directory.
 - 05/14/21 (mac): Provide task handler for HSI retrieval.
 - 07/07/21 (mac): Add legacy mfdnv5b00/b01 wf support to hsi extraction handler.
+- 07/13/21 (zz): Fix typos in generate_smwf_info_in_library().
 """
 
 import glob
@@ -474,14 +475,14 @@ def retrieve_natorb_obdme(
 ################################################################
 
 def generate_smwf_info_in_library(results_prefix):
-    """Generate missing swmf_info file in situ in library.
+    """Generate missing smwf_info file in situ in library.
 
-    This is for mfdnv15b00/b01 legacy runs.  The swmf_info file is generated
+    This is for mfdnv15b00/b01 legacy runs.  The smwf_info file is generated
     from the results file (in res) and partitioning (in task_data).
 
     As byproduct, provides task-data/mfdn_partitioning.info, if not already available.
 
-    Caution: The code for generating swmf_info files involves calls to compiled
+    Caution: The code for generating smwf_info files involves calls to compiled
     utilities from shell (orbital-gen).  If you are running on a front end
     machine (e.g., xfer queue at NERSC), make sure shell is compiled for the
     appropriate architecture (e.g., haswell), and that the appropriate module
@@ -520,7 +521,7 @@ def generate_smwf_info_in_library(results_prefix):
         res_filename = results_data.params["filename"]
         orbital_filename=os.path.join(task_data_prefix,descriptor,"orbitals.dat")
         partitioning_filename=os.path.join(task_data_prefix,descriptor,"mfdn_partitioning.info")
-        info_filename = os.path.join(wf_prefix,descriptor,"mfdn_swmf.info")
+        info_filename = os.path.join(wf_prefix,descriptor,"mfdn_smwf.info")
 
         # short circuit if info file exists
         if (os.path.isfile(info_filename)):
