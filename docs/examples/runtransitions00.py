@@ -152,7 +152,7 @@ tasks = [{
     # one-body sources
     "obme_sources": [
         # examples of direct construction:
-        ("Q",    {"builtin": "solid-harmonic", "coordinate": "r", "order": 2, "qn": (0,0,0)}),
+        ("Q",    {"builtin": "solid-harmonic", "coordinate": "r", "order": 2, "qn": (2,0,0)}),
         ("Qp",   {"tensor-product": ["delta_p","Q"], "qn": (2,0,0)}),
         ("Qn",   {"tensor-product": ["delta_n","Q"], "qn": (2,0,0)}),
         ("Qiv",  {"tensor-product": ["tz","Q"], "coefficient": 2., "qn": (2,0,0)}),
