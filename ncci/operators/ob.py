@@ -29,6 +29,8 @@ University of Notre Dame
     + Fix solid_harmonic_source for ik solid harmonics.
     + Use pattern matching for setting up solid harmonic sources.
     + Print warning when overriding with user-defined sources.
+- 07/14/21 (pjf):
+    + Add definitions for r.rtz and ik.iktz.
 """
 import collections
 import math
@@ -55,7 +57,9 @@ k_kinematic_operators = {
     "ik":       {"builtin": "kinematic", "qn": (1,1,0)},
     "ik.ik":    {"builtin": "kinematic", "qn": (0,0,0)},
     "rtz":      {"tensor-product": ["r","tz"], "qn": (1,1,0)},
+    "r.rtz":    {"tensor-product": ["r.r","tz"], "qn": (0,0,0)},
     "iktz":     {"tensor-product": ["ik","tz"], "qn": (1,1,0)},
+    "ik.iktz":  {"tensor-product": ["ik.ik","tz"], "qn": (0,0,0)},
 }
 
 ################################################################

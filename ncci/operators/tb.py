@@ -52,6 +52,8 @@ University of Notre Dame
     - 07/09/21 (pjf): Add intrinsic operators:
         + Sp, Sn, S, Siv, Lintr, Livintr, Lpintr, Lnintr, M1intr
         + Qintr, Qivintr, Qpintr, Qnintr
+    - 07/14/21 (pjf):
+        + Add additional intrinsic operators: r2intr, r2ivintr, rp2intr, and rn2intr
 """
 import collections
 import math
@@ -297,6 +299,69 @@ def Tcm(A):
     out = mcscript.utils.CoefficientDict()
     out += (1/(2*A)) * (constants.k_hbar_c**2/constants.k_mN_csqr) * Uksqr()
     out += (1/A) * (constants.k_hbar_c**2/constants.k_mN_csqr) * Vk1k2()
+    return out
+
+def r2intr(A):
+    """Intrinsic r^2 two-body operator.
+
+    Arguments:
+        A (int): mass number
+
+    Returns:
+        CoefficientDict containing coefficients for r2intr operator.
+    """
+    out = mcscript.utils.CoefficientDict()
+    out += (1-1/A) * Ursqr()
+    out += (-2/A) * Vr1r2()
+    return out
+
+def r2ivintr(nuclide):
+    """Two-body intrinsic isovector r^2 operator.
+
+    Arguments:
+        nuclide (tuple of int): nuclide N and Z
+
+    Returns:
+        CoefficientDict containing coefficients for r2ivintr operator.
+    """
+    (Z,N) = nuclide
+    A = Z+N
+    out = 2*mcscript.utils.CoefficientDict({  # overall factor of 2 from tz vs. \tau_0
+        "U[r.rtz]": 1-2/A,
+        "V[rtz,r]": -2/A*(-math.sqrt(3)),
+        "V[r,rtz]": -2/A*(-math.sqrt(3)),
+        })
+    out += (Z-N)/A**2 * Ursqr() + 2*(Z-N)/A**2 * Vr1r2()
+    return out
+
+def rp2intr(nuclide):
+    """Two-body intrinsic proton r^2 operator.
+
+    This is (r_p-R)^2, where R is the c-o-m of the A-body system, not the Z-body
+    proton subsystem.
+
+    Arguments:
+        nuclide (tuple of int): nuclide N and Z
+
+    Returns:
+        CoefficientDict containing coefficients for rp2intr operator.
+    """
+    out = (r2intr(A=sum(nuclide)) + r2ivintr(nuclide=nuclide))/2
+    return out
+
+def rn2intr(nuclide):
+    """Two-body intrinsic neutron r^2 operator.
+
+    This is (r_n-R)^2, where R is the c-o-m of the A-body system, not the N-body
+    neutron subsystem.
+
+    Arguments:
+        nuclide (tuple of int): nuclide N and Z
+
+    Returns:
+        CoefficientDict containing coefficients for rn2intr operator.
+    """
+    out = (r2intr(A=sum(nuclide)) - r2ivintr(nuclide=nuclide))/2
     return out
 
 def Lintr(A):
