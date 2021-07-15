@@ -312,7 +312,7 @@ def allowed_by_masks(task,qn_pair):
 
     # apply masks
     if verbose:
-        print("Vetting {}".format(qn_pair))
+        print("Mask: vetting {}".format(qn_pair))
     allowed = True
     for mask_function_params in mask_list:
         if not isinstance(mask_function_params, tuple):
@@ -321,10 +321,10 @@ def allowed_by_masks(task,qn_pair):
         (mask_function, mask_params) = mask_function_params
         mask_function_value = mask_function(task, mask_params, qn_pair, verbose=verbose)
         if verbose:
-            print("  mask {}: {}".format(mask_function.__name__, mask_function_value))
+            print("  Mask: mask {} {}".format(mask_function.__name__, mask_function_value))
         allowed &= mask_function_value
     if verbose:
-        print("  Vetted {}: {}".format(qn_pair, allowed))
+        print("  Mask: vetted {} {}".format(qn_pair, allowed))
 
     return allowed
 
