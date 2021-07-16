@@ -28,6 +28,10 @@ ncci.environ.operator_dir_list = [
     "example-data",
 ]
 
+# nuclide
+nuclide = (3, 3)
+A = sum(nuclide)
+
 # hw -- linear mesh
 hw_range = (15, 20, 5)
 hw_list = mcscript.utils.value_range(*hw_range)
@@ -43,7 +47,7 @@ Nmax_range = (2, 4, 2)
 Nmax_list = mcscript.utils.value_range(*Nmax_range)
 
 def mask_allow_near_yrast(task,mask_params,qn_pair,verbose=False):
-    """Mask function to allow only transitions originating (and, optionally, terminating) near the yrast line.
+    """Mask function for transitions involving only low-lying states of each J.
 
     Mask parameters:
         "ni_max" (int or dict): maximum ni, or dictionary Ji->ni_max
@@ -53,6 +57,7 @@ def mask_allow_near_yrast(task,mask_params,qn_pair,verbose=False):
         task (dict): task dictionary
         mask_params (dict): parameters specific to this mask
         qn_pair (tuple): (qnf,qni) for transition
+        verbose (book, optional): verbosity (argument required by handler)
 
     Returns:
         allow (bool): mask value
@@ -72,48 +77,24 @@ def mask_allow_near_yrast(task,mask_params,qn_pair,verbose=False):
     if (isinstance(nf_max, dict)):
         nf_max = nf_max.get(Jf,0)
     if (verbose):
-        print("  Jf {} nf {} nf_max {} {} ; Ji {} ni {} ni_max {} {}".format(Jf,nf,nf_max,(nf<=nf_max),Ji,ni,ni_max,(ni<=ni_max)))
+        print("  Mask yrast check: Jf {} nf {} nf_max {} {} ; Ji {} ni {} ni_max {} {}".format(Jf,nf,nf_max,(nf<=nf_max),Ji,ni,ni_max,(ni<=ni_max)))
     allow=(ni<=ni_max)
     allow&=(nf<=nf_max)
 
     return allow
 
 tasks = [{
-    # nuclide parameters -- for descriptor
-    "nuclide": (3, 3),
 
-    # postprocessor parameters
-    "wf_source_run_list": ["mfdn13"],
-    "wf_source_bra_selector": {
-        "nuclide": (3, 3),
-        "interaction": interaction,
-        "hw": hw,
-        "Nmax": Nmax,
-        },
-    "wf_source_ket_selector": {
-        "nuclide": (3, 3),
-        "interaction": interaction,
-        "hw": hw,
-        "Nmax": Nmax,
-        },
-
-    # postprocessor mask
-    "postprocessor_mask": [
-        (mask_allow_near_yrast, {"ni_max": 1, "nf_max": 1}),
-    ],
-
-    # basis parameters
-    "basis_mode": ncci.modes.BasisMode.kDirect,
-    "hw": hw,
-
-    # Hamiltonian parameters
+    # nuclide/Hamiltonian/hw parameters -- for descriptor
+    "nuclide": nuclide,
     "interaction": interaction,
     "use_coulomb": coulomb,
-    "a_cm": 40.,
-    "hw_cm": None,
+    "hw": hw,
 
-    # truncation parameters for TBME generation
+    # basis mode parameters for OBME/TBME generation
+    #
     # traditional oscillator many-body truncation
+    "basis_mode": ncci.modes.BasisMode.kDirect,
     "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
     "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
     "truncation_parameters": {
@@ -121,42 +102,68 @@ tasks = [{
         "Nstep": 2,
         },
 
+    # wf selection parameters for postprocessor
+    "wf_source_run_list": ["mfdn13"],
+    "wf_source_bra_selector": {
+        "nuclide": nuclide,
+        "interaction": interaction,
+        "hw": hw,
+        "Nmax": Nmax,
+        },
+    "wf_source_ket_selector": {
+        "nuclide": nuclide,
+        "interaction": interaction,
+        "hw": hw,
+        "Nmax": Nmax,
+        },
+    "postprocessor_mask": [
+        (mask_allow_near_yrast, {"ni_max": 1, "nf_max": 1}),
+    ],
+    "postprocessor_mask_verbose": False,
+    
     # obdme parameters
     "obdme_multipolarity": 2,
     "save_obdme": True,
 
     # one-body observables
-    #  ob_observable_sets: ['E0', 'E1', 'M1', 'E2', 'M2', ..., 'GT', 'F']
-    "ob_observable_sets": ['M1', 'E2'],
+    #  ob_observable_sets: ["E0", "E1", "M1", "E2", "M2", ..., "GT", "F"]
+    "ob_observable_sets": ["M1", "E2"],
     "ob_observables": [
         # (name, qn, operator_id)
         #            ^-from obme_sources (or builtin)
     ],
 
     # two-body observables
-    ## "observable_sets": ["H-components","am-sqr","isospin"],
-    "tb_observable_sets": ["am-sqr"],
+    # "tb_observable_sets": ["H-components", "am-sqr", "isospin", "intrinsic-E0", "intrinsic-M1", "intrinsic-E2"],
+    "tb_observable_sets": ["intrinsic-M1", "intrinsic-E2"],
     "tb_observables": [
-        ("CSU3", (0,0,0), {"CSU3-U": 1/(6-1), "CSU3-V": 1.0}),
-        ("CSp3R", (0,0,0), {"CSp3R-U": 1/(6-1), "CSp3R-V": 1.0}),
+        # Casimir operators
+        ("CSU3", (0,0,0), {"CSU3-U": 1/(A-1), "CSU3-V": 1.0}),
+        ("CSp3R", (0,0,0), {"CSp3R-U": 1/(A-1), "CSp3R-V": 1.0}),
+        # one-body evaluated as two-body -- for validation/illustration
         ("UDlp", (1,0,0), {"U[Dlp]": 1.0}),
         ("UDln", (1,0,0), {"U[Dln]": 1.0}),
         ("UDsp", (1,0,0), {"U[Dsp]": 1.0}),
         ("UDsn", (1,0,0), {"U[Dsn]": 1.0}),
         ("UE2p", (2,0,0), {"U[E2p]": 1.0}),
         ("UE2n", (2,0,0), {"U[E2n]": 1.0}),
-        # V[a,b] = V[(a*b + b*a)/2]
-        ("QxQ_0", (0,0,0), {"U[QxQ_0]": 1.0, "V[Q,Q]": 2.0})
+        # one-body Q-invariant (contains cm contribution)
+        #     Note: V[a,b] = V[(a*b + b*a)/2]
+        ("QxQ_0", (0,0,0), {"U[QxQ_0]": 1.0, "V[Q,Q]": 2.0}),
+        ("QpxQp_0", (0,0,0), {"U[QpxQp_0]": 1.0, "V[Qp,Qp]": 2.0}),
+        ("QnxQn_0", (0,0,0), {"U[QnxQn_0]": 1.0, "V[Qn,Qn]": 2.0}),
         ],
 
     # one-body sources
     "obme_sources": [
         # examples of direct construction:
-        ("Q",    {"builtin": "solid-harmonic", "coordinate": "r", "order": 2, "qn": (0,0,0)}),
+        ("Q",    {"builtin": "solid-harmonic", "coordinate": "r", "order": 2, "qn": (2,0,0)}),
         ("Qp",   {"tensor-product": ["delta_p","Q"], "qn": (2,0,0)}),
         ("Qn",   {"tensor-product": ["delta_n","Q"], "qn": (2,0,0)}),
         ("Qiv",  {"tensor-product": ["tz","Q"], "coefficient": 2., "qn": (2,0,0)}),
         ("QxQ_0", {"tensor-product": ["Q","Q"], "qn": (0,0,0)}),
+        ("QpxQp_0", {"tensor-product": ["Qp","Qp"], "qn": (0,0,0)}),
+        ("QnxQn_0", {"tensor-product": ["Qn","Qn"], "qn": (0,0,0)}),
     ],
 
     # two-body sources
@@ -167,8 +174,11 @@ tasks = [{
         ("CSp3R-V", {"filename": "CSp3R-V-tb-6.bin", "qn": (0,0,0)}),
     ],
 
+    # file format parameters
     "h2_format": 15099,
     "h2_extension": "dat",  # TODO mac (10/12/20): switch to bin when safe
+
+    # executable name
     "mfdn-transitions_executable": "xtransitions"
 
     }

@@ -29,6 +29,9 @@ University of Notre Dame
     + Fix solid_harmonic_source for ik solid harmonics.
     + Use pattern matching for setting up solid harmonic sources.
     + Print warning when overriding with user-defined sources.
+- 07/14/21 (pjf):
+    + Add definitions for r.rtz and ik.iktz.
+    + Add E1 intrinsic correction.
 """
 import collections
 import math
@@ -55,7 +58,9 @@ k_kinematic_operators = {
     "ik":       {"builtin": "kinematic", "qn": (1,1,0)},
     "ik.ik":    {"builtin": "kinematic", "qn": (0,0,0)},
     "rtz":      {"tensor-product": ["r","tz"], "qn": (1,1,0)},
+    "r.rtz":    {"tensor-product": ["r.r","tz"], "qn": (0,0,0)},
     "iktz":     {"tensor-product": ["ik","tz"], "qn": (1,1,0)},
+    "ik.iktz":  {"tensor-product": ["ik.ik","tz"], "qn": (0,0,0)},
 }
 
 ################################################################
@@ -189,6 +194,26 @@ def generate_ob_observable_sets(task):
             }
             continue
 
+        # special case for (intrinsic) E1
+        if name == "E1":
+            nuclide = task["nuclide"]
+            (Z,N) = nuclide
+            A = sum(nuclide)
+            qn = (1,1,0)
+            ob_observables += [
+                ("E1p", qn, "E1p"),
+                ("E1n", qn, "E1n"),
+            ]
+            obme_sources["E1p"] = {
+                "linear-combination": {"r1Y1tz": 0.5, "r1Y1": -0.5*(Z-N)/A},
+                "qn": (1,1,0),
+            }
+            obme_sources["E1n"] = {
+                "linear-combination": {"r1Y1tz": -0.5, "r1Y1": 0.5*(Z-N)/A},
+                "qn": (1,1,0),
+            }
+            continue
+
         # electric transitions (general)
         match = re.fullmatch(r"E([0-9]+)", name)
         if match:
@@ -300,13 +325,13 @@ def generate_ob_observable_sets(task):
                 },
                 "qn": qn,
             }
-
             continue
 
         if name in {"F", "beta"}:
             qn = (0,0,1)
             ob_observables += [("F", qn, "t+")]
             obme_sources["t+"] = k_isospin_operators["t+"]
+            continue
 
         if name in {"GT", "beta"}:
             qn = (1,0,1)
@@ -314,6 +339,7 @@ def generate_ob_observable_sets(task):
             obme_sources["t+"] = k_isospin_operators["t+"]
             obme_sources["s"] = k_am_operators["s"]
             obme_sources["GT"] = {"tensor-product": ["s", "t+"], "qn": qn}
+            continue
 
     return (ob_observables, obme_sources)
 
