@@ -24,6 +24,7 @@ University of Notre Dame
 - 05/14/21 (mac): Provide task handler for HSI retrieval.
 - 07/07/21 (mac): Add legacy mfdnv5b00/b01 wf support to hsi extraction handler.
 - 07/13/21 (zz): Fix typos in generate_smwf_info_in_library().
+- 07/15/21 (zz): Fix parts that make unnecessary error messages in generate_smwf_info_in_library().
 """
 
 import glob
@@ -508,7 +509,7 @@ def generate_smwf_info_in_library(results_prefix):
     res_format = "mfdn_v15"  # this function is mfdn_v15 specific
     filename_format="mfdn_format_7_ho"  # probably all legacy runs used this filename format, but might need to override
     mesh_data = mfdnres.res.slurp_res_files(
-        res_prefix,res_format,filename_format,glob_pattern="*.res",verbose=False
+        res_prefix,res_format,filename_format,glob_pattern="*-mfdn15-*.res",verbose=False
     )
 
     # iterate over tasks
@@ -536,11 +537,14 @@ def generate_smwf_info_in_library(results_prefix):
         if (not os.path.isfile(res_filename)):
             raise mcscript.exception.ScriptError("Missing res file {}".format(res_filename))  # twilight zone -- should exist by construction
         if (not os.path.isdir(os.path.join(task_data_prefix,descriptor))):
-            raise mcscript.exception.ScriptError("Missing task_data subdirectory for present descriptor {}".format(os.path.join(task_data_prefix,descriptor)))
+            print("Missing task_data subdirectory for present descriptor {}".format(os.path.join(task_data_prefix,descriptor)))
+            continue
         if (not os.path.isdir(os.path.join(wf_prefix,descriptor))):
-            raise mcscript.exception.ScriptError("Missing wf subdirectory for present descriptor {}".format(os.path.join(wf_prefix,descriptor)))
+            print("Missing wf subdirectory for present descriptor {}".format(os.path.join(wf_prefix,descriptor)))
+            continue
         if (not os.path.isfile(orbital_filename)):
-            raise mcscript.exception.ScriptError("Missing orbital file {}".format(orbital_filename))
+            print("Missing orbital file {}".format(orbital_filename))
+            continue
 
         # ensure partitioning file exists
         #
@@ -549,7 +553,8 @@ def generate_smwf_info_in_library(results_prefix):
         if not os.path.isfile(partitioning_filename):
             generated_partitioning_filename = os.path.join(task_data_prefix,descriptor,"mfdn_partitioning.generated")
             if (not os.path.isfile(generated_partitioning_filename)):
-                raise mcscript.exception.ScriptError("Missing generated partition file {}".format(generated_partitioning_filename))
+                print("Missing generated partition file {}".format(generated_partitioning_filename))
+                continue
             mcscript.call([
                 "cp", "--verbose",
                 generated_partitioning_filename,
