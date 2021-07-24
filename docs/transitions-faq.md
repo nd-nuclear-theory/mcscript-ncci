@@ -52,31 +52,80 @@ constraints on choosing the number N of ranks, there are a few considerations:
 As a rule of thumb, based on the above considerations, N=m or n ranks is a
 reasonable choice.
 
-Example: Alice generated Nmax06 wave functions for 12C, and Bob wants to
+Example: Alice generated Nmax=8 wave functions for 12C, and Bob wants to
 calculate transisitions.
 
 Alice generated the wave functions using `mfdn` on Cori KNL.  Based on memory
-needs, she chose 11 "diagonal" ranks.  There were thus 11*(11+1)/2=66 total
-ranks, that is, one for each block of the upper triangle of the Hamiltonian
-matrix.
+needs, she chose 55 "diagonal" ranks.  That is, she chose to decompose the upper
+triangle of the Hamiltonian matrix into 55*(55+1)/2=1540 blocks, and thus ran
+mfdn with 1540 ranks. That's all Bob needs to know about Alice's wave function
+run, in order to set up his `mfdn-transitions` run.
 
-That's all Bob needs to know about the wave functions to set up the
-`mfdn-transitions` run.  But Bob will also be running on Cori KNL, so let us
-digress for a moment to review how Alice took the KNL node configuration into
-account.  Since the KNL nodes are broken into 4 NUMA domains, she split these 66
-ranks over 17 nodes.  With 4x hyperthreading, and using 64 of the KNL
-processor's physical cores (to leave a couple in reserve for system tasks),
-there are 256 logical cores available per KNL node.  So, splitting those over 4
-ranks, she ran with 64 threads per rank.  Alice was using the `mcscript` job
-submission tool `qsubm`, so her submission parameters were `--ranks=66 --nods=17
---threads=64` (and `--serialthreads=256` for the "serial", i.e.,
-OpenMP-parallelized, setup codes from `shell`, which are run before either
+But let us digress for a moment to review how Alice took the KNL node
+configuration into account, as this is useful background for when Bob also takes
+the KNL node configuration into account.  Since the KNL nodes are broken into 4
+NUMA domains, she split these 1540 ranks over 17 nodes.  With 4x hyperthreading,
+and using 64 of the KNL processor's physical cores (to leave a couple in reserve
+for system tasks), there are 256 logical cores available per KNL node.  So,
+splitting those over 4 ranks, she ran with 64 threads per rank.  Alice was using
+the `mcscript` job submission tool `qsubm`, so her submission parameters were
+`--ranks=66 --nods=17 --threads=64` (and `--serialthreads=256` for the "serial",
+i.e., OpenMP-parallelized, setup codes from `shell`, which are run before either
 `mfdn` or `mfdn-transitions` to generate the OBME/TBME files).
 
-Bob then could therfore reasonably choose anywhere from 1 to 17^2=289 ranks.  If
-he were to chose 1 rank, he would let it use all available hyperthreads, with
-`--threads=256` (and, again, in this and the following examples, always with
-`--serialthreads=256` for the OBME/TBME setup codes).  But instead he follows
-the rule of thumb above and chooses to run on 17 ranks.  If he respects the NUMA
-domains, he will put 4 ranks per node, so his `qsubm` submission parameters are
-`--ranks=17 --nodes=5 --threads=64`.
+Bob then could therefore reasonably choose anywhere from 1 to 55^2=3025 ranks.
+Let's see how this pans out on Cori KNL nodes.  Each node has 64 physical cores
+available for the run (to leave a couple in reserve for system tasks), so, with
+4x hyperthreading, there are 256 logical cores available per node.
+
+Thus, if Bob ran with one rank per node, he might choose:
+
+   * A single-node run: 1 rank / 1 node / 256 threads per node
+
+   ~~~~
+   qsubm ... --ranks=1 --nodes=1 --threads=256 --serialthreads=256
+   ~~~~
+   
+   * Taking as many ranks a diagonal ranks in Alice's run: 55 ranks / 55 nodes /
+     256 threads per node
+
+   ~~~~
+   qsubm ... --ranks=55 --nodes=55 --threads=256 --serialthreads=256
+   ~~~~
+
+However, the memory on each KNL node is not uniformly accessible.  Rather, it is
+broken into 4 NUMA domains.  If a rank is spread over multiple NUMA domains,
+this may be expected to slow memory access.  So, instead, each rank should be
+confined to a single NUMA domain.  It should use only 64 logical cores, which
+means we can fit 4 ranks per node.  Thus, Bob might choose:
+
+   * A single-node run: 4 ranks / 1 node / 64 threads per node
+
+   ~~~~
+   qsubm ... --ranks=4 --nodes=1 --threads=64 --serialthreads=256
+   ~~~~
+   
+   * Taking as many ranks a diagonal ranks in Alice's run: 55 ranks / 14 nodes /
+     64 threads per node
+
+   ~~~~
+   qsubm ... --ranks=55 --nodes=14 --threads=64 --serialthreads=256
+   ~~~~
+
+   * Or, to again throw 55 nodes at it: 220 ranks / 55 nodes / 64 threads per
+     node
+
+   ~~~~
+   qsubm ... --ranks=220 --nodes=55 --threads=64 --serialthreads=256
+   ~~~~
+
+As an anecdotal example, comparing the timings (runmac0604), we see pretty good
+strong scaling from 14 to 55 nodes, if we do it by increasing the number of
+ranks (by a factor of 4), but but not if we just spread out each rank to use
+more threads (and cross over NUMA domains):
+
+   * 55/14/64  => total time with MPI  167.122170000000  => 2338 node-sec
+   * 220/55/64 => total time with MPI   50.9975730000000 => 2804 node-sec
+   * 55/55/256 => total time with MPI   88.8562030000000 => 4886 node-sec
+   * 1/1/256   => total time with MPI 3147.47612600000   => 3147 node-sec
+
