@@ -25,6 +25,7 @@ University of Notre Dame
 - 07/07/21 (mac): Add legacy mfdnv5b00/b01 wf support to hsi extraction handler.
 - 07/13/21 (zz): Fix typos in generate_smwf_info_in_library().
 - 07/15/21 (zz): Fix parts that make unnecessary error messages in generate_smwf_info_in_library().
+- 07/25/21 (mac): Remove temporary generate_smwf_info_in_library_handler().
 """
 
 import glob
@@ -237,7 +238,7 @@ def hsi_retrieval_handler(task):
     date = task["date"]
     library_base= task["library_base"]
     repo_str = task["repo_str"]
-
+    
     # construct paths
     target_run_top_prefix = os.path.join(library_base,"run{run}".format(run=run))
     target_run_results_prefix = os.path.join(target_run_top_prefix,"results")
@@ -537,13 +538,13 @@ def generate_smwf_info_in_library(results_prefix):
         if (not os.path.isfile(res_filename)):
             raise mcscript.exception.ScriptError("Missing res file {}".format(res_filename))  # twilight zone -- should exist by construction
         if (not os.path.isdir(os.path.join(task_data_prefix,descriptor))):
-            print("Missing task_data subdirectory for present descriptor {}".format(os.path.join(task_data_prefix,descriptor)))
+            print("WARN: Missing task_data subdirectory for present descriptor {}".format(os.path.join(task_data_prefix,descriptor)))
             continue
         if (not os.path.isdir(os.path.join(wf_prefix,descriptor))):
-            print("Missing wf subdirectory for present descriptor {}".format(os.path.join(wf_prefix,descriptor)))
+            print("WARN: Missing wf subdirectory for present descriptor {}".format(os.path.join(wf_prefix,descriptor)))
             continue
         if (not os.path.isfile(orbital_filename)):
-            print("Missing orbital file {}".format(orbital_filename))
+            print("WARN: Missing orbital file {}".format(orbital_filename))
             continue
 
         # ensure partitioning file exists
@@ -579,51 +580,3 @@ def generate_smwf_info_in_library(results_prefix):
             info_filename=info_filename
         )
     
-def generate_smwf_info_in_library_handler(task):
-    """Task handler for ad hoc run to supply missing smwf_info files in an already-extracted run.
-
-    Since smwf_info files are now provided as part of the hsi extraction
-    handler, this handler should NOT be useful past initial testing (7/21).
-    
-    Task dictionary:
-
-        run (str): run name
-        legacy (bool): if legacy format (pre-subarchives)
-        year (str): year code (for archive file hsi subdirectory)
-        date (str): date code (for archive filename)
-        library_base (str): path to library directory
-        repo_str (str): group name for file permissions
-
-    Example:
-
-      {
-          "run": "mac0451", "legacy": False, "year": "2020", "date": "200501",
-          "library_base": library_base, "repo_str": "m2032"
-      }
-
-    Arguments:
-        task (dict): as described above
-
-    """
-
-    # extract run retrieval parameters from task dictionary
-    run = task["run"]
-    library_base= task["library_base"]
-    repo_str = task["repo_str"]
-
-    # construct paths
-    target_run_top_prefix = os.path.join(library_base,"run{run}".format(run=run))
-    target_run_results_prefix = os.path.join(target_run_top_prefix,"results")
-    
-    # provide wf info files if needed (for mfdn v15b00/b01)
-    generate_smwf_info_in_library(target_run_results_prefix)
-
-    # make retrieved results available to group
-    if repo_str is not None:
-        mcscript.call([
-            "chown","--recursive",":{}".format(repo_str),target_run_top_prefix
-        ])
-        mcscript.call([
-            "chmod","--recursive","g+rX",target_run_top_prefix
-        ])
-
