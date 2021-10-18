@@ -40,6 +40,7 @@ University of Notre Dame
 - 07/08/21 (pjf):
     + Add support for postfixes.
     + Ignore non-half-integer J values.
+- 10/18/21 (mac): Provide "wf_source_glob_pattern" task parameter.
 """
 import collections
 import glob
@@ -430,7 +431,13 @@ def init_postprocessor_db(task, postfix=""):
     wf_source_res_dir_list = []
     for run in task["wf_source_run_list"]:
         wf_source_res_dir_list += [library.get_res_directory(run)]
-    wf_source_mesh_data = mfdnres.input.slurp_res_files(wf_source_res_dir_list, filename_format="ALL", verbose=True)
+    wf_source_glob_pattern = task.get("wf_source_glob_pattern","*.res")
+    wf_source_mesh_data = mfdnres.input.slurp_res_files(
+        wf_source_res_dir_list,
+        filename_format="ALL",
+        glob_pattern = wf_source_glob_pattern,
+        verbose=True
+    )
 
     # construct bra and ket info
     bra_selector = task["wf_source_bra_selector"]

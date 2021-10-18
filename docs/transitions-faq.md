@@ -121,7 +121,7 @@ means we can fit 4 ranks per node.  Thus, Bob might choose:
 
 As an anecdotal example, comparing the timings (runmac0604), we see pretty good
 strong scaling from 14 to 55 nodes, if we do it by increasing the number of
-ranks (by a factor of 4), but but not if we just spread out each rank to use
+ranks (by a factor of 4), but not if we just spread out each rank to use
 more threads (and cross over NUMA domains):
 
    * 55/14/64  => total time with MPI  167.122170000000  => 2338 node-sec
