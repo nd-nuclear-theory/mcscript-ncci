@@ -41,6 +41,7 @@ University of Notre Dame
     + Add support for postfixes.
     + Ignore non-half-integer J values.
 - 10/18/21 (mac): Provide "wf_source_glob_pattern" task parameter.
+- 10/19/21 (pjf): Fix two-body observables if not one-body observables enabled.
 """
 import collections
 import glob
@@ -885,8 +886,11 @@ def run_postprocessor_two_body(task, postfix="", one_body=False):
         max_ket_J = max([ket_J for (ket_J,_,_) in ket_qn_list])
         min_ket_J = min([ket_J for (ket_J,_,_) in ket_qn_list])
         max_deltaJ = max(abs(max_ket_J-bra_J), max_ket_J+bra_J, abs(min_ket_J-bra_J), min_ket_J+bra_J)
-        max_J0 = max([J0 for _,(J0,_,_),_ in ob_observables])
-        max2K = 2*int(min(max_deltaJ, max_J0))
+        if num_free_obdmes > 0:
+            max_J0 = max([J0 for _,(J0,_,_),_ in ob_observables])
+            max2K = 2*int(min(max_deltaJ, max_J0))
+        else:
+            max2K = 0
         transitions_inputlist = {
             "basisfilename_bra": "{:s}/mfdn_MBgroups".format(bra_wf_prefix),
             "smwffilename_bra": "{:s}/mfdn_smwf".format(bra_wf_prefix),
