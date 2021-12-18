@@ -42,6 +42,7 @@ University of Notre Dame
     + Ignore non-half-integer J values.
 - 10/18/21 (mac): Provide "wf_source_glob_pattern" task parameter.
 - 10/19/21 (pjf): Fix two-body observables if not one-body observables enabled.
+- 12/18/21 (mac): Proceed with warning if failure loading am module.
 """
 import collections
 import glob
@@ -51,10 +52,14 @@ import math
 import os
 import re
 import sqlite3
+import warnings
 
 import mcscript
 import mfdnres
-import am
+try:
+    import am
+except:
+    warnings.warn("Error loading am module (may be due to missing gsl).  Some functionality will be lost.")
 
 from . import (
     environ,
