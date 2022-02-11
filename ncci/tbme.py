@@ -1,4 +1,4 @@
-"""tbme.py -- task handlers for MFDn runs.
+"""tbme.py -- code to handle generation of TBMEs via h2mixer
 
 Patrick Fasano
 University of Notre Dame
