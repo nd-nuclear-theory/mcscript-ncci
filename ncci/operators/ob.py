@@ -46,7 +46,7 @@ University of Notre Dame
     + Add E1 intrinsic correction.
 - 02/11/22 (mac): Define observable set name "intrinsic-E1" for
     intrinsic E1 to avoid overloading lab frame E1.
-
+- 02/15/22 (pjf): Fix tz vs. tau0 scaling in intrinsic-E1 operator.
 """
 import collections
 import math
@@ -212,6 +212,8 @@ def generate_ob_observable_sets(task):
         # special case for (intrinsic) E1
         #
         # see equation (30) of "intrinsic" [Caprio 2020, doi:10.1088/1361-6471/ab9d38]
+        #
+        # note different factor of 1/2 from eq. (30), arising from $t_z$ vs $tau_0$
         if name == "intrinsic-E1":
             nuclide = task["nuclide"]
             (Z,N) = nuclide
@@ -222,11 +224,11 @@ def generate_ob_observable_sets(task):
                 ("E1n", qn, "E1n"),
             ]
             obme_sources["E1p"] = {
-                "linear-combination": {"r1Y1tz": 0.5, "r1Y1": -0.5*(Z-N)/A},
+                "linear-combination": {"r1Y1tz": 1., "r1Y1": -1.*(Z-N)/A},
                 "qn": (1,1,0),
             }
             obme_sources["E1n"] = {
-                "linear-combination": {"r1Y1tz": -0.5, "r1Y1": 0.5*(Z-N)/A},
+                "linear-combination": {"r1Y1tz": -1., "r1Y1": 1.*(Z-N)/A},
                 "qn": (1,1,0),
             }
             continue
