@@ -45,6 +45,8 @@ University of Notre Dame
     + Split out pre and post phases from task_handler_postprocessor().
     + Add explicit call to postprocessing.init_postprocessor_db().
 - 05/14/21 (pjf): Use partitioning from task-data for decompositions.
+- 02/25/22 (pjf): Only call task_handler_postprocessor_pre from
+    task_handler_postprocessor if not task is not being resumed.
 """
 import os
 import glob
@@ -367,7 +369,8 @@ def task_handler_postprocessor(task, cleanup=True):
     Arguments:
         task (dict): as described in module docstring
     """
-    task_handler_postprocessor_pre(task)
+    if not task["metadata"].get("resumed"):
+        task_handler_postprocessor_pre(task)
     postprocessing.run_postprocessor(task)
     task_handler_postprocessor_post(task, cleanup)
 
