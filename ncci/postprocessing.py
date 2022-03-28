@@ -43,6 +43,7 @@ University of Notre Dame
 - 10/18/21 (mac): Provide "wf_source_glob_pattern" task parameter.
 - 10/19/21 (pjf): Fix two-body observables if not one-body observables enabled.
 - 12/18/21 (mac): Proceed with warning if failure loading am module.
+- 03/28/22 (pjf): Fix disk thrashing when building database.
 """
 import collections
 import glob
@@ -658,7 +659,7 @@ def init_postprocessor_db(task, postfix=""):
             (*bra_run_descriptor_pair, bra_id_dict[bra_qn],
             *ket_run_descriptor_pair, ket_id_dict[ket_qn])
             )
-        db.commit()
+    db.commit()
 
 
     # sanity check -- raise exception if nothing to do in task
