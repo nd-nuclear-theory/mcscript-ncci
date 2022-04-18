@@ -62,7 +62,14 @@ from . import (
 )
 
 def generate_h2mixer_obme_source_lines(identifier, parameters, postfix):
-    """
+    """ Generate input lines for h2mixer to define an OBME source.
+
+    Arguments:
+        identifier (str): TODO
+        parameters (dict): TODO
+
+    Returns:
+        (list of str): h2mixer input lines
     """
     filename = parameters.get("filename")
     (j0, g0, tz0) = parameters["qn"]
@@ -105,15 +112,15 @@ def generate_h2mixer_obme_source_lines(identifier, parameters, postfix):
 
 
 def generate_h2mixer_tbme_source_lines(identifier, parameters, postfix):
-    """Generate input line for h2mixer source channel.
+    """ Generate input lines for h2mixer to define a TBME source.
 
     Arguments:
-        identifier (str): parameters for input line (id, parameters)
+        identifier (str): parameters for input line (id, parameters)  [TODO (mac): clarify]
         parameters (dict): specification for input file
             {"filename": (str), "xform_filename": (str), "xform_truncation": (str)}
 
     Returns:
-        (list of str) h2mixer input lines
+        (list of str): h2mixer input lines
     """
     filename = parameters.get("filename")
     xform_filename = parameters.get("xform_filename")
