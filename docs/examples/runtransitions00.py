@@ -5,7 +5,7 @@
     `mcscript-ncci/docs/examples` to NCCI_DATA_DIR_H2 to ensure that this
     script can find the relevant h2 files.
 
-    See runmfdn.txt for full description.
+    See examples.md for full description.
 
     Patrick J. Fasano, Mark A. Caprio
     University of Notre Dame
@@ -137,6 +137,7 @@ tasks = [{
     # "tb_observable_sets": ["H-components", "am-sqr", "isospin", "intrinsic-E0", "intrinsic-M1", "intrinsic-E2"],
     "tb_observable_sets": ["intrinsic-M1", "intrinsic-E2"],
     "tb_observables": [
+        # examples of direct construction:
         # Casimir operators
         ("CSU3", (0,0,0), {"CSU3-U": 1/(A-1), "CSU3-V": 1.0}),
         ("CSp3R", (0,0,0), {"CSp3R-U": 1/(A-1), "CSp3R-V": 1.0}),
@@ -157,10 +158,12 @@ tasks = [{
     # one-body sources
     "obme_sources": [
         # examples of direct construction:
-        ("Q",    {"builtin": "solid-harmonic", "coordinate": "r", "order": 2, "qn": (2,0,0)}),
-        ("Qp",   {"tensor-product": ["delta_p","Q"], "qn": (2,0,0)}),
-        ("Qn",   {"tensor-product": ["delta_n","Q"], "qn": (2,0,0)}),
-        ("Qiv",  {"tensor-product": ["tz","Q"], "coefficient": 2., "qn": (2,0,0)}),
+        # operators for quadratic quadrupole shape invariants
+        ("r2C2", {"builtin": "solid-harmonic", "coordinate": "r", "order": 2, "qn": (2,0,0)}),
+        ("Q", {"linear-combination": {"r2C2": math.sqrt(5/(4*math.pi))}, "qn": (2,0,0)}),
+        ("Qp", {"tensor-product": ["delta_p","Q"], "qn": (2,0,0)}),
+        ("Qn", {"tensor-product": ["delta_n","Q"], "qn": (2,0,0)}),
+        ("Qiv", {"tensor-product": ["tz","Q"], "coefficient": 2., "qn": (2,0,0)}),
         ("QxQ_0", {"tensor-product": ["Q","Q"], "qn": (0,0,0)}),
         ("QpxQp_0", {"tensor-product": ["Qp","Qp"], "qn": (0,0,0)}),
         ("QnxQn_0", {"tensor-product": ["Qn","Qn"], "qn": (0,0,0)}),

@@ -1,6 +1,6 @@
-""" runmfdn13.py
+""" runmfdn12.py
 
-    See runmfdn.txt for description.
+    See examples.md for full description.
 
     Patrick J. Fasano, Mark A. Caprio
     University of Notre Dame

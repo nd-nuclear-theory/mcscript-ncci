@@ -3,7 +3,7 @@
     Example Lanczos decomposition run using L^2 and S^2. Ensure that the output
     of runmfdn13.py is in the current NCCI_LIBRARY_PATH.
 
-    See runmfdn.txt for full description.
+    See examples.md for full description.
 
     Patrick J. Fasano
     University of Notre Dame

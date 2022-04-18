@@ -4,7 +4,7 @@
     `mcscript-ncci/docs/examples` to NCCI_DATA_DIR_H2 to ensure that this
     script can find the relevant h2 files.
 
-    See runmfdn.txt for full description.
+    See examples.md for full description.
 
     Patrick J. Fasano, Mark A. Caprio
     University of Notre Dame

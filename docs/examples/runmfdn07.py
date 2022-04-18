@@ -1,6 +1,6 @@
 """ runmfdn07.py
 
-    See runmfdn.txt for description.
+    See examples.md for full description.
 
     Mark A. Caprio
     University of Notre Dame
