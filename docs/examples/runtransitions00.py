@@ -120,7 +120,7 @@ tasks = [{
         (mask_allow_near_yrast, {"ni_max": 1, "nf_max": 1}),
     ],
     "postprocessor_mask_verbose": False,
-    
+
     # obdme parameters
     "obdme_multipolarity": 2,
     "save_obdme": True,
@@ -159,8 +159,7 @@ tasks = [{
     "obme_sources": [
         # examples of direct construction:
         # operators for quadratic quadrupole shape invariants
-        ("r2C2", {"builtin": "solid-harmonic", "coordinate": "r", "order": 2, "qn": (2,0,0)}),
-        ("Q", {"linear-combination": {"r2C2": math.sqrt(5/(4*math.pi))}, "qn": (2,0,0)}),
+        ("Q", {"builtin": "solid-harmonic", "coordinate": "r", "order": 2, "qn": (2,0,0)}),
         ("Qp", {"tensor-product": ["delta_p","Q"], "qn": (2,0,0)}),
         ("Qn", {"tensor-product": ["delta_n","Q"], "qn": (2,0,0)}),
         ("Qiv", {"tensor-product": ["tz","Q"], "coefficient": 2., "qn": (2,0,0)}),
