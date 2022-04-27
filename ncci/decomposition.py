@@ -11,6 +11,8 @@ University of Notre Dame
     - 03/31/21 (zz):
         +  Add LS operator
         +  Add support for swapping p and n parts.
+    - 04/24/22 (zz):
+        +  Add T operator.
 """
 
 import glob
@@ -94,6 +96,9 @@ def L2_operator(nuclide,Nmax,hw):
     return operators.tb.L2()
 def S2_operator(nuclide,Nmax,hw):
     return operators.tb.S2()
+def T2_operator(nuclide,Nmax,hw):
+    A = sum(nuclide)
+    return operators.tb.T2(A)
 def LS_operator(nuclide,Nmax,hw,coefs,swap):
     return mcscript.utils.dot(
     	[operators.tb.S2(), operators.tb.L2()],
@@ -153,6 +158,7 @@ def Sp3RSpSnS_operator(nuclide,Nmax,hw,coefs,swap):
 decomposition_operator_registry={
     "L" : (L2_operator,False),
     "S": (S2_operator,False),
+    "T": (T2_operator,False),
     "LS": (LS_operator,True),
     "Nex": (Nex_operator,False),
     "SU3": (CSU3_operator,False),
