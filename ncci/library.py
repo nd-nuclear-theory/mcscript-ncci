@@ -180,18 +180,22 @@ def recover_from_hsi(
 
     print("Retrieving {}...".format((year,run,date)))
 
-    # retrieve results subarchives from hsi
-    hsi_command_string = "cd {year}; get run{run}-archive-{date}-{{res,task-data,wf}}.t*".format(year=year,run=run,date=date)
-    mcscript.call(["hsi",hsi_command_string],check_return=False)
-
+    # determine archive types to retrieve
     archive_types = ["res","task-data","wf"]
     if (keep_metadata):
         archive_types.append("out")
-    ## if (keep_obdme):
-    ##    archive_types.append("obdme")
+    if (keep_obdme):
+        archive_types.append("obdme")
+
+    # retrieve results subarchives from hsi
+    hsi_command_string = "cd {year}; get run{run}-archive-{date}-{{{archve_types_str}}}.t*".format(
+        year=year,run=run,date=date,
+        archive_types_str=",".join(archive_types)
+    )
+    mcscript.call(["hsi",hsi_command_string],check_return=False)
 
     # expand results subarchives to run directory
-    for archive_type in ["res","task-data","wf"]:
+    for archive_type in archive_types:
         for extension in ["tgz","tar.gz","tar"]:
             archive_filename = "run{run}-archive-{date}-{archive_type}.{extension}".format(run=run,date=date,archive_type=archive_type,extension=extension)
             if os.path.isfile(archive_filename):
