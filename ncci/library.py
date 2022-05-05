@@ -26,6 +26,8 @@ University of Notre Dame
 - 07/13/21 (zz): Fix typos in generate_smwf_info_in_library().
 - 07/15/21 (zz): Fix parts that make unnecessary error messages in generate_smwf_info_in_library().
 - 07/25/21 (mac): Remove temporary generate_smwf_info_in_library_handler().
+- 05/05/22 (mac): Provide keep_archives, keep_metadata, and keep_obdme flags for modern his archives.
+
 """
 
 import glob
@@ -43,7 +45,10 @@ from . import (
 # HSI run retrieval scripting -- legacy
 ################################################################
 
-def recover_from_hsi_legacy(year,run,date,library_base,keep_archives=False,keep_metadata=False,repo_str=None):
+def recover_from_hsi_legacy(
+        year,run,date,library_base,
+        keep_archives=False,keep_metadata=False,keep_obdme=False,
+):
     """Extract results subarchives from hsi for "legacy" archives (until 2018), before archives
     were broken down by results type.
 
@@ -57,7 +62,7 @@ def recover_from_hsi_legacy(year,run,date,library_base,keep_archives=False,keep_
         library_base (str): path to library directory
         keep_archives (bool, optional): whether or not to save unextracted archives (useful in debugging this scripting)
         keep_metadata (bool, optional): whether or not to keep flags/batch/output directories (useful for diagnostics)
-        repo_str (str,optional): group name for file permissions
+        keep_obdme (bool, optional): whether or not to retrieve/keep obdme results -- IGNORED for legacy archive
 
     """
 
@@ -144,7 +149,10 @@ def recover_from_hsi_legacy(year,run,date,library_base,keep_archives=False,keep_
 # HSI run retrieval scripting
 ################################################################
 
-def recover_from_hsi(year,run,date,library_base,repo_str=None):
+def recover_from_hsi(
+        year,run,date,library_base,
+        keep_archives=False,keep_metadata=False,keep_obdme=False,
+):
     """Extract results subarchives from hsi.
 
     Limitation: This routine fails for legacy archives where the results
@@ -160,7 +168,9 @@ def recover_from_hsi(year,run,date,library_base,repo_str=None):
         run (str): run name
         date (str): date code (for archive filename)
         library_base (str): path to library directory
-        repo_str (str,optional): group name for file permissions
+        keep_archives (bool, optional): whether or not to save unextracted archives (useful in debugging this scripting)
+        keep_metadata (bool, optional): whether or not to retrieve/keep flags/batch/output directories (useful for diagnostics)
+        keep_obdme (bool, optional): whether or not to retrieve/keep obdme results
 
     """
 
@@ -173,6 +183,12 @@ def recover_from_hsi(year,run,date,library_base,repo_str=None):
     # retrieve results subarchives from hsi
     hsi_command_string = "cd {year}; get run{run}-archive-{date}-{{res,task-data,wf}}.t*".format(year=year,run=run,date=date)
     mcscript.call(["hsi",hsi_command_string],check_return=False)
+
+    archive_types = ["res","task-data","wf"]
+    if (keep_metadata):
+        archive_types.append("out")
+    ## if (keep_obdme):
+    ##    archive_types.append("obdme")
 
     # expand results subarchives to run directory
     for archive_type in ["res","task-data","wf"]:
@@ -192,7 +208,8 @@ def recover_from_hsi(year,run,date,library_base,repo_str=None):
             "--strip-components=1",
             "--exclude=mfdn*obdme*",
         ])
-        mcscript.call(["rm","-v",filename])
+        if not keep_archives:
+            mcscript.call(["rm","-v",filename])
     os.chdir(os.path.join(target_run_results_prefix,"wf"))
     for filename in glob.glob("*.tar"):
         mcscript.call([
@@ -200,7 +217,8 @@ def recover_from_hsi(year,run,date,library_base,repo_str=None):
             "--strip-components=1",
             "--totals"
         ])
-        mcscript.call(["rm","-v",filename])
+        if not keep_archives:
+            mcscript.call(["rm","-v",filename])
 
     os.chdir(library_base)
 
@@ -218,7 +236,10 @@ def hsi_retrieval_handler(task):
         year (str): year code (for archive file hsi subdirectory)
         date (str): date code (for archive filename)
         library_base (str): path to library directory
-        repo_str (str): group name for file permissions
+        keep_archives (bool, optional): whether or not to save unextracted archives (useful in debugging this scripting)
+        keep_metadata (bool, optional): whether or not to retrieve/keep flags/batch/output directories (useful for diagnostics)
+        keep_obdme (bool, optional): whether or not to retrieve/keep obdme results
+        repo_str (str,optional): group name for file permissions
 
     Example:
 
@@ -237,7 +258,10 @@ def hsi_retrieval_handler(task):
     year = task["year"]
     date = task["date"]
     library_base= task["library_base"]
-    repo_str = task["repo_str"]
+    keep_archives = task.get("keep_archives",False)
+    keep_metadata = task.get("keep_metadata",False)
+    keep_obdme = task.get("keep_obdme",False)
+    repo_str = task.get("repo_str",None)
     
     # construct paths
     target_run_top_prefix = os.path.join(library_base,"run{run}".format(run=run))
@@ -246,9 +270,15 @@ def hsi_retrieval_handler(task):
     # call hsi extraction handler
     if task["legacy"]:
         # keep archives to facilitate resumption on error; keep metadata to facilitate rebundling into modern archive
-        recover_from_hsi_legacy(year,run,date,library_base,repo_str=repo_str,keep_archives=True,keep_metadata=True)
+        recover_from_hsi_legacy(
+            year,run,date,library_base,
+            keep_archives=True,keep_metadata=True,keep_obdme=False,
+        )
     else:
-        recover_from_hsi(year,run,date,library_base,repo_str=repo_str)
+        recover_from_hsi(
+            year,run,date,library_base,
+            keep_archives=keep_archives,keep_metadata=keep_metadata,keep_obdme=keep_obdme
+        )
 
     # provide wf info files if needed (for mfdn v15b00/b01)
     generate_smwf_info_in_library(target_run_results_prefix)
