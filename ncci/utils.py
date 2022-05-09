@@ -9,6 +9,7 @@
         + Add N0_for_nuclide function (copied from mfdnres).
     - 12/02/20 (pjf): Allow J<M natorb base states.
     - 07/08/21 (pjf): Check that J of natorb base state matches nuclide.
+    - 04/27/22 (pjf): Add hw_from_oscillator_length().
 """
 
 import math
@@ -76,6 +77,19 @@ def oscillator_length(hw):
     """
     return constants.k_hbar_c/math.sqrt(constants.k_mN_csqr*hw)
 
+
+def hw_from_oscillator_length(b):
+    """Calculate oscillator frequency for given oscillator length.
+
+    hw(b) = (hbar c)^2/[(m_N c^2) (b^2)]
+
+    Arguments:
+        b (numeric): oscillator length in fm
+
+    Returns:
+        (float): hbar omega in MeV
+    """
+    return constants.k_hbar_c**2/(constants.k_mN_csqr*b**2)
 
 def natural_orbital_indicator(natural_orbital_iteration):
     """Construct natural orbital indicator string."""
