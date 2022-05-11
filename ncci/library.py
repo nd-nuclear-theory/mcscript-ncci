@@ -188,7 +188,7 @@ def recover_from_hsi(
         archive_types.append("obdme")
 
     # retrieve results subarchives from hsi
-    hsi_command_string = "cd {year}; get run{run}-archive-{date}-{{{archve_types_str}}}.t*".format(
+    hsi_command_string = "cd {year}; get run{run}-archive-{date}-{{{archive_types_str}}}.t*".format(
         year=year,run=run,date=date,
         archive_types_str=",".join(archive_types)
     )
