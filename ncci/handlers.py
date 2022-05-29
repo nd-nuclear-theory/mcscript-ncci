@@ -360,8 +360,8 @@ def task_handler_postprocessor_post(task, cleanup=True):
     Arguments:
         task (dict): as described in module docstring
     """
-    postprocessing.evaluate_ob_observables(task, postfix=postfix)
-    postprocessing.save_postprocessor_obdme(task, postfix=postfix)
+    postprocessing.evaluate_ob_observables(task)
+    postprocessing.save_postprocessor_obdme(task)
 
 
 def task_handler_postprocessor(task, cleanup=True):
