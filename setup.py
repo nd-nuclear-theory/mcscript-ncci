@@ -7,6 +7,7 @@ setup(
     description=("Scripting for NCCI runs"),
     license="MIT",
     packages=find_packages(include="ncci*"),
+    python_requires='>=3.9',
     install_requires=[
         "deprecated>=1.2.10",
         "mcscript>=0.1.0",
