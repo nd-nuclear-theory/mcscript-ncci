@@ -4,7 +4,7 @@
 """
 import deprecated as __deprecated
 
-from . import ob, tb
+from . import ob, tb, rel
 
 ################################################################
 # import from tb but mark as deprecated
