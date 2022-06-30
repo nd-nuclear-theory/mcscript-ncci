@@ -661,7 +661,7 @@ def get_tbme_sources(task, targets, postfix):
     if "VNN" in required_tbme_sources:
         VNN_filename = task.get("interaction_file")
         if VNN_filename is None:
-            VNN_filename = environ.interaction_filename(
+            VNN_filename = environ.find_interaction_file(
                 task["interaction"],
                 task["truncation_int"],
                 task["hw_int"]
@@ -686,7 +686,7 @@ def get_tbme_sources(task, targets, postfix):
     if "VC_unscaled" in required_tbme_sources:
         VC_filename = task.get("coulomb_file")
         if VC_filename is None:
-            VC_filename = environ.interaction_filename(
+            VC_filename = environ.find_interaction_file(
                 "VC",
                 task["truncation_coul"],
                 task["hw_coul"]

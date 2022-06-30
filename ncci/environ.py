@@ -22,9 +22,13 @@ University of Notre Dame
 - 05/29/19 (mac): Add mfdn_postprocessor_filename.
 - 08/23/19 (pjf): Add obme_filename.
 - 09/20/19 (pjf): Remove observable_me_filename().
+- 06/30/22 (pjf):
+    + Rename interaction_filename() -> find_interaction_file().
+    + Use multi-file mode of mcscript.utils.search_in_subdirectories().
 """
 
 import os
+from typing import Optional
 
 import mcscript.parameters
 import mcscript.utils
@@ -62,7 +66,9 @@ def mfdn_postprocessor_filename(name):
         return mcscript.utils.expand_path(name)
     return os.path.join(mcscript.parameters.run.install_dir, "mfdn-transitions", name)
 
-def interaction_filename(interaction, truncation, hw):
+def find_interaction_file(
+    interaction:str, truncation:tuple[str,int], hw:Optional[float]
+):
     """Construct filename for interaction h2 file.
 
     Arguments:
@@ -76,32 +82,28 @@ def interaction_filename(interaction, truncation, hw):
     Raises:
         mcscript.exception.ScriptError: if no suitable match is found
     """
+    truncation_str = mcscript.utils.dashify(truncation)
     if (hw is None):
         # for special operator files
-        interaction_filename_patterns = [
-            "{}-{}.bin",
-            "{}-{}.dat"
+        interaction_filename_candidates = [
+            f"{interaction}_{truncation_str}.bin"
+            f"{interaction}-{truncation_str}.bin"  # DEPRECATED
+            f"{interaction}_{truncation_str}.dat"
+            f"{interaction}-{truncation_str}.dat"  # DEPRECATED
         ]
     else:
-        interaction_filename_patterns = [
-            "{}-{}-{:04.1f}.bin",
-            "{}-{}-{:g}.bin",
-            "{}-{}-{:04.1f}.dat",
-            "{}-{}-{:g}.dat",
+        interaction_filename_candidates = [
+            f"{interaction}_{truncation_str}_{hw:04.1f}.bin",
+            f"{interaction}-{truncation_str}-{hw:04.1f}.bin",  # DEPRECATED
+            f"{interaction}-{truncation_str}-{hw:g}.bin",  # DEPRECATED
+            f"{interaction}_{truncation_str}_{hw:04.1f}.dat",
+            f"{interaction}-{truncation_str}-{hw:04.1f}.dat",  # DEPRECATED
+            f"{interaction}-{truncation_str}-{hw:g}.dat",  # DEPRECATED
         ]
-    for filename_pattern in interaction_filename_patterns:
-        filename = filename_pattern.format(
-            interaction, mcscript.utils.dashify(truncation), hw
-        )
-        path = mcscript.utils.search_in_subdirectories(
-            data_dir_h2_list, interaction_run_list, filename,
-            fail_on_not_found=False
-            )
-        if path is not None:
-            return path
-
-    # no valid file found
-    raise mcscript.exception.ScriptError("no match on interaction filename")
+    return mcscript.utils.search_in_subdirectories(
+        data_dir_h2_list, interaction_run_list, interaction_filename_candidates,
+        fail_on_not_found=True
+    )
 
 
 
