@@ -47,6 +47,7 @@ University of Notre Dame
     + Add "tbme-" to operator id.
 - 09/20/20 (pjf): Fix generate_tbme() if hw_int is not set.
 - 11/22/20 (pjf): Always pass orbital filename for h2mixer builtins.
+- 06/12/22 (mac): Support Norb_max truncation parameter in generate_tbme_targets().
 """
 import glob
 import os
@@ -240,7 +241,10 @@ def generate_tbme_targets(task, targets, target_qn, postfix=""):
                 # important: truncation of orbitals file, one-body
                 # truncation of interaction file, and MFDn
                 # single-particle shells (beware 1-based) must agree
-                N1_max = utils.Nv_for_nuclide(task["nuclide"])+truncation_parameters["Nmax"]
+                if truncation_parameters.get("Nmax_orb") is not None:
+                    N1_max = truncation_parameters["Nmax_orb"]
+                else:
+                    N1_max = utils.Nv_for_nuclide(task["nuclide"])+truncation_parameters["Nmax"]
                 N2_max = 2*utils.Nv_for_nuclide(task["nuclide"])+truncation_parameters["Nmax"]
                 target_weight_max = utils.weight_max_string((N1_max, N2_max))
             elif task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kFCI:

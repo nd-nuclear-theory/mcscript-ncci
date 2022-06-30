@@ -44,6 +44,7 @@ University of Notre Dame
 - 10/19/21 (pjf): Fix two-body observables if not one-body observables enabled.
 - 12/18/21 (mac): Proceed with warning if failure loading am module.
 - 03/28/22 (pjf): Fix disk thrashing when building database.
+- 05/29/22 (pjf): Remove cleanup tasks from run_postprocessor.
 """
 import collections
 import glob
@@ -1237,5 +1238,3 @@ def run_postprocessor(task, postfix=""):
     """
     run_postprocessor_two_body(task, postfix=postfix, one_body=True)
     run_postprocessor_one_body(task, postfix=postfix)
-    evaluate_ob_observables(task, postfix=postfix)
-    save_postprocessor_obdme(task, postfix=postfix)

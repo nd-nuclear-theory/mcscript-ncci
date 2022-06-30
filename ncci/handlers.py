@@ -48,6 +48,7 @@ University of Notre Dame
 - 02/25/22 (pjf): Only call task_handler_postprocessor_pre from
     task_handler_postprocessor if not task is not being resumed.
 - 05/09/22 (pjf): Call generate_mfdn_input() in addition to run_mfdn().
+- 05/29/22 (pjf): Implement task_handler_postprocessor_post.
 """
 import os
 import glob
@@ -366,12 +367,12 @@ def task_handler_postprocessor_pre(task):
 def task_handler_postprocessor_post(task, cleanup=True):
     """Task handler for components after postprocessor run.
 
-    TODO(pjf): Implement.
-
     Arguments:
         task (dict): as described in module docstring
     """
-    pass
+    postprocessing.evaluate_ob_observables(task)
+    postprocessing.save_postprocessor_obdme(task)
+
 
 def task_handler_postprocessor(task, cleanup=True):
     """Task handler for basic postprocessor run.

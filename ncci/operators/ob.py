@@ -63,6 +63,7 @@ University of Notre Dame
 - 02/11/22 (mac): Define observable set name "intrinsic-E1" for
     intrinsic E1 to avoid overloading lab frame E1.
 - 02/15/22 (pjf): Fix tz vs. tau0 scaling in intrinsic-E1 operator.
+- 06/28/22 (mac): Fix E0n operator in E0 observable set.
 
 """
 import collections
@@ -213,7 +214,7 @@ def generate_ob_observable_sets(task):
             qn = (0,0,0)
             ob_observables += [
                 ("E0p", qn, "E0p"),
-                ("E0n", qn, "E0p"),
+                ("E0n", qn, "E0n"),
             ]
             obme_sources["r.r"] = k_kinematic_operators["r.r"]
             obme_sources["E0p"] = {
