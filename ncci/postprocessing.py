@@ -45,8 +45,10 @@ University of Notre Dame
 - 12/18/21 (mac): Proceed with warning if failure loading am module.
 - 03/28/22 (pjf): Fix disk thrashing when building database.
 - 05/29/22 (pjf): Remove cleanup tasks from run_postprocessor.
+- 06/30/22 (pjf): Deprecate run_postprocessor.
 """
 import collections
+import deprecated
 import glob
 import hashlib
 import itertools
@@ -1229,6 +1231,7 @@ def save_postprocessor_obdme(task, postfix=""):
         )
 
 
+@deprecated.deprecated(reason="use handlers.task_handler_mfdn_postprocessor_run instead")
 def run_postprocessor(task, postfix=""):
     """Execute both phases of postprocessor.
 

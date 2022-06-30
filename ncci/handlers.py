@@ -49,13 +49,14 @@ University of Notre Dame
     task_handler_postprocessor if not task is not being resumed.
 - 05/09/22 (pjf): Call generate_mfdn_input() in addition to run_mfdn().
 - 05/29/22 (pjf): Implement task_handler_postprocessor_post.
+- 06/30/22 (pjf): Harmonize/standardize task handler names.
 """
 import os
 import glob
 import mcscript
+import mcscript.exception
 
 from . import (
-    descriptors,
     library,
     modes,
     postprocessing,
@@ -72,7 +73,7 @@ default_mfdn_driver = mfdn_v15
 # counting-only run
 ################################################################
 
-def task_handler_dimension(task, postfix=""):
+def task_handler_mfdn_dimension(task, postfix=""):
     """Task handler for dimension counting-only run.
 
     Arguments:
@@ -89,7 +90,7 @@ def task_handler_dimension(task, postfix=""):
     mfdn_driver.run_mfdn(task=task, postfix=postfix)
 
 
-def task_handler_nonzeros(task, postfix=""):
+def task_handler_mfdn_nonzeros(task, postfix=""):
     """Task handler for nonzero counting-only run.
 
     Arguments:
@@ -110,7 +111,7 @@ def task_handler_nonzeros(task, postfix=""):
 # generic cleanup and archive steps
 ################################################################
 
-def task_handler_post_run(task, postfix="", cleanup=True):
+def task_handler_mfdn_post(task, postfix="", cleanup=True):
     """Task handler for serial components after MFDn run.
 
     If expect to use wave functions after initial results archive, invoke this
@@ -147,20 +148,21 @@ def task_handler_post_run(task, postfix="", cleanup=True):
     if (cleanup):
         mfdn_driver.cleanup_mfdn_workdir(task, postfix=postfix)
 
-def task_handler_post_run_no_cleanup(task,postfix=""):
+def task_handler_mfdn_post_no_cleanup(task, postfix=""):
     """ Task handler for serial components after MFDn run (no cleanup).
 
     Arguments:
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
-    task_handler_post_run(task,postfix=postfix,cleanup=False)
+    task_handler_mfdn_post(task,postfix=postfix,cleanup=False)
+
 
 ################################################################
-# basic oscillator run
+# basic MFDn run
 ################################################################
 
-def task_handler_oscillator_pre(task, postfix=""):
+def task_handler_mfdn_pre(task, postfix=""):
     """Task handler for serial components before MFDn phase of basic oscillator run.
 
     Arguments:
@@ -176,7 +178,7 @@ def task_handler_oscillator_pre(task, postfix=""):
     if task.get("save_tbme"):
         tbme.save_tbme(task, postfix=postfix)
 
-def task_handler_oscillator_mfdn(task, postfix=""):
+def task_handler_mfdn_run(task, postfix=""):
     """Task handler for MFDn phase of oscillator basis run.
 
     Arguments:
@@ -191,7 +193,23 @@ def task_handler_oscillator_mfdn(task, postfix=""):
     mfdn_driver.generate_mfdn_input(task=task, postfix=postfix)
     mfdn_driver.run_mfdn(task=task, postfix=postfix)
 
-def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
+def task_handler_mfdn(task, postfix=""):
+    """Task handler for complete oscillator basis run, including serial pre and post
+    steps.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+
+    """
+
+    task_handler_mfdn_pre(task, postfix=postfix)
+    task_handler_mfdn_run(task, postfix=postfix)
+    task_handler_mfdn_post(task, postfix=postfix)
+
+task_handler_mfdn_decomposition_pre = task_handler_mfdn_pre
+
+def task_handler_mfdn_decomposition_run(task, postfix=""):
     """Task handler for MFDn Lanczos decomposition, assuming oscillator basis.
 
     Task fields:
@@ -254,26 +272,27 @@ def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
         task, lanczos_source_filename, lanczos_target_filename, "lanczos"
     )
 
-def task_handler_oscillator(task, postfix=""):
-    """Task handler for complete oscillator basis run, including serial pre and post
+task_handler_mfdn_decomposition_post = task_handler_mfdn_post
+
+def task_handler_mfdn_decomposition(task, postfix=""):
+    """Task handler for complete decomposition run, including serial pre and post
     steps.
 
     Arguments:
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
-
     """
 
-    task_handler_oscillator_pre(task, postfix=postfix)
-    task_handler_oscillator_mfdn(task, postfix=postfix)
-    task_handler_post_run(task, postfix=postfix)
+    task_handler_mfdn_decomposition_pre(task, postfix=postfix)
+    task_handler_mfdn_decomposition_run(task, postfix=postfix)
+    task_handler_mfdn_decomposition_post(task, postfix=postfix)
 
 
 ################################################################
 # basic natural orbital run
 ################################################################
 
-def task_handler_natorb_pre(task, source_postfix="", target_postfix=""):
+def task_handler_mfdn_natorb_pre(task, source_postfix="", target_postfix=""):
     """Task handler for serial components before MFDn natural orbitals run.
 
     Precondition: This handler assumes a base run has already been
@@ -300,7 +319,7 @@ def task_handler_natorb_pre(task, source_postfix="", target_postfix=""):
         )
 
 
-def task_handler_natorb_run(task, postfix):
+def task_handler_mfdn_natorb_run(task, postfix):
     """Task handler for MFDn natural orbital run.
 
     Precondition: This handler assumes task_handler_natorb_pre() has been called.
@@ -323,8 +342,9 @@ def task_handler_natorb_run(task, postfix):
     mfdn_driver.generate_mfdn_input(task=task, postfix=postfix)
     mfdn_driver.run_mfdn(task=task, postfix=postfix)
 
+task_handler_mfdn_natorb_post = task_handler_mfdn_post
 
-def task_handler_natorb(task, cleanup=True):
+def task_handler_mfdn_natorb(task, cleanup=True):
     """Task handler for basic oscillator+natural orbital run.
 
     Arguments:
@@ -336,15 +356,15 @@ def task_handler_natorb(task, cleanup=True):
     utils.check_natorb_base_state(task)
 
     # first do base oscillator run
-    task_handler_oscillator(task, postfix=utils.natural_orbital_indicator(0))
+    task_handler_mfdn(task, postfix=utils.natural_orbital_indicator(0))
 
-    task_handler_natorb_pre(
+    task_handler_mfdn_natorb_pre(
         task,
         source_postfix=utils.natural_orbital_indicator(0),
         target_postfix=utils.natural_orbital_indicator(1)
         )
-    task_handler_natorb_run(task=task, postfix=utils.natural_orbital_indicator(1))
-    task_handler_post_run(
+    task_handler_mfdn_natorb_run(task=task, postfix=utils.natural_orbital_indicator(1))
+    task_handler_mfdn_post(
         task=task, postfix=utils.natural_orbital_indicator(1), cleanup=cleanup
         )
 
@@ -353,37 +373,52 @@ def task_handler_natorb(task, cleanup=True):
 # postprocessing run
 ################################################################
 
-def task_handler_postprocessor_pre(task):
+def task_handler_mfdn_postprocessor_pre(task, postfix=""):
     """Task handler for components before postprocessor run.
 
     Arguments:
         task (dict): as described in module docstring
+        postfix (string): identifier to add to generated files
     """
-    radial.set_up_orbitals(task)
-    radial.set_up_obme_analytic(task)
-    tbme.generate_tbme(task)
-    postprocessing.init_postprocessor_db(task)
+    radial.set_up_orbitals(task, postfix)
+    radial.set_up_obme_analytic(task, postfix)
+    tbme.generate_tbme(task, postfix)
+    postprocessing.init_postprocessor_db(task, postfix)
 
-def task_handler_postprocessor_post(task, cleanup=True):
-    """Task handler for components after postprocessor run.
+def task_handler_mfdn_postprocessor_run(task, postfix=""):
+    """Task handler for MFDn postprocessor phase of postprocessor run.
 
     Arguments:
         task (dict): as described in module docstring
+        postfix (string): identifier to add to generated files
     """
-    postprocessing.evaluate_ob_observables(task)
-    postprocessing.save_postprocessor_obdme(task)
+    postprocessing.run_postprocessor_two_body(task, postfix=postfix, one_body=True)
+    postprocessing.run_postprocessor_one_body(task, postfix=postfix)
+
+def task_handler_mfdn_postprocessor_post(task, postfix="", cleanup=True):
+    """Task handler for components after postprocessor run.
+
+    TODO: Implement cleanup.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string): identifier to add to generated files
+    """
+    postprocessing.evaluate_ob_observables(task, postfix)
+    postprocessing.save_postprocessor_obdme(task, postfix)
 
 
-def task_handler_postprocessor(task, cleanup=True):
+def task_handler_mfdn_postprocessor(task, postfix="", cleanup=True):
     """Task handler for basic postprocessor run.
 
     Arguments:
         task (dict): as described in module docstring
+        postfix (string): identifier to add to generated files
     """
     if not task["metadata"].get("resumed"):
-        task_handler_postprocessor_pre(task)
-    postprocessing.run_postprocessor(task)
-    task_handler_postprocessor_post(task, cleanup)
+        task_handler_mfdn_postprocessor_pre(task)
+    task_handler_mfdn_postprocessor_run(task, postfix)
+    task_handler_mfdn_postprocessor_post(task, postfix, cleanup)
 
 
 ################################################################
@@ -428,3 +463,27 @@ def archive_handler_mfdn_hsi():
 
     # save to tape
     mcscript.task.archive_handler_hsi(archive_filename_list)
+
+
+################################################################
+# deprecated handler names
+################################################################
+from deprecated import deprecated
+
+task_handler_dimension = deprecated(reason="use task_handler_mfdn_dimension")(task_handler_mfdn_dimension)
+task_handler_nonzeros = deprecated(reason="use task_handler_mfdn_nonzeros")(task_handler_mfdn_nonzeros)
+task_handler_post_run = deprecated(reason="use task_handler_mfdn_post")(task_handler_mfdn_post)
+task_handler_post_run_no_cleanup = deprecated(reason="use task_handler_mfdn_post_no_cleanup")(task_handler_mfdn_post_no_cleanup)
+
+task_handler_oscillator_pre = deprecated(reason="use task_handler_mfdn_pre")(task_handler_mfdn_pre)
+task_handler_oscillator_mfdn = deprecated(reason="use task_handler_mfdn_run")(task_handler_mfdn_run)
+task_handler_oscillator = deprecated(reason="use task_handler_mfdn")(task_handler_mfdn)
+task_handler_oscillator_mfdn_decomposition = deprecated(reason="use task_handler_mfdn_decomposition_run")(task_handler_mfdn_decomposition_run)
+
+task_handler_natorb_pre = deprecated(reason="use task_handler_mfdn_natorb_pre")(task_handler_mfdn_natorb_pre)
+task_handler_natorb_run = deprecated(reason="use task_handler_mfdn_natorb_run")(task_handler_mfdn_natorb_run)
+task_handler_natorb = deprecated(reason="use task_handler_mfdn_natorb")(task_handler_mfdn_natorb)
+
+task_handler_postprocessor_pre = deprecated(reason="use task_handler_mfdn_postprocessor_pre")(task_handler_mfdn_postprocessor_pre)
+task_handler_postprocessor_post = deprecated(reason="use task_handler_mfdn_postprocessor_post")(task_handler_mfdn_postprocessor_post)
+task_handler_postprocessor = deprecated(reason="use task_handler_mfdn_postprocessor")(task_handler_mfdn_postprocessor)
