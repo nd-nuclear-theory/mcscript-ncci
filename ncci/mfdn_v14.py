@@ -51,7 +51,9 @@ University of Notre Dame
     + Add "tbme-" to operator id to form basename.
 - 11/13/20 (pjf): Use constants module.
 - 11/24/20 (pjf): Fix natorb filename globbing for non-integer J.
+- 05/09/22 (pjf): Split generate_mfdn_input() from run_mfdn().
 """
+import errno
 import os
 import glob
 import warnings
@@ -67,8 +69,8 @@ from . import (
 )
 
 
-def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
-    """Generate input file and execute MFDn version 14 beta 06.
+def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
+    """Generate input file for MFDn version 14 beta 06.
 
     Arguments:
         task (dict): as described in module docstring
@@ -200,8 +202,33 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             partition_filename,
             os.path.join(work_dir, "mfdn_partitioning.info")
             ])
+
+
+def run_mfdn(task, postfix=""):
+    """Execute MFDn version 14 beta 06.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+
+    Raises:
+        mcscript.exception.ScriptError: if MFDn output not found
+    """
+    # check that diagonalization is enabled
+    if not task.get("diagonalization"):
+        raise mcscript.exception.ScriptError(
+            'Task dictionary "diagonalization" flag not enabled.'
+        )
+
     # enter work directory
+    work_dir = "work{:s}".format(postfix)
     os.chdir(work_dir)
+
+    # check that mfdn.input exists
+    if not os.path.isfile("mfdn.input"):
+        raise FileNotFoundError(
+            errno.ENOENT, os.strerror(errno.ENOENT), "mfdn.input"
+        )
 
     # invoke MFDn
     mcscript.call(

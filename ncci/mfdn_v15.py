@@ -56,7 +56,9 @@ University of Notre Dame
 - 11/30/20 (pjf): Add "calculate_tbo" task option.
 - 12/04/20 (pjf): Remove leftover mfdn.res and mfdn.out files before launching
     MFDn.
+- 05/09/22 (pjf): Split generate_mfdn_input() from run_mfdn().
 """
+import errno
 import os
 import glob
 import collections
@@ -141,8 +143,8 @@ truncation_setup_functions = {
 }
 
 
-def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
-    """Generate input file and execute MFDn version 15 beta 00.
+def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
+    """Generate input file for MFDn version 15.
 
     Arguments:
         task (dict): as described in module docstring
@@ -274,8 +276,33 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             os.path.join(work_dir, "mfdn_partitioning.info")
             ])
 
+
+
+def run_mfdn(task, postfix=""):
+    """Execute MFDn version 15.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+
+    Raises:
+        mcscript.exception.ScriptError: if MFDn output not found
+    """
+    # check that diagonalization is enabled
+    if not task.get("diagonalization"):
+        raise mcscript.exception.ScriptError(
+            'Task dictionary "diagonalization" flag not enabled.'
+        )
+
     # enter work directory
+    work_dir = "work{:s}".format(postfix)
     os.chdir(work_dir)
+
+    # check that mfdn.input exists
+    if not os.path.isfile("mfdn.input"):
+        raise FileNotFoundError(
+            errno.ENOENT, os.strerror(errno.ENOENT), "mfdn.input"
+        )
 
     # remove any stray files from a previous run
     if os.path.exists("mfdn.out"):

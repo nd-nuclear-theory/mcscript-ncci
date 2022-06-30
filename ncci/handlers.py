@@ -47,6 +47,7 @@ University of Notre Dame
 - 05/14/21 (pjf): Use partitioning from task-data for decompositions.
 - 02/25/22 (pjf): Only call task_handler_postprocessor_pre from
     task_handler_postprocessor if not task is not being resumed.
+- 05/09/22 (pjf): Call generate_mfdn_input() in addition to run_mfdn().
 """
 import os
 import glob
@@ -81,8 +82,10 @@ def task_handler_dimension(task, postfix=""):
     if mfdn_driver is None:
         mfdn_driver = default_mfdn_driver
     radial.set_up_orbitals(task, postfix=postfix)
-    mfdn_driver.run_mfdn(
-        task, run_mode=modes.MFDnRunMode.kDimension, postfix=postfix)
+    mfdn_driver.generate_mfdn_input(
+        task=task, run_mode=modes.MFDnRunMode.kDimension, postfix=postfix
+    )
+    mfdn_driver.run_mfdn(task=task, postfix=postfix)
 
 
 def task_handler_nonzeros(task, postfix=""):
@@ -96,8 +99,10 @@ def task_handler_nonzeros(task, postfix=""):
     if mfdn_driver is None:
         mfdn_driver = default_mfdn_driver
     radial.set_up_orbitals(task, postfix=postfix)
-    mfdn_driver.run_mfdn(
-        task, run_mode=modes.MFDnRunMode.kNonzeros, postfix=postfix)
+    mfdn_driver.generate_mfdn_input(
+        task=task, run_mode=modes.MFDnRunMode.kNonzeros, postfix=postfix
+    )
+    mfdn_driver.run_mfdn(task=task, postfix=postfix)
 
 
 ################################################################
@@ -182,7 +187,8 @@ def task_handler_oscillator_mfdn(task, postfix=""):
     mfdn_driver = task.get("mfdn_driver")
     if mfdn_driver is None:
         mfdn_driver = default_mfdn_driver
-    mfdn_driver.run_mfdn(task, postfix=postfix)
+    mfdn_driver.generate_mfdn_input(task=task, postfix=postfix)
+    mfdn_driver.run_mfdn(task=task, postfix=postfix)
 
 def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
     """Task handler for MFDn Lanczos decomposition, assuming oscillator basis.
@@ -232,7 +238,10 @@ def task_handler_oscillator_mfdn_decomposition(task, postfix=""):
     mfdn_driver = task.get("mfdn_driver")
     if mfdn_driver is None:
         mfdn_driver = default_mfdn_driver
-    mfdn_driver.run_mfdn(task, run_mode=modes.MFDnRunMode.kLanczosOnly, postfix=postfix)
+    mfdn_driver.generate_mfdn_input(
+        task=task, run_mode=modes.MFDnRunMode.kLanczosOnly, postfix=postfix
+    )
+    mfdn_driver.run_mfdn(task=task, postfix=postfix)
 
     # copy out lanczos file
     descriptor = task["metadata"]["descriptor"]
@@ -310,6 +319,7 @@ def task_handler_natorb_run(task, postfix):
 
     # set correct basis mode
     task["basis_mode"] = modes.BasisMode.kGeneric
+    mfdn_driver.generate_mfdn_input(task=task, postfix=postfix)
     mfdn_driver.run_mfdn(task=task, postfix=postfix)
 
 
