@@ -209,7 +209,7 @@ def task_handler_mfdn(task, postfix=""):
     task_handler_mfdn_run(task, postfix=postfix)
     task_handler_mfdn_post(task, postfix=postfix)
 
-task_handlers_mfdn = [
+task_handler_mfdn_phases = [
     task_handler_mfdn_pre,
     task_handler_mfdn_run,
     task_handler_mfdn_post,
@@ -295,7 +295,7 @@ def task_handler_mfdn_decomposition(task, postfix=""):
     task_handler_mfdn_decomposition_run(task, postfix=postfix)
     task_handler_mfdn_decomposition_post(task, postfix=postfix)
 
-task_handlers_mfdn_decomposition = [
+task_handler_mfdn_decomposition_phases = [
     task_handler_mfdn_decomposition_pre,
     task_handler_mfdn_decomposition_run,
     task_handler_mfdn_decomposition_post,
@@ -382,7 +382,7 @@ def task_handler_mfdn_natorb(task, cleanup=True):
         task=task, postfix=utils.natural_orbital_indicator(1), cleanup=cleanup
         )
 
-task_handlers_mfdn_natorb = [
+task_handler_mfdn_natorb_phases = [
     task_handler_mfdn_natorb_pre,
     task_handler_mfdn_natorb_run,
     task_handler_mfdn_natorb_post,
@@ -440,7 +440,7 @@ def task_handler_mfdn_postprocessor(task, postfix="", cleanup=True):
     task_handler_mfdn_postprocessor_run(task, postfix)
     task_handler_mfdn_postprocessor_post(task, postfix, cleanup)
 
-task_handlers_mfdn_postprocessor = [
+task_handler_mfdn_postprocessor_phases = [
     task_handler_mfdn_postprocessor_pre,
     task_handler_mfdn_postprocessor_run,
     task_handler_mfdn_postprocessor_post,
