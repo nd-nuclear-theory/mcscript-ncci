@@ -52,6 +52,7 @@ University of Notre Dame
 - 06/30/22 (pjf):
     + Harmonize/standardize task handler names.
     + Provide predefined lists of handlers.
+- 07/05/22 (pjf): Add task_handler_relative().
 """
 import os
 import glob
@@ -64,6 +65,7 @@ from . import (
     postprocessing,
     radial,
     tbme,
+    relative,
     utils,
     mfdn_v15,
 )
@@ -489,6 +491,16 @@ def archive_handler_mfdn_hsi():
 
     # save to tape
     mcscript.task.archive_handler_hsi(archive_filename_list)
+
+
+################################################################
+# relative matrix element generation and Moshinsky transform
+################################################################
+
+def task_handler_relative(task):
+    """Generate relative matrix elements and perform Moshinsky transforms."""
+    relative.generate_rel_targets(task)
+    relative.generate_moshinsky_targets(task)
 
 
 ################################################################
