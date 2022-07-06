@@ -5,6 +5,7 @@ University of Notre Dame
 
 - 03/20/22 (pjf): Created.
 - 06/29/22 (pjf): Initial implementation completed.
+- 07/06/22 (pjf): Add save_rel() and save_moshinsky().
 """
 from ast import operator
 import glob
@@ -15,6 +16,7 @@ import warnings
 import mcscript.control
 import mcscript.utils
 import mcscript.exception
+import mcscript.task
 
 from . import (
     utils,
@@ -236,3 +238,49 @@ def generate_moshinsky_targets(task):
             check_return=True
         )
 
+def save_rel(task):
+    """Save relative targets to results.
+
+    Arguments:
+        task (dict): as described in module docstring
+    """
+    # get targets
+    targets = operators.rel.get_rel_targets(task)
+
+    # get rel sources
+    rel_sources = operators.rel.get_rel_sources(task, targets)
+
+    for (basename, _, source_id) in task.get("relative_targets", []):
+        source = rel_sources[source_id]
+        source_filename = relative_filename_for_source(source_id, source)
+        if source["type"] == operators.rel.RelativeOperatorType.kRelative:
+            target_filename = environ.rel_filename(basename, source['Nmax'], source['hw'])
+        elif source["type"] == operators.rel.RelativeOperatorType.kRelativeCM:
+            target_filename = environ.relcm_filename(basename, source['Nmax'], source['hw'])
+        else:
+            raise ValueError("invalid operator type: {}".format(source["type"]))
+        mcscript.task.save_results_single(
+            task, source_filename, target_filename, subdirectory="rel"
+        )
+
+def save_moshinsky(task):
+    """Save moshinsky targets to results.
+
+    Arguments:
+        task (dict): as described in module docstring
+    """
+    # get targets
+    targets = operators.rel.get_rel_targets(task)
+
+    # get rel sources
+    rel_sources = operators.rel.get_rel_sources(task, targets)
+
+    for (basename, _, parameters) in task.get("moshinsky_targets", []):
+        source_id = parameters["id"]
+        source = rel_sources[source_id]
+        filename = environ.tmbe_filename(
+            basename, parameters["truncation"], source['hw'], task.get("h2_extension", "bin")
+        )
+        mcscript.task.save_results_single(
+            task, filename, subdirectory="tbme"
+        )

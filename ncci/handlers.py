@@ -53,6 +53,7 @@ University of Notre Dame
     + Harmonize/standardize task handler names.
     + Provide predefined lists of handlers.
 - 07/05/22 (pjf): Add task_handler_relative().
+- 07/06/22 (pjf): Improve relative task handlers.
 """
 import os
 import glob
@@ -450,6 +451,31 @@ task_handler_mfdn_postprocessor_phases = [
 
 
 ################################################################
+# relative matrix element generation and Moshinsky transform
+################################################################
+
+def task_handler_relative_run(task):
+    """Task handler for relative matrix element manipulation."""
+    relative.generate_rel_targets(task)
+    relative.generate_moshinsky_targets(task)
+
+def task_handler_relative_post(task):
+    """Task handler for components after relative run."""
+    relative.save_rel(task)
+    relative.save_moshinsky(task)
+
+def task_handler_relative(task):
+    """Task handler for basic relative/Moshinsky run."""
+    task_handler_relative_run(task)
+    task_handler_relative_post(task)
+
+task_handler_relative_phases = [
+    task_handler_relative_run,
+    task_handler_relative_post,
+]
+
+
+################################################################
 # mfdn archiving
 ################################################################
 
@@ -491,16 +517,6 @@ def archive_handler_mfdn_hsi():
 
     # save to tape
     mcscript.task.archive_handler_hsi(archive_filename_list)
-
-
-################################################################
-# relative matrix element generation and Moshinsky transform
-################################################################
-
-def task_handler_relative(task):
-    """Generate relative matrix elements and perform Moshinsky transforms."""
-    relative.generate_rel_targets(task)
-    relative.generate_moshinsky_targets(task)
 
 
 ################################################################
