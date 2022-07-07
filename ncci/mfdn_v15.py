@@ -289,7 +289,7 @@ def run_mfdn(task, postfix=""):
         mcscript.exception.ScriptError: if MFDn output not found
     """
     # check that diagonalization is enabled
-    if not task.get("diagonalization"):
+    if (run_mode in (modes.MFDnRunMode.kNormal, modes.MFDnRunMode.kLanczosOnly)) and not task.get("diagonalization"):
         raise mcscript.exception.ScriptError(
             'Task dictionary "diagonalization" flag not enabled.'
         )
