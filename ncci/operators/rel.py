@@ -405,7 +405,7 @@ def dilated_operator(source_operator_id:str, source_operator:dict, target_Nmax:i
     }
 
 def relative_operator_from_jpv(
-    name:str, Nmax:int, hw:float, Jmax:int, *,
+    Nmax:int, hw:float, Jmax:int, *,
     source_filename:Optional[str]=None,
     source_filename_pp:Optional[str]=None,
     source_filename_nn:Optional[str]=None,
@@ -433,20 +433,19 @@ def relative_operator_from_jpv(
         T0_max = 2
         parameters = {
             "Jmax": Jmax,
-            "source_filename_pp": source_filename_pp,
-            "source_filename_nn": source_filename_nn,
-            "source_filename_pn": source_filename_pn
+            "source_filename_pp": mcscript.utils.expand_path(source_filename_pp),
+            "source_filename_nn": mcscript.utils.expand_path(source_filename_nn),
+            "source_filename_pn": mcscript.utils.expand_path(source_filename_pn),
         }
     else:
         raise ValueError("must specify source_filename or all of source_filename_{pp,nn,pn}")
 
     return {
         "type": RelativeOperatorType.kRelative,
-        "id": name,
         "qn": (0,0,0,T0_max),
         "hw": hw,
         "Nmax": Nmax,
-        "source_type": "jpv2rel",
+        "source_type": "jpv",
         "parameters": parameters
     }
 
