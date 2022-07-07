@@ -160,10 +160,13 @@ def find_relcm_file(name:str, Nmax:int, hw:Optional[float]) -> str:
     if (hw is None):
         # for special operator files
         filename_candidates = [
+            f"{name:s}_Nmax{Nmax:02d}_relcm.bin"
             f"{name:s}_Nmax{Nmax:02d}_relcm.dat"
         ]
     else:
         filename_candidates = [
+            f"{name:s}_Nmax{Nmax:02d}_hw{hw:04.1f}_relcm.bin",
+            f"{name:s}_Nmax{Nmax:02d}_hw{hw:g}_relcm.bin",  # DEPRECATED
             f"{name:s}_Nmax{Nmax:02d}_hw{hw:04.1f}_relcm.dat",
             f"{name:s}_Nmax{Nmax:02d}_hw{hw:g}_relcm.dat",  # DEPRECATED
         ]
@@ -184,8 +187,8 @@ _tbme_filename_template_nohw = "{:s}_{:s}-{:d}.{:s}"
 _rel_filename_template = "{:s}_Nmax{:02d}_hw{:04.1f}_rel.dat"
 _rel_filename_template_nohw = "{:s}_Nmax{:02d}_rel.dat"
 # filename templates for relative-cm files
-_relcm_filename_template = "{:s}_Nmax{:02d}_hw{:04.1f}_relcm.{ext:s}"
-_relcm_filename_template_nohw = "{:s}_Nmax{:02d}_relcm.{ext:s}"
+_relcm_filename_template = "{:s}_Nmax{:02d}_hw{:04.1f}_relcm.{:s}"
+_relcm_filename_template_nohw = "{:s}_Nmax{:02d}_relcm.{:s}"
 # filename template for interaction tbme basis orbitals
 _orbitals_int_filename_template = "orbitals-int{:s}.dat"
 # filename template for Coulomb tbme basis orbitals
