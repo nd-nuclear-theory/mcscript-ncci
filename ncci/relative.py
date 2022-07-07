@@ -63,7 +63,7 @@ def relative_filename_for_source(source_id:str, source:dict) -> str:
     return rel_filename
 
 _k_rel_target_handlers["file"] = (
-    lambda source_id, sources: relative_filename_for_source(source_id, sources["source_id"])
+    lambda source_id, sources: relative_filename_for_source(source_id, sources[source_id])
 )
 
 def _jpv2rel_handler(source_id:str, rel_sources:dict):
