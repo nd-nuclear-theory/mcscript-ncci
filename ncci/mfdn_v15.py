@@ -288,12 +288,6 @@ def run_mfdn(task, postfix=""):
     Raises:
         mcscript.exception.ScriptError: if MFDn output not found
     """
-    # check that diagonalization is enabled
-    if (run_mode in (modes.MFDnRunMode.kNormal, modes.MFDnRunMode.kLanczosOnly)) and not task.get("diagonalization"):
-        raise mcscript.exception.ScriptError(
-            'Task dictionary "diagonalization" flag not enabled.'
-        )
-
     # enter work directory
     work_dir = "work{:s}".format(postfix)
     os.chdir(work_dir)
