@@ -57,14 +57,17 @@ University of Notre Dame
 - 12/04/20 (pjf): Remove leftover mfdn.res and mfdn.out files before launching
     MFDn.
 - 05/09/22 (pjf): Split generate_mfdn_input() from run_mfdn().
+- 07/12/22 (pjf): Add sanity check on dimension and numnonzero.
 """
 import errno
 import os
 import glob
 import collections
+import re
 import warnings
 
 import mcscript
+import mcscript.exception
 
 from . import modes, environ, operators
 
@@ -319,6 +322,30 @@ def run_mfdn(task, postfix=""):
         raise mcscript.exception.ScriptError("mfdn.out not found")
     if (not os.path.exists("mfdn.res")):
         raise mcscript.exception.ScriptError("mfdn.res not found")
+
+    # check for basic sanity of dimension and numnonzero
+    with open("mfdn.res", "r") as res:
+        neg_dim_regex = re.compile(r"dimension.*=.*(-[0-9]+)")
+        neg_nnz_regex = re.compile(r"numnonzero.*=.*(-[0-9]+)")
+        for line in res:
+            if match := neg_dim_regex.match(line):
+                raise mcscript.exception.ScriptError(
+                    f"negative MFDn dimension: {match.group(1)}"
+                )
+            if match := neg_nnz_regex.match(line):
+                raise mcscript.exception.ScriptError(
+                    f"negative MFDn numnonzero: {match.group(1)}"
+                )
+
+    with open("mfdn.out", "r") as out:
+        for line in out:
+            if "ERROR: group size larger than int(2)" in line:
+                raise mcscript.exception.ScriptError(
+                    f"group size larger than int(2)"
+                )
+            if "Dimension of M-basis" in line:
+                # group size errors should have already happened
+                break
 
     # leave work directory
     os.chdir("..")
