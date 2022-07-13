@@ -7,11 +7,10 @@ University of Notre Dame
 - 06/29/22 (pjf): Initial implementation completed.
 - 07/06/22 (pjf): Add save_rel() and save_moshinsky().
 """
-from ast import operator
+from __future__ import annotations
 import glob
 import os
 from typing import Callable
-import warnings
 
 import mcscript.control
 import mcscript.utils

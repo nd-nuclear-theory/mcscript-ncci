@@ -37,6 +37,7 @@ University of Notre Dame
 - 04/13/22 (pjf): Created, based on ob.py.
 - 06/29/22 (pjf): Initial implementation completed.
 """
+from __future__ import annotations
 import collections
 import enum
 import math

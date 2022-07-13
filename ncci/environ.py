@@ -28,6 +28,7 @@ University of Notre Dame
     + Add filename functions for rel and tbme files.
 """
 
+from __future__ import annotations
 import os
 from typing import Optional
 
