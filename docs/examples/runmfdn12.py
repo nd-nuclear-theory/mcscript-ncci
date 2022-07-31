@@ -21,7 +21,7 @@ mcscript.init()
 # build task list
 ##################################################################
 
-ncci.environ.interaction_run_list = [
+ncci.environ.interaction_dir_list = [
     "example-data"
 ]
 

@@ -46,6 +46,10 @@ data_dir_h2_list = os.environ.get("NCCI_DATA_DIR_H2", "").split(":")
 # Environment variable is interpreted as a PATH-style colon-delimited list.
 
 interaction_run_list = []
+# subdirectories for interaction tbme files (to be set by calling run script) --
+# DEPRECATED in favor of interaction_dir_list
+
+interaction_dir_list = []
 # subdirectories for interaction tbme files (to be set by calling run script)
 
 operator_dir_list = []
@@ -110,8 +114,9 @@ def find_interaction_file(
             f"{interaction}-{truncation_str}-{hw:04.1f}.dat",  # DEPRECATED
             f"{interaction}-{truncation_str}-{hw:g}.dat",  # DEPRECATED
         ]
+    full_interaction_dir_list = interaction_run_list + interaction_dir_list  # interaction_run_list is DEPRECATED
     return mcscript.utils.search_in_subdirectories(
-        data_dir_h2_list, interaction_run_list, interaction_filename_candidates,
+        data_dir_h2_list, full_interaction_dir_list, interaction_filename_candidates,
         fail_on_not_found=True
     )
 

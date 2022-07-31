@@ -21,7 +21,7 @@ mcscript.init()
 # build task list
 ##################################################################
 
-ncci.environ.interaction_run_list = [
+ncci.environ.interaction_dir_list = [
     "run0164-JISP16-ob-9",
     "run0164-JISP16-ob-13",
     "run0164-JISP16-tb-10",
