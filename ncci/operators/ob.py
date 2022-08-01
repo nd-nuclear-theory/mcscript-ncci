@@ -70,6 +70,7 @@ import collections
 import math
 import re
 
+import mcscript.exception
 import mcscript.utils
 
 from .. import (
@@ -312,6 +313,7 @@ def generate_ob_observable_sets(task):
         match = re.fullmatch(r"M([0-9]+)", name)
         if match:
             order = int(match.group(1))
+            j0 = order
             if order == 0:
                 raise mcscript.exception.ScriptError("you must construct additional magnetic monopoles")
             qn = (order,(order-1)%2,0)
