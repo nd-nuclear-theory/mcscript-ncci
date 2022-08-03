@@ -271,7 +271,6 @@ def generate_ob_observable_sets(task):
                 "tensor-product": ["delta_n", solid_harmonic_id],
                 "qn": qn
             }
-            continue
 
         # special case for M1
         if name == "M1":
@@ -364,14 +363,12 @@ def generate_ob_observable_sets(task):
                 },
                 "qn": qn,
             }
-            continue
 
         if name in {"F", "beta"}:
             ob_observables += [("F+", (0,0,+1), "t+")]
             ob_observables += [("F-", (0,0,-1), "t-")]
             obme_sources["t+"] = k_isospin_operators["t+"]
             obme_sources["t-"] = k_isospin_operators["t-"]
-            continue
 
         if name in {"GT", "beta"}:
             ob_observables += [("GT+", (1,0,+1), "GT+")]
@@ -381,7 +378,6 @@ def generate_ob_observable_sets(task):
             obme_sources["s"] = k_am_operators["s"]
             obme_sources["GT+"] = {"tensor-product": ["s", "t+"], "qn": (1,0,+1)}
             obme_sources["GT-"] = {"tensor-product": ["s", "t-"], "qn": (1,0,-1)}
-            continue
 
     return (ob_observables, obme_sources)
 
