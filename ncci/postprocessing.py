@@ -293,7 +293,10 @@ def allowed_by_multipolarity(qn_pair, Tz_pair, operator_qn):
     allowed = True
     allowed = allowed and mfdnres.am.allowed_triangle(bra_J,J0,ket_J)
     allowed = allowed and (bra_g+ket_g+g0)%2 == 0
-    allowed = allowed and (ket_Tz + Tz0) == bra_Tz
+    # note: an operator with Tz0 can actually be used for transitions
+    # with +Tz0 or -Tz0
+    # allowed = allowed and (ket_Tz + Tz0) == bra_Tz
+    allowed = allowed and abs(bra_Tz-ket_Tz)==Tz0
 
     return allowed
 
