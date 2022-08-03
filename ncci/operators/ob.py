@@ -376,8 +376,14 @@ def generate_ob_observable_sets(task):
             obme_sources["t+"] = k_isospin_operators["t+"]
             obme_sources["t-"] = k_isospin_operators["t-"]
             obme_sources["s"] = k_am_operators["s"]
-            obme_sources["GT+"] = {"tensor-product": ["s", "t+"], "qn": (1,0,+1)}
-            obme_sources["GT-"] = {"tensor-product": ["s", "t-"], "qn": (1,0,-1)}
+            # note that the Gamow-Teller operator is defined as sigma*tau/2,
+            # which simplifies to 2*s*t -- we do NOT introduce the additional
+            # factor of 1/sqrt(3) present in Suhonen 7.21, since this operator
+            # is used with the standard equation for one-body operators (Suhonen
+            # 4.25) rather than the (oddly beta-decay-specific) conventional
+            # equation Suhonen 7.19
+            obme_sources["GT+"] = {"tensor-product": ["s", "t+"], "coefficient": 2.0, "qn": (1,0,+1)}
+            obme_sources["GT-"] = {"tensor-product": ["s", "t-"], "coefficient": 2.0, "qn": (1,0,-1)}
 
     return (ob_observables, obme_sources)
 
