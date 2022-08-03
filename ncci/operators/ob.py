@@ -367,17 +367,20 @@ def generate_ob_observable_sets(task):
             continue
 
         if name in {"F", "beta"}:
-            qn = (0,0,1)
-            ob_observables += [("F", qn, "t+")]
+            ob_observables += [("F+", (0,0,+1), "t+")]
+            ob_observables += [("F-", (0,0,-1), "t-")]
             obme_sources["t+"] = k_isospin_operators["t+"]
+            obme_sources["t-"] = k_isospin_operators["t-"]
             continue
 
         if name in {"GT", "beta"}:
-            qn = (1,0,1)
-            ob_observables += [("GT", qn, "GT")]
+            ob_observables += [("GT+", (1,0,+1), "GT+")]
+            ob_observables += [("GT-", (1,0,-1), "GT-")]
             obme_sources["t+"] = k_isospin_operators["t+"]
+            obme_sources["t-"] = k_isospin_operators["t-"]
             obme_sources["s"] = k_am_operators["s"]
-            obme_sources["GT"] = {"tensor-product": ["s", "t+"], "qn": qn}
+            obme_sources["GT+"] = {"tensor-product": ["s", "t+"], "qn": (1,0,+1)}
+            obme_sources["GT-"] = {"tensor-product": ["s", "t-"], "qn": (1,0,-1)}
             continue
 
     return (ob_observables, obme_sources)
