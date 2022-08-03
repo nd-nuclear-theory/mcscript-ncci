@@ -403,10 +403,10 @@ def task_handler_mfdn_postprocessor_pre(task, postfix=""):
         task (dict): as described in module docstring
         postfix (string): identifier to add to generated files
     """
+    postprocessing.init_postprocessor_db(task, postfix)
     radial.set_up_orbitals(task, postfix)
     radial.set_up_obme_analytic(task, postfix)
     tbme.generate_tbme(task, postfix)
-    postprocessing.init_postprocessor_db(task, postfix)
 
 def task_handler_mfdn_postprocessor_run(task, postfix=""):
     """Task handler for MFDn postprocessor phase of postprocessor run.
