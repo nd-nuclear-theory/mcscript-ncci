@@ -660,6 +660,7 @@ def get_tbme_sources(task, targets, postfix):
     # tbme sources: VNN
     if "VNN" in required_tbme_sources:
         VNN_filename = task.get("interaction_file")
+        xform_truncation_int = task.get("xform_truncation_int")
         if VNN_filename is None:
             VNN_filename = environ.find_interaction_file(
                 task["interaction"],
@@ -667,10 +668,9 @@ def get_tbme_sources(task, targets, postfix):
                 task["hw_int"]
             )
 
-        if task["basis_mode"] is modes.BasisMode.kDirect:
+        if task["basis_mode"] is modes.BasisMode.kDirect and xform_truncation_int is None:
             tbme_sources["VNN"] = dict(filename=VNN_filename)
         else:
-            xform_truncation_int = task.get("xform_truncation_int")
             if xform_truncation_int is None:
                 xform_truncation_int = task["truncation_int"]
             tbme_sources["VNN"] = dict(
@@ -685,16 +685,16 @@ def get_tbme_sources(task, targets, postfix):
     # factor from dilation.
     if "VC_unscaled" in required_tbme_sources:
         VC_filename = task.get("coulomb_file")
+        xform_truncation_coul = task.get("xform_truncation_coul")
         if VC_filename is None:
             VC_filename = environ.find_interaction_file(
                 "VC",
                 task["truncation_coul"],
                 task["hw_coul"]
             )
-        if task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated):
+        if task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated) and xform_truncation_coul is None:
             tbme_sources["VC_unscaled"] = dict(filename=VC_filename)
         else:
-            xform_truncation_coul = task.get("xform_truncation_coul")
             if xform_truncation_coul is None:
                 xform_truncation_coul = task["truncation_coul"]
             tbme_sources["VC_unscaled"] = dict(
