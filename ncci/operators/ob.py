@@ -64,6 +64,9 @@ University of Notre Dame
     intrinsic E1 to avoid overloading lab frame E1.
 - 02/15/22 (pjf): Fix tz vs. tau0 scaling in intrinsic-E1 operator.
 - 06/28/22 (mac): Fix E0n operator in E0 observable set.
+- 08/03/22 (pjf): Generate both Tz-raising and lowering operators for beta decay.
+- 08/06/22 (pjf): Fix phases on Tz-lowering beta decay operators so that they
+    are related by (-1)^Tz0.
 
 """
 import collections
@@ -365,14 +368,18 @@ def generate_ob_observable_sets(task):
             }
 
         if name in {"F", "beta"}:
-            ob_observables += [("F+", (0,0,+1), "t+")]
-            ob_observables += [("F-", (0,0,-1), "t-")]
+            # note: we can use the same observable name twice since only one
+            # will ever be applicable for a given pair of nuclei
+            ob_observables += [("F", (0,0,+1), "t+")]
+            ob_observables += [("F", (0,0,-1), "F-")]
             obme_sources["t+"] = k_isospin_operators["t+"]
             obme_sources["t-"] = k_isospin_operators["t-"]
+            # we define F- with a negative phase so that F- = (-1)^Tz0 F+
+            obme_sources["F-"] = {"linear-combination": {"t-": -1}, "qn": (0,0,-1)}
 
         if name in {"GT", "beta"}:
-            ob_observables += [("GT+", (1,0,+1), "GT+")]
-            ob_observables += [("GT-", (1,0,-1), "GT-")]
+            ob_observables += [("GT", (1,0,+1), "GT+")]
+            ob_observables += [("GT", (1,0,-1), "GT-")]
             obme_sources["t+"] = k_isospin_operators["t+"]
             obme_sources["t-"] = k_isospin_operators["t-"]
             obme_sources["s"] = k_am_operators["s"]
@@ -383,7 +390,8 @@ def generate_ob_observable_sets(task):
             # 4.25) rather than the (oddly beta-decay-specific) conventional
             # equation Suhonen 7.19
             obme_sources["GT+"] = {"tensor-product": ["s", "t+"], "coefficient": 2.0, "qn": (1,0,+1)}
-            obme_sources["GT-"] = {"tensor-product": ["s", "t-"], "coefficient": 2.0, "qn": (1,0,-1)}
+            # we define GT- with a negative phase so that GT- = (-1)^Tz0 GT+
+            obme_sources["GT-"] = {"tensor-product": ["s", "t-"], "coefficient": -2.0, "qn": (1,0,-1)}
 
     return (ob_observables, obme_sources)
 
