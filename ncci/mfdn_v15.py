@@ -314,7 +314,8 @@ def run_mfdn(task, postfix=""):
         ],
         mode=mcscript.CallMode.kHybrid,
         check_return=True,
-        file_watchdog=mcscript.control.FileWatchdog("mfdn.out")
+        file_watchdog=mcscript.control.FileWatchdog("mfdn.out"),
+        file_watchdog_restarts=3,
     )
 
     # test for basic indications of success
