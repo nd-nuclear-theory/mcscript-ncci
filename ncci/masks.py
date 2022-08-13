@@ -2,6 +2,7 @@
 
     - 05/11/22 (mac): Created, extracted from run scripts (runmac0633),
         originally task_handler_postprocessor.py.
+    - 08/13/22 (pjf): Add mask_good_J().
 """
 
 import math
@@ -100,3 +101,52 @@ def mask_only_self(task,mask_params,qn_pair,verbose=False):
     allow = (qnf==qni)
 
     return allow
+
+def mask_good_J(task:dict, mask_params:dict, qn_pair, verbose=False):
+    """Mask function restricting to "good-J" levels.
+
+    Mask parameters:
+        "tolerance" (float, optional): maximum deviation of J from (half-)integral
+
+    Arguments:
+        task (dict): task dictionary
+        mask_params (dict): parameters specific to this mask
+        qn_pair (tuple): (qnf,qni) for transition
+        verbose (book, optional): verbosity (argument required by handler)
+
+    Returns:
+        allow (bool): mask value
+    """
+    (qnf,qni) = qn_pair
+    (Ji,gi,ni) = qni
+    (Jf,gf,nf) = qnf
+
+    if "nuclide" in task.get("wf_source_bra_selector", {}):
+        bra_nuclide = task["wf_source_bra_selector"]["nuclide"]
+    elif "bra_nuclide" in task:
+        bra_nuclide = task["bra_nuclide"]
+    else:
+        bra_nuclide = task["nuclide"]
+    bra_A = sum(bra_nuclide)
+
+    if "nuclide" in task.get("wf_source_ket_selector", {}):
+        ket_nuclide = task["wf_source_ket_selector"]["nuclide"]
+    elif "ket_nuclide" in task:
+        ket_nuclide = task["bra_nuclide"]
+    else:
+        ket_nuclide = task["nuclide"]
+    ket_A = sum(ket_nuclide)
+
+    tolerance = mask_params.get("tolerance", 1e-2)
+
+    allow_bra = mcscript.utils.approx_equal(2*Jf, int(2*Jf), tolerance)
+    allow_bra &= (int(2*Jf)%2 == bra_A%2)
+    if verbose and not allow_bra:
+        print(f"  WARNING: Invalid Jf={Jf} for nuclide {bra_nuclide}")
+
+    allow_ket = mcscript.utils.approx_equal(2*Ji, int(2*Ji), tolerance)
+    allow_ket &= (int(2*Ji)%2 == ket_A%2)
+    if verbose and not allow_ket:
+        print(f"  WARNING: Invalid Jf={Ji} for nuclide {bra_nuclide}")
+
+    return (allow_bra and allow_ket)
