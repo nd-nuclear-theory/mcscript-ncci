@@ -139,13 +139,13 @@ def mask_good_J(task:dict, mask_params:dict, qn_pair, verbose=False):
 
     tolerance = mask_params.get("tolerance", 1e-2)
 
-    allow_bra = mcscript.utils.approx_equal(2*Jf, int(2*Jf), tolerance)
-    allow_bra &= (int(2*Jf)%2 == bra_A%2)
+    allow_bra = mcscript.utils.approx_equal(2*Jf, round(2*Jf), tolerance)
+    allow_bra &= (round(2*Jf)%2 == bra_A%2)
     if verbose and not allow_bra:
         print(f"  WARNING: Invalid Jf={Jf} for nuclide {bra_nuclide}")
 
-    allow_ket = mcscript.utils.approx_equal(2*Ji, int(2*Ji), tolerance)
-    allow_ket &= (int(2*Ji)%2 == ket_A%2)
+    allow_ket = mcscript.utils.approx_equal(2*Ji, round(2*Ji), tolerance)
+    allow_ket &= (round(2*Ji)%2 == ket_A%2)
     if verbose and not allow_ket:
         print(f"  WARNING: Invalid Jf={Ji} for nuclide {bra_nuclide}")
 

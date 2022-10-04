@@ -232,7 +232,7 @@ def recover_from_hsi(
 
 def hsi_retrieval_handler(task):
     """ Task handler for HSI run retrieval.
-    
+
     Task dictionary:
 
         run (str): run name
@@ -266,11 +266,11 @@ def hsi_retrieval_handler(task):
     keep_metadata = task.get("keep_metadata",False)
     keep_obdme = task.get("keep_obdme",False)
     repo_str = task.get("repo_str",None)
-    
+
     # construct paths
     target_run_top_prefix = os.path.join(library_base,"run{run}".format(run=run))
     target_run_results_prefix = os.path.join(target_run_top_prefix,"results")
-    
+
     # call hsi extraction handler
     if task["legacy"]:
         # keep archives to facilitate resumption on error; keep metadata to facilitate rebundling into modern archive
@@ -296,14 +296,14 @@ def hsi_retrieval_handler(task):
             "chmod","--recursive","g+rX",target_run_top_prefix
         ])
 
-        
+
 def hsi_retrieval_task_descriptor(task):
     """ Provide task descriptor for HSI run retrieval.
 
     Also useful as task pool.
     """
     return task["run"]
-    
+
 ################################################################
 # library accessors
 ################################################################
@@ -485,7 +485,7 @@ def retrieve_natorb_obdme(
     obdme_info_filename = glob.glob(os.path.join(obdme_dir, "mfdn.rppobdme.info"))
     (J, g, n) = qn
     obdme_filename = glob.glob(
-        os.path.join(obdme_dir, "mfdn.statrobdme.seq*.2J{:02d}.n{:02d}.2T*".format(int(2*J), n))
+        os.path.join(obdme_dir, "mfdn.statrobdme.seq*.2J{:02d}.n{:02d}.2T*".format(round(2*J), n))
         )
     if (len(obdme_filename) == 1) and (len(obdme_info_filename) == 1):
         mcscript.call([
@@ -539,7 +539,7 @@ def generate_smwf_info_in_library(results_prefix):
         raise mcscript.exception.ScriptError("Missing task_data directory {}".format(task_data_prefix))
     if (not os.path.isdir(wf_prefix)):
         raise mcscript.exception.ScriptError("Missing wf directory {}".format(wf_prefix))
-    
+
     # slurp res files
     res_format = "mfdn_v15"  # this function is mfdn_v15 specific
     filename_format="mfdn_format_7_ho"  # probably all legacy runs used this filename format, but might need to override
@@ -604,7 +604,7 @@ def generate_smwf_info_in_library(results_prefix):
         task["nuclide"] = results_data.params["nuclide"]
         task["truncation_parameters"] = dict(M=results_data.params["M"])
         task["metadata"] = dict(descriptor=results_data.params["descriptor"])
-    
+
         # generate wf info file
         mfdn_v15.generate_smwf_info(
             task=task,
@@ -613,4 +613,4 @@ def generate_smwf_info_in_library(results_prefix):
             res_filename=res_filename,
             info_filename=info_filename
         )
-    
+

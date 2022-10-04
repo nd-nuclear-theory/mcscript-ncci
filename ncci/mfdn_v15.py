@@ -94,7 +94,7 @@ def set_up_Nmax_truncation(task, inputlist):
         inputlist["Nmin"] = 1
     inputlist["Nmax"] = int(truncation_parameters["Nmax"])
     inputlist["deltaN"] = int(truncation_parameters["Nstep"])
-    inputlist["TwoMj"] = int(2*truncation_parameters["M"])
+    inputlist["TwoMj"] = round(2*truncation_parameters["M"])
 
 
 def set_up_WeightMax_truncation(task, inputlist):
@@ -112,7 +112,7 @@ def set_up_WeightMax_truncation(task, inputlist):
 
     inputlist["WTmax"] = truncation_parameters["mb_weight_max"]
     inputlist["parity"] = truncation_parameters["parity"]
-    inputlist["TwoMj"] = int(2*truncation_parameters["M"])
+    inputlist["TwoMj"] = round(2*truncation_parameters["M"])
 
 
 def set_up_FCI_truncation(task, inputlist):
@@ -136,7 +136,7 @@ def set_up_FCI_truncation(task, inputlist):
 
     inputlist["WTmax"] = sum(task["nuclide"])*max_sp_weight
     inputlist["parity"] = int(truncation_parameters["parity"])
-    inputlist["TwoMj"] = int(2*truncation_parameters["M"])
+    inputlist["TwoMj"] = round(2*truncation_parameters["M"])
 
 
 truncation_setup_functions = {
@@ -234,7 +234,7 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         # obdme: parameters
         inputlist["obdme"] = task.get("calculate_obdme", True)
         if task.get("obdme_multipolarity") is not None:
-            obslist["max2K"] = int(2*task["obdme_multipolarity"])
+            obslist["max2K"] = round(2*task["obdme_multipolarity"])
 
         # construct transition observable input if reference states given
         if task.get("obdme_reference_state_list") is not None:
@@ -243,7 +243,7 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             # guard against pathetically common mistakes
             for (J, g_rel, i) in task["obdme_reference_state_list"]:
                 # validate integer/half-integer character of angular momentum
-                twice_J = int(2*J)
+                twice_J = round(2*J)
                 if ((twice_J % 2) != (sum(task["nuclide"]) % 2)):
                     raise ValueError("invalid angular momentum for reference state")
                 # validate grade (here taken relative to natural grade)
@@ -255,7 +255,7 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             obslist["ref2J"] = []
             obslist["refseq"] = []
             for (J, g_rel, i) in task["obdme_reference_state_list"]:
-                obslist["ref2J"].append(int(2*J))
+                obslist["ref2J"].append(round(2*J))
                 obslist["refseq"].append(i)
 
     # manual override inputlist
@@ -385,7 +385,7 @@ def extract_natural_orbitals(task, postfix=""):
     obdme_info_filename = "mfdn.rppobdme.info"
     (J, g, n) = task["natorb_base_state"]
     obdme_filename = glob.glob(
-        "{:s}/mfdn.statrobdme.seq*.2J{:02d}.n{:02d}.2T*".format(work_dir, int(2*J), n)
+        "{:s}/mfdn.statrobdme.seq*.2J{:02d}.n{:02d}.2T*".format(work_dir, round(2*J), n)
         )
 
     print("Saving OBDME files for natural orbital generation...")
@@ -684,7 +684,7 @@ def generate_smwf_info(task, orbital_filename, partitioning_filename, res_filena
     lines.append("   15200    ! Version Number")
     lines.append(
         " {Z:>3d} {N:>3d} {TwoM:>3d}    ! Z, N, 2Mj".format(
-            Z=task["nuclide"][0], N=task["nuclide"][1], TwoM=int(2*task["truncation_parameters"]["M"])
+            Z=task["nuclide"][0], N=task["nuclide"][1], TwoM=round(2*task["truncation_parameters"]["M"])
         )
     )
     lines.append(" {:127s}".format(task["metadata"]["descriptor"]))
@@ -751,7 +751,7 @@ def generate_smwf_info(task, orbital_filename, partitioning_filename, res_filena
         en = res_data.get_energy(level)
         residual = res_data.mfdn_level_residuals[level]
         lines.append(" {:>7d} {:>7d} {:>7d} {:>7.2f} {:>15.4f} {:>15.2e}".format(
-            index+1, int(2*J), n, T, en, residual
+            index+1, round(2*J), n, T, en, residual
         ))
 
     mcscript.utils.write_input(info_filename, input_lines=lines, verbose=False)

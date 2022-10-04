@@ -362,8 +362,8 @@ def get_run_descriptor_pair(bra_mesh_data, ket_mesh_data, qn_pair, operator_qn):
     (bra_J, bra_g, bra_n) = bra_qn
     (ket_J, ket_g, ket_n) = ket_qn
     (J0, g0, Tz0) = operator_qn
-    bra_J = am.HalfInt(int(2*bra_J), 2)
-    ket_J = am.HalfInt(int(2*ket_J), 2)
+    bra_J = am.HalfInt(round(2*bra_J), 2)
+    ket_J = am.HalfInt(round(2*ket_J), 2)
 
     bra_run_descriptor_pair = None
     ket_run_descriptor_pair = None
@@ -371,7 +371,7 @@ def get_run_descriptor_pair(bra_mesh_data, ket_mesh_data, qn_pair, operator_qn):
         if bra_qn not in bra_mesh_point.levels:
             continue
         # extract convenience variables
-        bra_M = am.HalfInt(int(2*bra_mesh_point.params["M"]),2)
+        bra_M = am.HalfInt(round(2*bra_mesh_point.params["M"]),2)
 
         for ket_mesh_point in ket_mesh_data:
             # special case: ensure that "diagonal" transitions are always
@@ -381,7 +381,7 @@ def get_run_descriptor_pair(bra_mesh_data, ket_mesh_data, qn_pair, operator_qn):
                     continue
             if ket_qn not in ket_mesh_point.levels:
                 continue
-            ket_M = am.HalfInt(int(2*ket_mesh_point.params["M"]),2)
+            ket_M = am.HalfInt(round(2*ket_mesh_point.params["M"]),2)
 
             # check for Clebsch zero
             cg_coefficient = am.ClebschGordan(
@@ -541,7 +541,7 @@ def init_postprocessor_db(task, postfix=""):
     ################################################################
     db.executemany(
         "INSERT INTO bra_levels (bra_J,bra_g,bra_n) VALUES (?,?,?)",
-        [(J,g,n) for (J,g,n) in bra_merged_data.levels if abs(int(2*J)-2*J)<=0.1]
+        [(J,g,n) for (J,g,n) in bra_merged_data.levels if abs(round(2*J)-2*J)<=0.1]
     )
     bra_id_list = db.execute(
         "SELECT bra_J,bra_g,bra_n,bra_level_id FROM bra_levels"
@@ -550,7 +550,7 @@ def init_postprocessor_db(task, postfix=""):
 
     db.executemany(
         "INSERT INTO ket_levels (ket_J,ket_g,ket_n) VALUES (?,?,?)",
-        [(J,g,n) for (J,g,n) in ket_merged_data.levels if abs(int(2*J)-2*J)<=0.1]
+        [(J,g,n) for (J,g,n) in ket_merged_data.levels if abs(round(2*J)-2*J)<=0.1]
     )
     ket_id_list = db.execute(
         "SELECT ket_J,ket_g,ket_n,ket_level_id FROM ket_levels"
@@ -914,13 +914,13 @@ def run_postprocessor_two_body(task, postfix="", one_body=False):
             "basisfilename_bra": "{:s}/mfdn_MBgroups".format(bra_wf_prefix),
             "smwffilename_bra": "{:s}/mfdn_smwf".format(bra_wf_prefix),
             "infofilename_bra": "{:s}/mfdn_smwf.info".format(bra_wf_prefix),
-            "TwoJ_bra": int(2*bra_J),
+            "TwoJ_bra": round(2*bra_J),
             "n_bra": int(bra_n),
 
             "basisfilename_ket": "{:s}/mfdn_MBgroups".format(ket_wf_prefix),
             "smwffilename_ket": "{:s}/mfdn_smwf".format(ket_wf_prefix),
             "infofilename_ket": "{:s}/mfdn_smwf.info".format(ket_wf_prefix),
-            "TwoJ_ket": [int(2*ket_J) for (ket_J,ket_g,ket_n) in ket_qn_list],
+            "TwoJ_ket": [round(2*ket_J) for (ket_J,ket_g,ket_n) in ket_qn_list],
             "n_ket": [int(ket_n) for (ket_J,ket_g,ket_n) in ket_qn_list],
 
             "obdme": True if num_free_obdmes > 0 else False,
@@ -1156,13 +1156,13 @@ def run_postprocessor_one_body(task, postfix=""):
             "basisfilename_bra": "{:s}/mfdn_MBgroups".format(bra_wf_prefix),
             "smwffilename_bra": "{:s}/mfdn_smwf".format(bra_wf_prefix),
             "infofilename_bra": "{:s}/mfdn_smwf.info".format(bra_wf_prefix),
-            "TwoJ_bra": int(2*bra_J),
+            "TwoJ_bra": round(2*bra_J),
             "n_bra": int(bra_n),
 
             "basisfilename_ket": "{:s}/mfdn_MBgroups".format(ket_wf_prefix),
             "smwffilename_ket": "{:s}/mfdn_smwf".format(ket_wf_prefix),
             "infofilename_ket": "{:s}/mfdn_smwf.info".format(ket_wf_prefix),
-            "TwoJ_ket": [int(2*ket_J) for (ket_J,ket_g,ket_n) in ket_qn_list],
+            "TwoJ_ket": [round(2*ket_J) for (ket_J,ket_g,ket_n) in ket_qn_list],
             "n_ket": [int(ket_n) for (ket_J,ket_g,ket_n) in ket_qn_list],
 
             "obdme": True,

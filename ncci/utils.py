@@ -184,7 +184,7 @@ def check_natorb_base_state(task):
     except TypeError:
         raise mcscript.exception.ScriptError(
             "invalid natorb_base_state: {}".format(natorb_base_state))
-    if int(2*J)%2 != sum(nuclide)%2:
+    if round(2*J)%2 != sum(nuclide)%2:
         raise mcscript.exception.ScriptError(
             "invalid natorb base state J={:3.1f}".format(J)
         )
