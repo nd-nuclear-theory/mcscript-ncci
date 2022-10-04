@@ -46,6 +46,8 @@ University of Notre Dame
 - 03/28/22 (pjf): Fix disk thrashing when building database.
 - 05/29/22 (pjf): Remove cleanup tasks from run_postprocessor.
 - 06/30/22 (pjf): Deprecate run_postprocessor.
+- 10/04/22 (pjf): Ensure that "diagonal" transitions always use same wave function
+  for bra and ket.
 """
 import collections
 import deprecated
@@ -372,6 +374,11 @@ def get_run_descriptor_pair(bra_mesh_data, ket_mesh_data, qn_pair, operator_qn):
         bra_M = am.HalfInt(int(2*bra_mesh_point.params["M"]),2)
 
         for ket_mesh_point in ket_mesh_data:
+            # special case: ensure that "diagonal" transitions are always
+            # truly diagonal, to ensure that moment phases are well defined
+            if (bra_qn == ket_qn) and (Tz0 == 0) and (g0 == 0):
+                if ket_mesh_point != bra_mesh_point:
+                    continue
             if ket_qn not in ket_mesh_point.levels:
                 continue
             ket_M = am.HalfInt(int(2*ket_mesh_point.params["M"]),2)
