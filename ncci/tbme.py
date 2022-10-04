@@ -273,7 +273,7 @@ def generate_tbme_targets(task, targets, target_qn, postfix=""):
     ))
     lines.append("set-target-multipolarity {:d} {:d} {:d}".format(*target_qn))
     lines.append("set-output-format {h2_format}".format(**task))
-    lines.append("set-mass {A}".format(A=A, **task))
+    lines.append("set-mass {A}".format(A=A))
     lines.append("")
 
     # xform sources: collect unique filenames
