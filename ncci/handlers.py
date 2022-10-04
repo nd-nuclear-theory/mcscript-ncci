@@ -54,6 +54,7 @@ University of Notre Dame
     + Provide predefined lists of handlers.
 - 07/05/22 (pjf): Add task_handler_relative().
 - 07/06/22 (pjf): Improve relative task handlers.
+- 08/15/22 (pjf): Implement cleanup in task_handler_mfdn_postprocessor_post.
 """
 import os
 import glob
@@ -421,14 +422,24 @@ def task_handler_mfdn_postprocessor_run(task, postfix=""):
 def task_handler_mfdn_postprocessor_post(task, postfix="", cleanup=True):
     """Task handler for components after postprocessor run.
 
-    TODO: Implement cleanup.
-
     Arguments:
         task (dict): as described in module docstring
         postfix (string): identifier to add to generated files
     """
     postprocessing.evaluate_ob_observables(task, postfix)
     postprocessing.save_postprocessor_obdme(task, postfix)
+
+    if cleanup:
+        postprocessing.cleanup_workdir(task, postfix=postfix)
+
+def task_handler_mfdn_postprocessor_post_no_cleanup(task, postfix=""):
+    """ Task handler for serial components after postprocessor run (no cleanup).
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+    task_handler_mfdn_postprocessor_post(task, postfix=postfix, cleanup=False)
 
 
 def task_handler_mfdn_postprocessor(task, postfix="", cleanup=True):
