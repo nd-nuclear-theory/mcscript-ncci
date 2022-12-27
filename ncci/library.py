@@ -61,7 +61,8 @@ def recover_from_hsi_legacy(
         date (str): date code (for archive filename)
         library_base (str): path to library directory
         keep_archives (bool, optional): whether or not to save unextracted archives (useful in debugging this scripting)
-        keep_metadata (bool, optional): whether or not to keep flags/batch/output directories (useful for diagnostics)
+        keep_metadata (bool, optional): whether or not to keep flags/batch/output directories (useful for diagnostics, 
+            or when retrieving the full archive contents to resave it)
         keep_obdme (bool, optional): whether or not to retrieve/keep obdme results -- IGNORED for legacy archive
 
     """
