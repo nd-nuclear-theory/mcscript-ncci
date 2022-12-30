@@ -64,6 +64,8 @@ University of Notre Dame
     - 07/14/21 (pjf):
         + Add additional intrinsic operators: r2intr, r2ivintr, rp2intr, and rn2intr
         + Add tb_observable_sets: intrinsic-E0, intrinsic-M1, intrinsic-E2
+    - 12/29/22 (zz):
+        + Add tb_observable_sets: VC
 """
 import collections
 import math
@@ -610,6 +612,9 @@ def get_tbme_targets(task):
         # target: VC (diagnostic)
         if "VC_unscaled" in targets[(0,0,0)]["H"]:
             targets[(0,0,0)]["VC"] = VC(hw_basis=hw_coul_rescaled, hw_coul=hw_coul)
+    # coulomb component
+    if "VC" in tb_observable_sets:
+        targets[(0,0,0)]["VC"] = VC(hw_basis=hw_coul_rescaled, hw_coul=hw_coul)
     # squared angular momenta
     if "am-sqr" in tb_observable_sets:
         targets[(0,0,0)]["L2"] = L2()
