@@ -19,6 +19,7 @@ University of Notre Dame
 - 01/13/21 (pjf): Add task_descriptor_decomposition_1.
 - 05/27/21 (pjf): Fix mixed parity indicator in task_descriptor_7.
 - 07/08/21 (pjf): Add natural_orbital_indicator to task_descriptor_7_trans.
+- 12/30/22 (zz): Add isoscalar_coulomb_indicator to task_descriptor_7.
 """
 import mcscript.exception
 import mcscript.utils
@@ -48,7 +49,7 @@ def task_descriptor_7(task):
     ):
         # traditional oscillator run
         template_string = (
-            "Z{nuclide[0]}-N{nuclide[1]}-{interaction}-coul{coulomb_flag:d}"
+            "Z{nuclide[0]}-N{nuclide[1]}-{interaction}-coul{coulomb_flag:d}{isoscalar_coulomb_indicator}"
             "-hw{hw:06.3f}"
             "-a_cm{a_cm:g}"
             "-Nmax{Nmax:02d}{mixed_parity_indicator}{fci_indicator}-Mj{M:03.1f}"
@@ -72,9 +73,14 @@ def task_descriptor_7(task):
         natural_orbital_indicator = "-natorb-J{:04.1f}-g{:1d}-n{:02d}".format(*task["natorb_base_state"])
     else:
         natural_orbital_indicator = ""
+    if task.get("use_isoscalar_coulomb") is True:
+        isoscalar_coulomb_indicator = "is"
+    else:
+        isoscalar_coulomb_indicator = ""
 
     descriptor = template_string.format(
         coulomb_flag=coulomb_flag,
+        isoscalar_coulomb_indicator=isoscalar_coulomb_indicator,
         mixed_parity_indicator=mixed_parity_indicator,
         fci_indicator=fci_indicator,
         natural_orbital_indicator=natural_orbital_indicator,

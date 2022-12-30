@@ -66,6 +66,8 @@ University of Notre Dame
         + Add tb_observable_sets: intrinsic-E0, intrinsic-M1, intrinsic-E2
     - 12/29/22 (zz):
         + Add tb_observable_sets: VC
+    - 12/30/22 (zz):
+        + Add isoscalar coulomb file name support to get_tbme_sources.
 """
 import collections
 import math
@@ -692,11 +694,19 @@ def get_tbme_sources(task, targets, postfix):
         VC_filename = task.get("coulomb_file")
         xform_truncation_coul = task.get("xform_truncation_coul")
         if VC_filename is None:
-            VC_filename = environ.find_interaction_file(
-                "VC",
-                task["truncation_coul"],
-                task["hw_coul"]
-            )
+            use_isoscalar_coulomb = task.get("use_isoscalar_coulomb")
+            if use_isoscalar_coulomb is True:
+                VC_filename = environ.find_interaction_file(
+                    "VCis",
+                    task["truncation_coul"],
+                    task["hw_coul"]
+                )
+            else:
+                VC_filename = environ.find_interaction_file(
+                    "VC",
+                    task["truncation_coul"],
+                    task["hw_coul"]
+                )
         if task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated) and xform_truncation_coul is None:
             tbme_sources["VC_unscaled"] = dict(filename=VC_filename)
         else:
