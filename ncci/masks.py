@@ -4,6 +4,7 @@
         originally task_handler_postprocessor.py.
     - 08/13/22 (pjf): Add mask_good_J().
     - 11/20/22 (mac): Add mask_by_energy_cutoff().
+    - 01/03/23 (mac): Provide "negate_mask" option for mask_allow_near_yrast.
 """
 
 import math
@@ -20,6 +21,10 @@ def mask_allow_near_yrast(task:dict, mask_params:dict, qn_pair, verbose=False):
         "ni_max" (int or dict, optional): maximum ni, or dictionary Ji->ni_max (default 0), default 5
 
         "nf_max" (int or dict, optional): maximum nf, or dictionary Jf->nf_max (default 0), default 999
+
+        "negate_mask" (bool, optional): whether or not to negate mask (useful to
+        eliminate a sub-network which has already been calculated elsewhere),
+        default False
 
     Arguments:
 
@@ -49,6 +54,7 @@ def mask_allow_near_yrast(task:dict, mask_params:dict, qn_pair, verbose=False):
     nf_max = mask_params.get("nf_max", 999)
     if (isinstance(nf_max, dict)):
         nf_max = nf_max.get(Jf,0)
+    negate_mask = mask_params.get("negate_mask", False)
 
     # calculate mask value
     if (verbose):
@@ -57,6 +63,8 @@ def mask_allow_near_yrast(task:dict, mask_params:dict, qn_pair, verbose=False):
             Ji, ni, ni_max, (ni<=ni_max),
         ))
     allow = (ni<=ni_max) and (nf<=nf_max)
+    if negate_mask:
+        allow = not allow
         
     return allow
 
