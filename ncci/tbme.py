@@ -48,6 +48,7 @@ University of Notre Dame
 - 09/20/20 (pjf): Fix generate_tbme() if hw_int is not set.
 - 11/22/20 (pjf): Always pass orbital filename for h2mixer builtins.
 - 06/12/22 (mac): Support Norb_max truncation parameter in generate_tbme_targets().
+- 01/30/23 (pjf): Rename j0->J0 and tz0->Tz0.
 """
 import glob
 import os
@@ -73,7 +74,7 @@ def generate_h2mixer_obme_source_lines(identifier, parameters, postfix):
         (list of str): h2mixer input lines
     """
     filename = parameters.get("filename")
-    (j0, g0, tz0) = parameters["qn"]
+    (J0, g0, Tz0) = parameters["qn"]
     lines = []
     if filename is not None:
         if identifier in operators.ob.k_h2mixer_builtin:
@@ -82,10 +83,10 @@ def generate_h2mixer_obme_source_lines(identifier, parameters, postfix):
                     id=identifier, filename=filename
                 )
             )
-        lines += ["define-ob-source input {id:s} {filename:s} {j0:d} {g0:d} {tz0:d}".format(
+        lines += ["define-ob-source input {id:s} {filename:s} {J0:d} {g0:d} {Tz0:d}".format(
             id=identifier,
             filename=filename,
-            j0=j0, g0=g0, tz0=tz0
+            J0=J0, g0=g0, Tz0=Tz0
         )]
     elif identifier in operators.ob.k_h2mixer_builtin:
         orbital_filename = parameters.get("orbital_filename", environ.orbitals_filename(postfix))
@@ -101,8 +102,8 @@ def generate_h2mixer_obme_source_lines(identifier, parameters, postfix):
     elif "tensor-product" in parameters:
         (factor_a, factor_b) = parameters["tensor-product"]
         coefficient = parameters.get("coefficient", 1.0)
-        lines += ["define-ob-source tensor-product {id:s} {factor_a:s} {factor_b:s} {j0:d} {coefficient:.17e}".format(
-            id=identifier, factor_a=factor_a, factor_b=factor_b, j0=j0, coefficient=coefficient
+        lines += ["define-ob-source tensor-product {id:s} {factor_a:s} {factor_b:s} {J0:d} {coefficient:.17e}".format(
+            id=identifier, factor_a=factor_a, factor_b=factor_b, J0=J0, coefficient=coefficient
         )]
     else:
         raise mcscript.exception.ScriptError(

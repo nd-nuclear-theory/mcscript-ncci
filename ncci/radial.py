@@ -42,6 +42,7 @@ University of Notre Dame
 - 09/19/20 (pjf): Break out xform generation into set_up_xforms_analytic().
 - 07/08/21 (pjf): Only generate interaction and Coulomb xforms if needed for
     tbme sources.
+- 01/30/23 (pjf): Rename j0->J0 and tz0->Tz0.
 """
 import math
 import os
@@ -266,19 +267,19 @@ def set_up_obme_analytic(task, postfix=""):
     # generate one-body RMEs
     for (identifier, parameters) in obme_sources.items():
         filename = parameters.get("filename")
-        (j0, g0, tz0) = parameters["qn"]
+        (J0, g0, Tz0) = parameters["qn"]
         if filename is not None:
-            lines += ["define-source input {id:s} {filename:s} {j0:d} {g0:d} {tz0:d}".format(
+            lines += ["define-source input {id:s} {filename:s} {J0:d} {g0:d} {Tz0:d}".format(
                 id=identifier,
                 filename=filename,
-                j0=j0, g0=g0, tz0=tz0
+                J0=J0, g0=g0, Tz0=Tz0
             )]
         elif "builtin" in parameters:
             line = "define-source {mode:s} {id:}".format(
                 id=identifier, mode=parameters["builtin"]
             )
             if parameters["builtin"] == "solid-harmonic":
-                line += " {coordinate:s} {order:d} {j0:d}".format(j0=j0, **parameters)
+                line += " {coordinate:s} {order:d} {J0:d}".format(J0=J0, **parameters)
             if "orbital_filename" in parameters:
                 line += " {orbital_filename:s}".format(**parameters)
             lines.append(line)
@@ -291,8 +292,8 @@ def set_up_obme_analytic(task, postfix=""):
         elif "tensor-product" in parameters:
             (factor_a, factor_b) = parameters["tensor-product"]
             coefficient = parameters.get("coefficient", 1.0)
-            lines += ["define-source tensor-product {id:s} {factor_a:s} {factor_b:s} {j0:d} {coefficient:.17e}".format(
-                id=identifier, factor_a=factor_a, factor_b=factor_b, j0=j0, coefficient=coefficient
+            lines += ["define-source tensor-product {id:s} {factor_a:s} {factor_b:s} {J0:d} {coefficient:.17e}".format(
+                id=identifier, factor_a=factor_a, factor_b=factor_b, J0=J0, coefficient=coefficient
             )]
         else:
             raise mcscript.exception.ScriptError("unknown one-body operator {}".format(identifier))
@@ -455,7 +456,7 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
     basis_command = "set-basis {basis_type:s} {orbital_filename:s}"
     length_command = "set-length-parameter {length_parameter:.17e}"
     xform_command = "define-xform natorb {xform_filename:s}"
-    input_source_command = "define-source input {id:s}{source_postfix:s} {filename:s} {j0:d} {g0:d} {tz0:d}"
+    input_source_command = "define-source input {id:s}{source_postfix:s} {filename:s} {J0:d} {g0:d} {Tz0:d}"
     xform_source_command = "define-source xform {id:s}{target_postfix:s} {id:s}{source_postfix:s} natorb"
     target_command = "define-target {id:s}{target_postfix:s} {filename:s}"
 
@@ -475,11 +476,11 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
     ))
 
     for identifier in sorted(obme_targets):
-        (j0, g0, tz0) = obme_sources[identifier]["qn"]
+        (J0, g0, Tz0) = obme_sources[identifier]["qn"]
         lines += [input_source_command.format(
             id=identifier, source_postfix=source_postfix, target_postfix=target_postfix,
             filename=environ.obme_filename(source_postfix, identifier),
-            j0=j0, g0=g0, tz0=tz0
+            J0=J0, g0=g0, Tz0=Tz0
         )]
         lines += [xform_source_command.format(
             id=identifier, source_postfix=source_postfix, target_postfix=target_postfix,

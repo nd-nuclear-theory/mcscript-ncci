@@ -20,7 +20,7 @@ defines the one-body source type:
 
 Supporting information is provided by the supplementary items:
 
-    "qn": tuple of (j0,g0,tz0)
+    "qn": tuple of (J0,g0,Tz0)
 
     "coefficient": float coefficient -- for "tensor-product" only
 
@@ -67,6 +67,7 @@ University of Notre Dame
 - 08/03/22 (pjf): Generate both Tz-raising and lowering operators for beta decay.
 - 08/06/22 (pjf): Fix phases on Tz-lowering beta decay operators so that they
     are related by (-1)^Tz0.
+- 01/30/23 (pjf): Rename j0->J0 and tz0->Tz0.
 
 """
 import collections
@@ -169,24 +170,24 @@ def ladder_operators_generic(hw):
 ################################################################
 # solid harmonic operators
 ################################################################
-def solid_harmonic_source(coordinate, order, j0=None):
+def solid_harmonic_source(coordinate, order, J0=None):
     """Generate solid harmonic source info.
 
     Arguments:
         coordinate (str): "r" or "ik"
         order (int): power of coordinate (i.e. r^n)
-        j0 (int, optional): rank of spherical harmonic (defaults to order)
+        J0 (int, optional): rank of spherical harmonic (defaults to order)
 
     Returns:
         (id (str), source (dict)): id and source dictionary
     """
-    if j0 is None:
-        j0 = order
+    if J0 is None:
+        J0 = order
     if coordinate not in {"r", "ik"}:
         raise mcscript.exception.ScriptError("unknown coordinate {}".format(coordinate))
 
-    qn = (j0,j0%2,0)  # (j0,g0,tz0)
-    identifier = "{:s}{:d}Y{:d}".format(coordinate, order, j0)
+    qn = (J0,J0%2,0)  # (J0,g0,Tz0)
+    identifier = "{:s}{:d}Y{:d}".format(coordinate, order, J0)
     source_dict = {
         "builtin": "solid-harmonic", "coordinate": coordinate, "order": order, "qn": qn
     }
@@ -260,12 +261,12 @@ def generate_ob_observable_sets(task):
         if match:
             order = int(match.group(1))
             qn = (order,order%2,0)
-            (j0, _, _) = qn
+            (J0, _, _) = qn
             ob_observables += [
                 ("E{}p".format(order), qn, "E{}p".format(order)),
                 ("E{}n".format(order), qn, "E{}n".format(order)),
             ]
-            solid_harmonic_id = "r{:d}Y{:d}".format(order, j0)
+            solid_harmonic_id = "r{:d}Y{:d}".format(order, J0)
             obme_sources["E{}p".format(order)] = {
                 "tensor-product": ["delta_p", solid_harmonic_id],
                 "qn": qn
@@ -315,7 +316,7 @@ def generate_ob_observable_sets(task):
         match = re.fullmatch(r"M([0-9]+)", name)
         if match:
             order = int(match.group(1))
-            j0 = order
+            J0 = order
             if order == 0:
                 raise mcscript.exception.ScriptError("you must construct additional magnetic monopoles")
             qn = (order,(order-1)%2,0)
@@ -330,7 +331,7 @@ def generate_ob_observable_sets(task):
             ]
             obme_sources["l"] = k_am_operators["l"]
             obme_sources["s"] = k_am_operators["s"]
-            solid_harmonic_id = "r{:d}Y{:d}".format(order-1, j0-1)
+            solid_harmonic_id = "r{:d}Y{:d}".format(order-1, J0-1)
             obme_sources["l"+solid_harmonic_id] = {
                 "tensor-product": ["l", solid_harmonic_id], "qn": qn
             }
@@ -527,8 +528,8 @@ def get_obme_sources(task, targets):
         if match:
             coordinate = match.group(1)
             order = int(match.group(2))
-            j0 = int(match.group(3))
-            (source_id, source) = solid_harmonic_source(coordinate, order, j0)
+            J0 = int(match.group(3))
+            (source_id, source) = solid_harmonic_source(coordinate, order, J0)
             assert source_id == solid_harmonic_id
             obme_sources[source_id] = source
 
@@ -536,8 +537,8 @@ def get_obme_sources(task, targets):
         if match:
             coordinate = match.group(1)
             order = int(match.group(2))
-            j0 = int(match.group(3))
-            (source_id, source) = solid_harmonic_source(coordinate, order, j0)
+            J0 = int(match.group(3))
+            (source_id, source) = solid_harmonic_source(coordinate, order, J0)
             assert source_id+"tz" == solid_harmonic_id
             obme_sources[solid_harmonic_id] = {
                 "tensor-product": [source_id, "tz"],
