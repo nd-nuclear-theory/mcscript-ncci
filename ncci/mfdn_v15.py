@@ -272,6 +272,7 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     if partition_filename is not None:
         partition_filename = mcscript.utils.expand_path(partition_filename)
         if not os.path.exists(partition_filename):
+            print("Partition filename: {}".format(partition_filename))
             raise mcscript.exception.ScriptError("partition file not found")
         mcscript.call([
             "cp", "--verbose",
