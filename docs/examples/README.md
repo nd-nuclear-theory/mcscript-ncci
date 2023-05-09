@@ -1,9 +1,48 @@
 # Summary of example run scripts #
 
-Setup: These examples make use of small example input TBME files found in the
-subdirectory `example-data`.  In order for the scripting to find these input files,
-make sure to set the environment variable `NCCI_DATA_DIR_H2` to include
-`mcscript-ncci/docs/examples` (see `mcscript-ncci/INSTALL.md`).
+05/09/23 (mac): Expand setup instructions.  Eliminate --here from example qsubm
+invocations.
+
+----------------------------------------------------------------
+
+Setup:
+
+  - These examples make use of small example input TBME files found in the
+    subdirectory `example-data`.  In order for the scripting to find these input
+    files, make sure to set the environment variable `NCCI_DATA_DIR_H2` to
+    include the present example directory.  See the "Environment configuration"
+    section of `mcscript-ncci/INSTALL.md`.
+
+  - Make sure you are familiar with the principles described in the mcscript
+    package's INSTALL.md file.  In particular, to run a run script with qsubm,
+    you need to create a symlink to the run file from your run
+    directory, e.g.,
+
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    % cd ${MCSCRIPT_RUN_HOME}
+    % ln -s ${HOME}/code/mcscript-ncci/docs/examples/runex01.py
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    Alternatively, you can run these scripts wiht the `examples` directory as
+    the current working directory, by adding the `--here` argument to `qsubm`.
+
+Recommended examples:
+
+The following set of examples is somewhat encyclopedic, e.g., covering some
+older versions of mfdn and some more advanced special features.  The best models
+starting point as a model for actual run scripts would be some of the newer
+examples:
+
+  - runmfdn13: This runs mfdn, to set up the wave functions you will need for the next two
+    examples.
+
+  - runmfdn14: This is an example of doing Lanczos decompositions with mfdn
+    (only try this example if such decompositions are of interest to you).
+
+  - runtransitions00: This runs mfdn-transitions, to calculate transitions for
+    the wave functions from runmfdn13.
+
+----------------------------------------------------------------
 
 runmfdn07: harmonic oscillator direct run with MFDn v15
 
@@ -11,7 +50,7 @@ runmfdn07: harmonic oscillator direct run with MFDn v15
 
     Interaction: example-data
 
-    Usage: qsubm --here mfdn07
+    Usage: qsubm mfdn07
 
     We use tb-6 from `example-data`. Make sure to set NCCI_DATA_DIR_H2 to include
     `mcscript-ncci/docs/examples` (see `mcscript-ncci/INSTALL.md`).
@@ -22,7 +61,7 @@ runmfdn08: harmonic oscillator direct run with MFDn v15 b01
 
     Interaction: run0164-JISP16-tb-10
 
-    Usage: qsubm --here mfdn08
+    Usage: qsubm mfdn08
 
     We use tb-10 as the smallest available set of files.  These are not provided
     in `mcscript-ncci/docs/examples`.
@@ -33,7 +72,7 @@ runmfdn09: general truncation direct run with MFDn v15
 
     Interaction: run0164-JISP16-tb-10
 
-    Usage: qsubm --here mfdn09
+    Usage: qsubm mfdn09
 
     We use tb-10 as the smallest available set of files.  These are not provided
     in `mcscript-ncci/docs/examples`.
@@ -42,7 +81,7 @@ runmfdn10: counting-only run with MFDn v15
 
     6He Nmax08 (counting)
 
-    Usage: qsubm --here mfdn10
+    Usage: qsubm mfdn10
 
 runmfdn11: manual orbital direct run with MFDn v15
 
@@ -50,7 +89,7 @@ runmfdn11: manual orbital direct run with MFDn v15
 
     Interaction: run0164-JISP16-tb-10
 
-    Usage: qsubm --here mfdn11
+    Usage: qsubm mfdn11
 
     We use tb-10 as the smallest available set of files.  These are not provided
     in `mcscript-ncci/docs/examples`.
@@ -61,7 +100,7 @@ runmfdn12: harmonic oscillator direct run with MFDn v15, plus custom input TBO
 
     Interaction: example-data
 
-    Usage: qsubm --here mfdn12
+    Usage: qsubm mfdn12
 
     Uses operator TBMEs from `example-data`.  Make sure to set NCCI_DATA_DIR_H2 to
     include `mcscript-ncci/docs/examples` (see `mcscript-ncci/INSTALL.md`).
@@ -74,11 +113,11 @@ runmfdn13: harmonic oscillator direct run with MFDn v15, for use with postproces
 
     Usage:
 
-        qsubm --here --pool=ALL mfdn13
+        qsubm --pool=ALL mfdn13
 
     or, for a quick test with just Nmax=2 runs
 
-        qsubm --here --pool=Nmax02 mfdn13
+        qsubm --pool=Nmax02 mfdn13
 
     Sets up for runtransitions00.
 
@@ -93,11 +132,11 @@ runmfdn14: harmonic oscillator Lanczos decomposition run with MFDn v15
 
     Usage:
 
-        qsubm --here --pool=ALL mfdn14
+        qsubm --pool=ALL mfdn14
 
     or, for a quick test with just Nmax=2, M=1.0 runs
 
-        qsubm --here --pool=Nmax02-M1.0 mfdn14
+        qsubm --pool=Nmax02-M1.0 mfdn14
 
     Uses wave functions created by runmfdn13.  Make sure to set
     NCCI_LIBRARY_PATH to include `mcscript-ncci/docs/examples`
@@ -111,11 +150,11 @@ runtransitions00: mfdn-transitions postprocessor run
 
     Usage:
 
-        qsubm --here --pool=ALL transitions00
+        qsubm --pool=ALL transitions00
 
     or, for a quick test with just Nmax=2 runs
 
-        qsubm --here --pool=Nmax02 transitions00
+        qsubm --pool=Nmax02 transitions00
 
     Uses operator TBMEs from `example-data`.  Make sure to set NCCI_DATA_DIR_H2 to
     include `mcscript-ncci/docs/examples` (see `mcscript-ncci/INSTALL.md`).
