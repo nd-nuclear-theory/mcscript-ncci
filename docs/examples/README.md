@@ -10,11 +10,11 @@ Setup:
   - These examples make use of small example input TBME files found in the
     subdirectory `example-data`.  In order for the scripting to find these input
     files, make sure to set the environment variable `NCCI_DATA_DIR_H2` to
-    include the present example directory.  See the "Environment configuration"
-    section of `mcscript-ncci/INSTALL.md`.
+    include the present example directory.  Please follow the instructions in
+    the "Environment configuration" section of `mcscript-ncci/INSTALL.md`.
 
   - Make sure you are familiar with the principles described in the mcscript
-    package's INSTALL.md file.  In particular, to run a run script with qsubm,
+    package's `INSTALL.md` file.  In particular, to run a run script with qsubm,
     you need to create a symlink to the run file from your run
     directory, e.g.,
 
@@ -25,6 +25,16 @@ Setup:
 
     Alternatively, you can run these scripts wiht the `examples` directory as
     the current working directory, by adding the `--here` argument to `qsubm`.
+
+  - The command line for `qsubm` given for each example below is a minimal
+    command line, which undoubtely leaves off important parameters for
+    submitting to the correct queue on your machine and/or selecting the correct
+    parallel configuration on your machine.  (For instance, if you just used
+    these commands directly on a login node of a cluster, you would be running
+    mfdn interactively on the login node, and possibly hogging the entire
+    machine by using the maximum number of OpenMP threads available on that
+    machine.)  So first please make sure you are familiar with the principles of
+    running jobs on your machine and of doing so properly with mcscript.
 
 Recommended examples:
 
