@@ -520,14 +520,22 @@ def archive_handler_mfdn_lightweight():
     )
     return archive_filename_list
 
-def archive_handler_mfdn_hsi():
-    """Generate archives for MFDn and save to tape."""
+def archive_handler_mfdn_hsi(split_large_archives=False):
+    """Generate archives for MFDn and save to tape.
+
+    Arguments:
+
+        split_large_archives (bool, optional): whether or not to split large
+        archives into segments (pass-through option to
+        mcscript.task.archive_handler_hsi()
+
+    """
 
     # generate archives
     archive_filename_list = archive_handler_mfdn()
 
     # save to tape
-    mcscript.task.archive_handler_hsi(archive_filename_list)
+    mcscript.task.archive_handler_hsi(archive_filename_list, split_large_archives=split_large_archives)
 
 
 ################################################################

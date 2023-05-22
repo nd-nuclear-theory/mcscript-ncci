@@ -48,6 +48,7 @@ University of Notre Dame
 - 06/30/22 (pjf): Deprecate run_postprocessor.
 - 10/04/22 (pjf): Ensure that "diagonal" transitions always use same wave function
   for bra and ket.
+- 12/16/22 (mac): Provide diagonalization results data to mask functions.
 """
 import collections
 import deprecated
@@ -303,7 +304,7 @@ def allowed_by_multipolarity(qn_pair, Tz_pair, operator_qn):
     return allowed
 
 
-def allowed_by_masks(task,qn_pair):
+def allowed_by_masks(task, qn_pair):
     """Apply masking functions to qn_pair.
 
     Each mask function should have a declaration the form
@@ -477,6 +478,7 @@ def init_postprocessor_db(task, postfix=""):
         )
     assert len(bra_merged_data) == 1
     bra_merged_data = bra_merged_data[0]
+    task["metadata"]["bra_results_data"] = bra_merged_data  # provide access to results data for use by masking functions
     if bra_selector == ket_selector:
         # special case where bra and ket selection is equal:
         # allow canonicalization of transitions, and don't duplicate work
@@ -500,6 +502,7 @@ def init_postprocessor_db(task, postfix=""):
             )
         assert len(ket_merged_data) == 1
         ket_merged_data = ket_merged_data[0]
+        task["metadata"]["ket_results_data"] = ket_merged_data  # provide access to results data for use by masking functions
 
     # extract Tz for bra and ket for convenience
     (bra_Z, bra_N) = bra_merged_data.params["nuclide"]
@@ -600,7 +603,7 @@ def init_postprocessor_db(task, postfix=""):
             continue
         if not allowed_by_masks(task, (bra_qn,ket_qn)):
             continue
-
+        
         (bra_run_descriptor_pair, ket_run_descriptor_pair) = get_run_descriptor_pair(
             bra_mesh_data, ket_mesh_data, (bra_qn, ket_qn), operator_qn
             )
@@ -684,6 +687,7 @@ def init_postprocessor_db(task, postfix=""):
     (ob_count,) = db.execute(
         "SELECT COUNT(*) FROM `ob_transitions`;"
     ).fetchone()
+    print("Transition counts: tb transitions {:d}, ob transitions {:d}".format(tb_count, ob_count))
     if (tb_count + ob_count) == 0:
         raise mcscript.exception.ScriptError(
             "No transitions to be calculated."

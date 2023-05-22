@@ -3,6 +3,8 @@
     - 05/11/22 (mac): Created, extracted from run scripts (runmac0633),
         originally task_handler_postprocessor.py.
     - 08/13/22 (pjf): Add mask_good_J().
+    - 11/20/22 (mac): Add mask_by_energy_cutoff().
+    - 01/03/23 (mac): Provide "negate_mask" option for mask_allow_near_yrast.
 """
 
 import math
@@ -11,20 +13,31 @@ import mcscript
 
 from . import constants
 
-def mask_allow_near_yrast(task,mask_params,qn_pair,verbose=False):
+def mask_allow_near_yrast(task:dict, mask_params:dict, qn_pair, verbose=False):
     """Mask function for transitions involving only low-lying states of each J.
 
     Mask parameters:
+
         "ni_max" (int or dict, optional): maximum ni, or dictionary Ji->ni_max (default 0), default 5
+
         "nf_max" (int or dict, optional): maximum nf, or dictionary Jf->nf_max (default 0), default 999
 
+        "negate_mask" (bool, optional): whether or not to negate mask (useful to
+        eliminate a sub-network which has already been calculated elsewhere),
+        default False
+
     Arguments:
+
         task (dict): task dictionary
+
         mask_params (dict): parameters specific to this mask
+
         qn_pair (tuple): (qnf,qni) for transition
+
         verbose (book, optional): verbosity (argument required by handler)
 
     Returns:
+
         allow (bool): mask value
 
     """
@@ -33,34 +46,48 @@ def mask_allow_near_yrast(task,mask_params,qn_pair,verbose=False):
     (qnf,qni) = qn_pair
     (Ji,gi,ni) = qni
     (Jf,gf,nf) = qnf
-
-    # calculate mask value
-    ni_max = mask_params.get("ni_max",5)
+    
+    # get parameters
+    ni_max = mask_params.get("ni_max", 999)
     if (isinstance(ni_max, dict)):
         ni_max = ni_max.get(Ji,0)
-    nf_max = mask_params.get("nf_max",999)
+    nf_max = mask_params.get("nf_max", 999)
     if (isinstance(nf_max, dict)):
         nf_max = nf_max.get(Jf,0)
-    if (verbose):
-        print("  Mask yrast check: Jf {} nf {} nf_max {} {} ; Ji {} ni {} ni_max {} {}".format(Jf,nf,nf_max,(nf<=nf_max),Ji,ni,ni_max,(ni<=ni_max)))
-    allow = (ni<=ni_max)
-    allow &= (nf<=nf_max)
+    negate_mask = mask_params.get("negate_mask", False)
 
+    # calculate mask value
+    if (verbose):
+        print("  Mask yrast check (canonical): Jf {} nf {} nf_max {} {} ; Ji {} ni {} ni_max {} {}".format(
+            Jf, nf, nf_max, (nf<=nf_max),
+            Ji, ni, ni_max, (ni<=ni_max),
+        ))
+    allow = (ni<=ni_max) and (nf<=nf_max)
+    if negate_mask:
+        allow = not allow
+        
     return allow
 
-def mask_no_self(task,mask_params,qn_pair,verbose=False):
+
+def mask_no_self(task:dict, mask_params:dict, qn_pair, verbose=False):
     """Mask function eliminating self-transitions (moments).
 
     Mask parameters:
+
         N/A
 
     Arguments:
+
         task (dict): task dictionary
+
         mask_params (dict): parameters specific to this mask
+
         qn_pair (tuple): (qnf,qni) for transition
+
         verbose (book, optional): verbosity (argument required by handler)
 
     Returns:
+
         allow (bool): mask value
 
     """
@@ -75,19 +102,25 @@ def mask_no_self(task,mask_params,qn_pair,verbose=False):
 
     return allow
 
-def mask_only_self(task,mask_params,qn_pair,verbose=False):
+def mask_only_self(task:dict, mask_params:dict, qn_pair, verbose=False):
     """Mask function restricting to self-transitions (moments).
 
     Mask parameters:
+
         N/A
 
     Arguments:
+
         task (dict): task dictionary
+
         mask_params (dict): parameters specific to this mask
+
         qn_pair (tuple): (qnf,qni) for transition
+
         verbose (book, optional): verbosity (argument required by handler)
 
     Returns:
+
         allow (bool): mask value
 
     """
@@ -102,19 +135,77 @@ def mask_only_self(task,mask_params,qn_pair,verbose=False):
 
     return allow
 
+
+def mask_by_energy_cutoff(task:dict, mask_params:dict, qn_pair, verbose=False):
+    """Mask function restricting to self-transitions (moments).
+
+    Mask parameters:
+
+        E_max (float, optional): max energy (for bra or ket), default None
+
+        Ei_max (float, optional): max energy for ket, default None
+
+        Ef_max (float, optional): max energy for bra, default None
+
+    Arguments:
+
+        task (dict): task dictionary
+
+        mask_params (dict): parameters specific to this mask
+
+        qn_pair (tuple): (qnf,qni) for transition
+
+        verbose (book, optional): verbosity (argument required by handler)
+
+    Returns:
+
+        allow (bool): mask value
+
+    """
+
+    # unpack quantum numbers
+    (qnf,qni) = qn_pair
+    (Ji,gi,ni) = qni
+    (Jf,gf,nf) = qnf
+
+    # extract parameters
+    E_max = mask_params.get("E_max", None)
+    Ei_max = mask_params.get("Ei_max", None)
+    Ef_max = mask_params.get("Ef_max", None)
+    
+    # calculate mask value
+    ket_results_data = task["metadata"]["ket_results_data"]
+    bra_results_data = task["metadata"]["bra_results_data"]
+    Ei = ket_results_data.get_energy(qni)
+    Ef = ket_results_data.get_energy(qnf)
+    allow = True
+    allow &= E_max is None or Ei<=E_max
+    allow &= E_max is None or Ef<=E_max
+    allow &= Ei_max is None or Ei<=Ei_max
+    allow &= Ef_max is None or Ef<=Ef_max
+
+    return allow
+
+
 def mask_good_J(task:dict, mask_params:dict, qn_pair, verbose=False):
     """Mask function restricting to "good-J" levels.
 
     Mask parameters:
+
         "tolerance" (float, optional): maximum deviation of J from (half-)integral
 
     Arguments:
+
         task (dict): task dictionary
+
         mask_params (dict): parameters specific to this mask
+
         qn_pair (tuple): (qnf,qni) for transition
+
         verbose (book, optional): verbosity (argument required by handler)
 
     Returns:
+
         allow (bool): mask value
     """
     (qnf,qni) = qn_pair

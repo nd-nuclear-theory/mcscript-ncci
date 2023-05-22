@@ -10,6 +10,7 @@
     - 12/02/20 (pjf): Allow J<M natorb base states.
     - 07/08/21 (pjf): Check that J of natorb base state matches nuclide.
     - 04/27/22 (pjf): Add hw_from_oscillator_length().
+    - 01/03/23 (mac): Add J_sqr_coefficient_for_energy_shift().
 """
 
 import math
@@ -18,8 +19,9 @@ import mcscript
 
 from . import constants
 
+
 ################################################################
-# utility calculations
+# strings for descriptors/filenames
 ################################################################
 
 def nuclide_string(nuclide, **kwargs):
@@ -64,6 +66,19 @@ def weight_max_string(truncation):
     return "{0[0]} {0[1]} {0[2]} {0[3]} {0[4]}".format(cutoffs)
 
 
+def natural_orbital_indicator(natural_orbital_iteration):
+    """Construct natural orbital indicator string."""
+    if (natural_orbital_iteration is None):
+        indicator = ""
+    else:
+        indicator = "-no{:1d}".format(natural_orbital_iteration)
+    return indicator
+
+
+################################################################
+# utility calculations
+################################################################
+
 def oscillator_length(hw):
     """Calculate oscillator length for given oscillator frequency.
 
@@ -91,13 +106,33 @@ def hw_from_oscillator_length(b):
     """
     return constants.k_hbar_c**2/(constants.k_mN_csqr*b**2)
 
-def natural_orbital_indicator(natural_orbital_iteration):
-    """Construct natural orbital indicator string."""
-    if (natural_orbital_iteration is None):
-        indicator = ""
-    else:
-        indicator = "-no{:1d}".format(natural_orbital_iteration)
-    return indicator
+
+def J_sqr_coefficient_for_energy_shift(M, energy_shift, delta_J=1):
+    """Determine coefficient needed on J^2 operator for given energy shift.
+
+    In a J-filtered run of given M, we generally want to shift the J=M+1 states
+    upward by at least a given amount relative to the J=M states.  This function
+    calculates the coefficient on |J|^2-M*(M+1) needed to accomplish such a
+    shift.
+
+    Argument:
+
+        M (float): M for run
+
+        energy_shift (float): desired energy shift
+
+        delta_J (int, optional): difference to next higher angular momentum of interest
+
+    Returns:
+
+        a_J2 (float): coefficient for J^2 operator
+
+    """
+
+    J = M
+    Jp = M + delta_J
+    a_J2 = energy_shift/(Jp*(Jp+1) - J*(J+1))
+    return a_J2
 
 ################################################################
 # shell model Nv
