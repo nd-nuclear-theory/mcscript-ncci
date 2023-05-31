@@ -55,6 +55,7 @@ University of Notre Dame
 - 07/05/22 (pjf): Add task_handler_relative().
 - 07/06/22 (pjf): Improve relative task handlers.
 - 08/15/22 (pjf): Implement cleanup in task_handler_mfdn_postprocessor_post.
+- 05/31/23 (pjf): Add postprocessor archive handlers.
 """
 import os
 import glob
@@ -536,6 +537,29 @@ def archive_handler_mfdn_hsi(split_large_archives=False):
 
     # save to tape
     mcscript.task.archive_handler_hsi(archive_filename_list, split_large_archives=split_large_archives)
+
+def archive_handler_mfdn_postprocessor():
+    """Generate archives for MFDn postprocessor results."""
+
+    archive_filename_list = mcscript.task.archive_handler_subarchives(
+        [
+            {"postfix" : "-transitions-output", "paths" : ["results/transitions-output"], "compress" : True, "include_metadata" : True},
+            {"postfix" : "-res", "paths" : ["results/res"], "compress" : True},
+            {"postfix" : "-obdme", "paths" : ["results/obdme"], "compress" : True},
+        ]
+    )
+    print(archive_filename_list)
+    return archive_filename_list
+
+def archive_handler_mfdn_postprocessor_hsi():
+    """Generate archives for MFDn postprocessor and save to tape."""
+
+    # generate archives
+    archive_filename_list = archive_handler_mfdn_postprocessor()
+    print(archive_filename_list)
+
+    # save to tape
+    mcscript.task.archive_handler_hsi(archive_filename_list)
 
 
 ################################################################
