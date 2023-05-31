@@ -3,6 +3,8 @@
 05/09/23 (mac): Expand setup instructions.  Eliminate --here from example qsubm
 invocations.
 
+05/31/23 (mac): Add perlmutter-cpu parallel environment example.
+
 ----------------------------------------------------------------
 
 Setup:
@@ -26,15 +28,21 @@ Setup:
     Alternatively, you can run these scripts wiht the `examples` directory as
     the current working directory, by adding the `--here` argument to `qsubm`.
 
-  - The command line for `qsubm` given for each example below is a minimal
-    command line, which undoubtely leaves off important parameters for
-    submitting to the correct queue on your machine and/or selecting the correct
-    parallel configuration on your machine.  (For instance, if you just used
-    these commands directly on a login node of a cluster, you would be running
-    mfdn interactively on the login node, and possibly hogging the entire
-    machine by using the maximum number of OpenMP threads available on that
-    machine.)  So first please make sure you are familiar with the principles of
-    running jobs on your machine and of doing so properly with mcscript.
+  - The example submission command lines given for the individual examples below
+    leave off the very-important parallel environment parameters (which we
+    estimate using mfdnmem) and queue submission information (otherwise you'll
+    be trying to run MFDn interactively on the front end, which may get people
+    yelling at you, or it may simply fail!).
+
+    So first please make sure you are familiar with the principles of running
+    jobs on your machine and of doing so properly with mcscript.
+
+    E.g., for a single-node run at NERSC on perlmutter-cpu, the following
+    command line would be reasonable for a first test run:
+
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    qsubm mfdn13 debug 30 --phase=1 --pool="Nmax02" --ranks=1 --nodes=1 --threads=32 --serialthreads=256 --mail-type=END,FAIL
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Recommended examples:
 
