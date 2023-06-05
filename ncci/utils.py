@@ -134,6 +134,7 @@ def J_sqr_coefficient_for_energy_shift(M, energy_shift, delta_J=1):
     a_J2 = energy_shift/(Jp*(Jp+1) - J*(J+1))
     return a_J2
 
+
 ################################################################
 # shell model Nv
 ################################################################

@@ -16,6 +16,7 @@ University of Notre Dame
 - 01/04/18 (pjf): Add MFDnRunMode kManual for user-provided orbital file.
 - 09/07/19 (pjf): Remove Nv from truncation_parameters.
 - 10/24/19 (mac): Add MFDnRunMode kLanczosOnly.
+- 06/04/23 (mac): Add JFilterMode.
 """
 
 import enum
@@ -35,6 +36,7 @@ class BasisMode(enum.Enum):
         needed on VNN TBMEs
       - Coulomb TBMEs need only scaling for dilation (hw_c -> hw)
       - MFDn can use built-in oscillator OBMEs for observables
+
     kDilated:
       - no0 basis is oscillator basis (hw)
       - source basis for VNN is oscillator basis of different
@@ -55,6 +57,32 @@ class BasisMode(enum.Enum):
     kDirect = 0
     kDilated = 1
     kGeneric = 2
+
+################################################################
+# J filtering modes
+################################################################
+
+@enum.unique
+class JFilterMode(enum.Enum):
+    """General modes of operation for J filtering
+
+    kEnabled:
+      - filter for all M
+
+    kDisabled:
+      - do not filter for any M
+
+    kM0Only:
+      - filter only for M=0.0
+      - for common case where J=0.0 states are obtained from M=0.0 run,
+        while all other states are obtained from M=1.0 run, to avoid
+        vanishing "parity" Clebsch-Gordan coefficients when calculating
+        observable RMEs)
+    """
+
+    kDisabled = 0
+    kEnabled = 1
+    kM0Only = 2
 
 
 ################################################################

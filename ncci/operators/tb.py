@@ -83,7 +83,7 @@ from .. import (
 
 
 # legacy -- imported by operators/__init__.py, for older codes which
-# expect operators.*
+# expect these operators to lie in the operators namespace (operators.*)
 __all__ = [
     'identity', 'Ursqr', 'Vr1r2', 'Uksqr', 'Vk1k2',
     'L2', 'Sp2', 'Sn2', 'S2', 'J2', 'T2', 'Tz',
@@ -518,7 +518,10 @@ def Qnintr(nuclide):
 # standard Hamiltonian
 ################################################################
 
-def Hamiltonian(A, hw, a_cm=0., hw_cm=None, use_coulomb=True, hw_coul=None, hw_coul_rescaled=None, **kwargs):
+def Hamiltonian(
+        A, hw, a_cm=0., hw_cm=None, use_coulomb=True, hw_coul=None, hw_coul_rescaled=None,
+        **kwargs,
+):
     """A standard Hamiltonian for shell-model runs.
 
     Arguments:
@@ -546,6 +549,41 @@ def Hamiltonian(A, hw, a_cm=0., hw_cm=None, use_coulomb=True, hw_coul=None, hw_c
         coulomb_interaction = mcscript.utils.CoefficientDict()
     return (kinetic_energy + interaction + coulomb_interaction + lawson_term)
 
+
+################################################################
+# J filter term for Hamiltonian
+################################################################
+
+def J_filter_term(
+        M, energy_shift, mode=modes.JFilterMode.kEnabled, delta_J=1.0
+):
+    """A standard Hamiltonian for shell-model runs.
+
+    Arguments:
+
+        M (float): M quantum number for run
+
+        energy_shift (float): energy shift for next higher M in J filtered run
+
+        mode (modes.JFilterMode, default modes.JFilterMode.kEnabled): selection mode for which M
+            runs are subject to J filtering (kEnabled, kDisabled, kM0Only)
+
+        delta_J (int, default 1.0): difference to next higher angular momentum of interest      
+
+    Returns:
+
+        CoefficientDict containing coefficients for Hamiltonian.
+    """
+
+    if mode==modes.JFilterMode.kEnabled or (mode==modes.JFilterMode.kM0Only and M==0.0):
+        coefficient = utils.J_sqr_coefficient_for_energy_shift(M, energy_shift, delta_J=delta_J)
+        term = coefficient*(J2() - M*(M+1)*identity())
+    else:
+        term = mcscript.utils.CoefficientDict()
+
+    return term
+
+        
 ################################################################
 # tbme target extraction
 ################################################################
