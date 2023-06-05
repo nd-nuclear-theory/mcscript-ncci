@@ -178,7 +178,7 @@ decomposition_operator_registry={
 
 def decomposition_operator(
         nuclide,Nmax,hw,decomposition_type,
-        decomposition_path,
+        decomposition_path=[],
         coef_filename_format = "decomposition_Z{nuclide[0]:02d}_N{nuclide[1]:02d}_Nmax{Nmax:02d}_{decomposition_type}_coefs.dat",
         swap=False,
         verbose=False
@@ -196,7 +196,7 @@ def decomposition_operator(
         nuclide (tuple): (Z,N) of nuclide for the coefficient file
         Nmax (int): Nmax
         decomposition_type (str): identifier for decomposition type (e.g., "U3SpSnS")
-        decomposition_path (str,list[str]): path to decomposition files
+        decomposition_path (str,list[str], optional): path to decomposition files
         coef_filename_format (str, optional): format template for coef filename
         swap (bool,optional): whether swapping Z and N is needed to find the decomposition files
     """

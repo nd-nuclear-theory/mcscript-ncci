@@ -58,6 +58,7 @@ University of Notre Dame
     MFDn.
 - 05/09/22 (pjf): Split generate_mfdn_input() from run_mfdn().
 - 07/12/22 (pjf): Add sanity check on dimension and numnonzero.
+- 06/05/23 (mac): Make "eigenvectors" optional, e.g., for decomposition run.
 """
 import errno
 import os
@@ -76,7 +77,7 @@ def set_up_Nmax_truncation(task, inputlist):
     """Generate Nmax truncation inputs for MFDn v15.
 
     Arguments:
-        task(dict): as described in module docstring
+        task(dict): as described in docs/task.md
         inputlist (dict): MFDn v15 inputlist
     """
     # sanity check
@@ -101,7 +102,7 @@ def set_up_WeightMax_truncation(task, inputlist):
     """Generate weight max truncation inputs for MFDn v15.
 
     Arguments:
-        task(dict): as described in module docstring
+        task(dict): as described in docs/task.md
         inputlist (dict): MFDn v15 inputlist
     """
     # sanity check
@@ -119,7 +120,7 @@ def set_up_FCI_truncation(task, inputlist):
     """Generate FCI truncation inputs for MFDn v15.
 
     Arguments:
-        task(dict): as described in module docstring
+        task(dict): as described in docs/task.md
         inputlist (dict): MFDn v15 inputlist
     """
     # sanity check
@@ -150,7 +151,7 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     """Generate input file for MFDn version 15.
 
     Arguments:
-        task (dict): as described in module docstring
+        task (dict): as described in docs/task.md
         run_mode (modes.MFDnRunMode): run mode for MFDn
         postfix (string, optional): identifier to add to generated files
 
@@ -199,7 +200,7 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             inputlist["hbomeg"] = float(task["hw"])
 
         # diagonalization parameters
-        inputlist["neivals"] = int(task["eigenvectors"])
+        inputlist["neivals"] = int(task.get("eigenvectors",4))
         inputlist["maxits"] = int(task["max_iterations"])
         inputlist["tol"] = float(task["tolerance"])
         if task.get("reduce_solver_threads"):
@@ -286,7 +287,7 @@ def run_mfdn(task, postfix=""):
     """Execute MFDn version 15.
 
     Arguments:
-        task (dict): as described in module docstring
+        task (dict): as described in docs/task.md
         postfix (string, optional): identifier to add to generated files
 
     Raises:
@@ -375,7 +376,7 @@ def extract_natural_orbitals(task, postfix=""):
     """Extract OBDME files for subsequent natural orbital iterations.
 
     Arguments:
-        task (dict): as described in module docstring
+        task (dict): as described in docs/task.md
         postfix (string, optional): identifier to add to generated files
     """
     # save OBDME files for next natural orbital iteration
@@ -409,7 +410,7 @@ def save_mfdn_task_data(task, postfix=""):
     """Collect and save working information.
 
     Arguments:
-        task (dict): as described in module docstring
+        task (dict): as described in docs/task.md
         postfix (string, optional): identifier to add to generated files
     """
     # convenience definitions
@@ -472,7 +473,7 @@ def save_mfdn_obdme(task, postfix=""):
     """Save MFDn-generated OBDME files.
 
     Arguments:
-        task (dict): as described in module docstring
+        task (dict): as described in docs/task.md
         postfix (str, optional): identifier to add to generated files
     """
     # convenience definitions
@@ -497,7 +498,7 @@ def save_mfdn_wavefunctions(task, postfix=""):
     """Collect and save MFDn wave functions.
 
     Arguments:
-        task (dict): as described in module docstring
+        task (dict): as described in docs/task.md
         postfix (string, optional): identifier to add to generated files
     """
     # convenience definitions
@@ -518,7 +519,7 @@ def cleanup_mfdn_workdir(task, postfix=""):
     """Remove temporary MFDn work files.
 
     Arguments:
-        task (dict): as described in module docstring
+        task (dict): as described in docs/task.md
         postfix (string, optional): identifier to add to generated files
     """
     # cleanup of wave function files
@@ -536,7 +537,7 @@ def extract_mfdn_task_data(
     """Extract task directory from task data archive.
 
     Arguments:
-        task (dict): as described in module docstring
+        task (dict): as described in docs/task.md
         task_data_dir (str, optional): location where results archives can be found;
             defaults to current run results directory
         run_name (str, optional): run name for archive; defaults to current run name
@@ -609,7 +610,7 @@ def extract_wavefunctions(
     """Extract wave functions to task directory from output archive.
 
     Arguments:
-        task (dict): as described in module docstring
+        task (dict): as described in docs/task.md
         wavefunctions_dir (str, optional): location where results archives can be found;
             defaults to current run results directory
         run_name (str, optional): run name for archive; defaults to current run name
@@ -671,7 +672,7 @@ def generate_smwf_info(task, orbital_filename, partitioning_filename, res_filena
       "nuclide", "truncation_parameters":"M", "metadata":"descriptor"
 
     Arguments:
-        task (dict): as described in module docstring
+        task (dict): as described in docs/task.md
         orbital_filename (str): name of orbital file to be included
         partitioning_filename (str): name of partitioning file to be included
         res_filename (str): name of results file to be parsed for state info

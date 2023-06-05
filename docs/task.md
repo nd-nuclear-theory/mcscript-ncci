@@ -114,8 +114,13 @@ University of Notre Dame
 ----------------------------------------------------------------
 ## diagonalization parameters ##
 
-- `eigenvectors`: `int`
+- `eigenvectors`: `int`, optional
   - number of eigenvectors to calculate
+  - must be positive (nonzero!) to avoid failure of MFDn
+  - for decomposition run, the value is largely irrelevant, but does
+    control how many eigenvalues are shown in the Lanzos convergence diagonostic
+    output, which may be useful in test runs
+  - If `None`, defaults to `4`.
 
 - `max_iterations`: `int`
   - maximum number of diagonalization iterations
