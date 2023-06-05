@@ -20,6 +20,7 @@ University of Notre Dame
 - 05/27/21 (pjf): Fix mixed parity indicator in task_descriptor_7.
 - 07/08/21 (pjf): Add natural_orbital_indicator to task_descriptor_7_trans.
 - 12/30/22 (zz): Add isoscalar_coulomb_indicator to task_descriptor_7.
+- 06/04/23 (mac): Add task_descriptor_decomposition_2.
 """
 import mcscript.exception
 import mcscript.utils
@@ -279,6 +280,27 @@ def task_descriptor_decomposition_1(task):
         # How does this interact with the "decomposition" flag in the format 7 mfdnres parser?
     )
 
+    descriptor = template_string.format(
+        source_wf_descriptor=task["wf_source_info"]["descriptor"](task["wf_source_info"]),
+        **task
+    )
+
+    return descriptor
+
+
+def task_descriptor_decomposition_2(task):
+    """Task descriptor for decomposition.
+
+    Replaces decomposition_operator_name with decomposition_type.
+    """
+    # extracted from runmac0688
+    template_string = (
+        "{source_wf_descriptor:s}"
+        "-J{source_wf_qn[0]:04.1f}-g{source_wf_qn[1]:1d}-n{source_wf_qn[2]:02d}"
+        "-{decomposition_type:s}-dlan{max_iterations:d}"
+    )
+
+    
     descriptor = template_string.format(
         source_wf_descriptor=task["wf_source_info"]["descriptor"](task["wf_source_info"]),
         **task
