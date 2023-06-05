@@ -164,11 +164,20 @@ University of Notre Dame
 
 ----------------------------------------------------------------
 ## storage ##
-- `save_obdme`: `bool`
-  - whether or not to save obdme files in archive
 
-- `save_wavefunctions`: `bool`
+- `save_tbme`: `bool`, optional
+  - whether or not to save Hamiltonian (and other operator) tbme files in archive
+  - this is useful if you wish to "set up" an MFDn run, by generating the tbme files,
+    then hand them off to someone else to do an unscripted run
+  - defaults to not saving
+
+- `save_obdme`: `bool`, optional
+  - whether or not to save obdme files in archive
+  - defaults to not saving
+
+- `save_wavefunctions`: `bool`, optional
   - whether or not to save smwf files in (separate) archive
+  - defaults to not saving
 
 ----------------------------------------------------------------
 ## version parameters ##
