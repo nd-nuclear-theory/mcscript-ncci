@@ -1245,6 +1245,17 @@ def save_postprocessor_obdme(task, postfix=""):
         )
 
 
+def cleanup_workdir(task, postfix=""):
+    """Remove temporary postprocessor work files.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+    scratch_file_list = glob.glob("work{:s}/*".format(postfix))
+    mcscript.call(["rm", "-vf"] + scratch_file_list)
+
+
 @deprecated.deprecated(reason="use handlers.task_handler_mfdn_postprocessor_run instead")
 def run_postprocessor(task, postfix=""):
     """Execute both phases of postprocessor.
