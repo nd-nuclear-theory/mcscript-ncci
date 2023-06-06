@@ -431,16 +431,13 @@ def save_mfdn_task_data(task, postfix=""):
         environ.orbitals_filename(postfix),
         ]
     # transformation information
-    archive_file_list += [
-        environ.radial_xform_filename(postfix),
-        environ.radial_olap_int_filename(postfix),
-        ]
+    # Use glob to allow for missing files (e.g., in decomposition run).
+    archive_file_list += glob.glob(environ.radial_xform_filename(postfix))
+    archive_file_list += glob.glob(environ.radial_olap_int_filename(postfix))
     # Coulomb information:
     if task["use_coulomb"]:
-        archive_file_list += [
-            environ.orbitals_coul_filename(postfix),
-            environ.radial_olap_coul_filename(postfix),
-        ]
+        archive_file_list += glob.glob(environ.orbitals_coul_filename(postfix))
+        archive_file_list += glob.glob(environ.radial_olap_coul_filename(postfix))
     # natural orbital information
     if task.get("natural_orbitals"):
         archive_file_list += [
