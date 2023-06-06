@@ -62,6 +62,12 @@ data_dir_rel_list = os.environ.get("NCCI_DATA_DIR_REL", "").split(":")
 rel_dir_list = []
 # subdirectories for rel and relcm files (to be set by calling run script)
 
+data_dir_decomposition_list = os.environ.get("NCCI_DATA_DIR_DECOMPOSITION", "").split(":")
+# Base directories for decomposition coefficient files ("NCCI_DATA_DIR_DECOMPOSITION")
+# Environment variable is interpreted as a PATH-style colon-delimited list.
+
+decomposition_dir_list = []
+# subdirectories for decomposition coefficient files (to be set by calling run script)
 
 def shell_filename(name):
     """Construct filename for shell package executable."""

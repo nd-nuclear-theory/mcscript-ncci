@@ -13,6 +13,7 @@ University of Notre Dame
         +  Add support for swapping p and n parts.
     - 04/24/22 (zz):
         +  Add T operator.
+    - 06/05/23 (mac): Use decomposition coefficient search path from environ.
 """
 
 import glob
@@ -22,7 +23,8 @@ import numpy as np
 
 import mcscript
 from . import (
-    operators
+    operators,
+    environ,
 )
 
 ################################################################
@@ -33,8 +35,8 @@ def read_decomposition_operator_coefs(
         nuclide,
         Nmax,
         decomposition_type,
-        decomposition_path,
-        coef_filename_format = "decomposition_Z{nuclide[0]:02d}_N{nuclide[1]:02d}_Nmax{Nmax:02d}_{decomposition_type}_coefs.dat",
+        decomposition_path=None,
+        coef_filename_format="decomposition_Z{nuclide[0]:02d}_N{nuclide[1]:02d}_Nmax{Nmax:02d}_{decomposition_type}_coefs.dat",
         verbose=False
 ):
     """ Read decomposition operator coefficients from coefs.dat file.
@@ -43,8 +45,8 @@ def read_decomposition_operator_coefs(
         nuclide (tuple): (Z,N) of nuclide
         Nmax (int): Nmax
         decomposition_type (str): identifier for decomposition type (e.g., "U3SpSnS")
-        decomposition_path (str,list[str]): path to decomposition files
-        coef_filename_format (str, optional): format template for coef filename
+        decomposition_path (str,list[str], optional): path to decomposition coefficient file
+        coef_filename_format (str, optional): format template for decomposition coefficient filename
 
     Returns:
         coefs (np.array): vector of coefficients
@@ -55,14 +57,16 @@ def read_decomposition_operator_coefs(
     if type(decomposition_path)==str:
         coefs = np.loadtxt(os.path.join(decomposition_path,coef_filename))
     else:
+        if decomposition_path is None:
+            decomposition_path = environ.decomposition_dir_list
         coefs = np.loadtxt(
             mcscript.utils.search_in_subdirectories(
-                    "",
-                    decomposition_path,
-                    coef_filename,
-                    error_message="file not found",
-                    verbose=False
-                )
+                environ.data_dir_decomposition_list,
+                decomposition_path,
+                coef_filename,
+                error_message="file not found",
+                verbose=verbose
+            )
         )
 
     if (verbose):
@@ -178,7 +182,7 @@ decomposition_operator_registry={
 
 def decomposition_operator(
         nuclide,Nmax,hw,decomposition_type,
-        decomposition_path=[],
+        decomposition_path=None,
         coef_filename_format = "decomposition_Z{nuclide[0]:02d}_N{nuclide[1]:02d}_Nmax{Nmax:02d}_{decomposition_type}_coefs.dat",
         swap=False,
         verbose=False

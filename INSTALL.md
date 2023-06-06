@@ -52,34 +52,47 @@ Prerequisites: `mcscript`, `shell`
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   e.g., ```run0164-JISP16-tb-20/JISP16-tb-20-20.bin```.
-  
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   #### @NDCRC: ####
   `.cshrc`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
-  setenv NCCI_DATA_DIR_H2 "/afs/crc.nd.edu/group/nuclthy/data/h2"
+  setenv GROUP_HOME "/afs/crc.nd.edu/group/nuclthy"
+  setenv NCCI_DATA_DIR_H2 "${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/docs/examples"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   `.bashrc` or `.bash_profile`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
-  export NCCI_DATA_DIR_H2="/afs/crc.nd.edu/group/nuclthy/data/h2"
+  export GROUP_HOME="/afs/crc.nd.edu/group/nuclthy"
+  export NCCI_DATA_DIR_H2="${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/docs/examples"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   #### @NERSC: ####
   `.cshrc`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
-  setenv NCCI_DATA_DIR_H2 "/global/cfs/cdirs/m2032/data/h2"
+  setenv GROUP_HOME "/global/cfs/cdirs/m2032"
+  setenv NCCI_DATA_DIR_H2 "${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/docs/examples"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   `.bashrc` or `.bash_profile`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
-  export NCCI_DATA_DIR_H2="/global/cfs/cdirs/m2032/data/h2"
+  export GROUP_HOME="/global/cfs/cdirs/m2032"
+  export NCCI_DATA_DIR_H2="${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/docs/examples"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  There are in fact several such environment variables indicating directories in
+  which the scripting should search for various types of data file:
+
+  * `NCCI_DATA_DIR_H2` for two-body matrix element files
+
+  * `NCCI_DATA_DIR_REL` for relative matrix element files
+  
+  * `NCCI_DATA_DIR_DECOMPOSITION` for decomposition operators coefficient files
+
+  But only `NCCI_DATA_DIR_H2` need be set for ordinary MFDn diagonalization runs.
 
   If you use `mcscript-ncci` to postprocess wave functions, you will also need
   to set the environment variable `NCCI_LIBRARY_PATH`, to tell `mcscript-ncci`
