@@ -32,7 +32,10 @@ Setup:
     leave off the very-important parallel environment parameters (which we
     estimate using mfdnmem) and queue submission information (otherwise you'll
     be trying to run MFDn interactively on the front end, which may get people
-    yelling at you, or it may simply fail!).
+    yelling at you -- or it may simply fail if the front-end machine has a
+    different architecture from the compute nodes and the executable file is not
+    compatible!).  However, at least the Nmax=2 example runs are are not
+    computationally demanding.
 
     So first please make sure you are familiar with the principles of running
     jobs on your machine and of doing so properly with mcscript.
@@ -131,11 +134,19 @@ runmfdn13: harmonic oscillator direct run with MFDn v15, for use with postproces
 
     Usage:
 
-        qsubm --pool=ALL mfdn13
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        qsubm --pool=ALL --phase=0 mfdn13
+        qsubm --pool=ALL --phase=1 mfdn13
+        qsubm --pool=ALL --phase=2 mfdn13
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    or, for a quick test with just Nmax=2 runs
+    or, for a quick test with just Nmax=2 runs, select
 
-        qsubm --pool=Nmax02 mfdn13
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        qsubm --pool=Nmax02 --phase=0 mfdn13
+        qsubm --pool=Nmax02 --phase=1 mfdn13
+        qsubm --pool=Nmax02 --phase=2 mfdn13
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Sets up for runtransitions00.
 
@@ -150,15 +161,28 @@ runmfdn14: harmonic oscillator Lanczos decomposition run with MFDn v15
 
     Usage:
 
-        qsubm --pool=ALL mfdn14
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        qsubm --pool=ALL --phase=0 mfdn14
+        qsubm --pool=ALL --phase=1 mfdn14
+        qsubm --pool=ALL --phase=2 mfdn14
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    or, for a quick test with just Nmax=2, M=1.0 runs
+    or, for a quick test with just Nmax=2 runs, select
 
-        qsubm --pool=Nmax02-M1.0 mfdn14
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        qsubm --pool=Nmax02 --phase=0 mfdn14
+        qsubm --pool=Nmax02 --phase=1 mfdn14
+        qsubm --pool=Nmax02 --phase=2 mfdn14
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Uses wave functions created by runmfdn13.  Make sure to set
-    NCCI_LIBRARY_PATH to include `mcscript-ncci/docs/examples`
-    (see `mcscript-ncci/INSTALL.md`).
+    NCCI_LIBRARY_PATH to include `mcscript-ncci/docs/examples` (see
+    `mcscript-ncci/INSTALL.md`).  For this example, you also need to set
+    NCCI_DATA_DIR_DECOMPOSITION to include `mcscript-ncci/docs/examples`.
+
+    The resulting Lanczos alpha-beta coefficients will be found in
+    `results/lanczos`.
+
 
 runtransitions00: mfdn-transitions postprocessor run
 
@@ -168,11 +192,19 @@ runtransitions00: mfdn-transitions postprocessor run
 
     Usage:
 
-        qsubm --pool=ALL transitions00
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        qsubm --pool=ALL --phase=0 transitions00
+        qsubm --pool=ALL --phase=1 transitions00
+        qsubm --pool=ALL --phase=2 transitions00
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     or, for a quick test with just Nmax=2 runs
 
-        qsubm --pool=Nmax02 transitions00
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        qsubm --pool=Nmax02 --phase=0 transitions00
+        qsubm --pool=Nmax02 --phase=1 transitions00
+        qsubm --pool=Nmax02 --phase=2 transitions00
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Uses operator TBMEs from `example-data`.  Make sure to set NCCI_DATA_DIR_H2 to
     include `mcscript-ncci/docs/examples` (see `mcscript-ncci/INSTALL.md`).

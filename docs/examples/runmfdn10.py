@@ -1,6 +1,6 @@
 """ runmfdn10.py
 
-    See examples.md for full description.
+    See examples/README.md for full description.
 
     Patrick J. Fasano
     University of Notre Dame
