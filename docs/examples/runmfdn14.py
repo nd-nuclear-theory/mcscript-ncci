@@ -170,7 +170,7 @@ tasks = [
         
         # version parameters
         "h2_format": 15099,
-        "mfdn_executable": "v15-beta02/xmfdn-h2-lan",
+        "mfdn_executable": "xmfdn-h2-lan",
         "mfdn_driver": ncci.mfdn_v15,
     }
     for nuclide in nuclide_list
