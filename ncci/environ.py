@@ -26,6 +26,7 @@ University of Notre Dame
     + Rename interaction_filename() -> find_interaction_file().
     + Use multi-file mode of mcscript.utils.search_in_subdirectories().
     + Add filename functions for rel and tbme files.
+- 06/16/23 (mac): Change default location of mfdn and mfdn-transitions executables to bin subdirectory.
 """
 
 from __future__ import annotations
@@ -76,15 +77,25 @@ def shell_filename(name):
 
 def mfdn_filename(name):
     """Construct filename for MFDn executable."""
+    # check for absolute path to file (which takes priority)
     if os.path.isfile(mcscript.utils.expand_path(name)):
         return mcscript.utils.expand_path(name)
-    return os.path.join(mcscript.parameters.run.install_dir, "mfdn", name)
+    # check for legacy installation location for executable (not in "bin" subdirectory)
+    if os.path.isfile(os.path.join(mcscript.parameters.run.install_dir, "mfdn", name)):
+        return os.path.join(mcscript.parameters.run.install_dir, "mfdn", name)
+    # standard path
+    return os.path.join(mcscript.parameters.run.install_dir, "mfdn", "bin", name)
 
 def mfdn_postprocessor_filename(name):
     """Construct filename for MFDn postprocessor executable."""
+    # check for absolute path to file (which takes priority)
     if os.path.isfile(mcscript.utils.expand_path(name)):
         return mcscript.utils.expand_path(name)
-    return os.path.join(mcscript.parameters.run.install_dir, "mfdn-transitions", name)
+    # check for legacy installation location for executable (not in "bin" subdirectory)
+    if os.path.isfile(os.path.join(mcscript.parameters.run.install_dir, "mfdn-transitions", name)):
+        return os.path.join(mcscript.parameters.run.install_dir, "mfdn-transitions", name)
+    # standard path
+    return os.path.join(mcscript.parameters.run.install_dir, "mfdn-transitions", "bin", name)
 
 def find_interaction_file(
     interaction:str, truncation:tuple[str,int], hw:Optional[float]
