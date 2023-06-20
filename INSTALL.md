@@ -5,38 +5,51 @@ Prerequisites: `mcscript`, `shell`
 
   Change to the directory where you want the repository to be installed,
   e.g.,
+
   ~~~~~~~~~~~~~~~~
   % cd ~/code
   ~~~~~~~~~~~~~~~~
 
   Clone the `mcscript-ncci` repository and all submodules.
+
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   % git clone https://github.com/nd-nuclear-theory/mcscript-ncci.git
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   Change your working directory to the repository for the following steps:
+
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   % cd mcscript-ncci
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   If you want the bleeding-edge, potentially broken version, check out the
   `develop` branch:
+
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   % git checkout -t origin/develop
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  Setup the package in your `PYTHONPATH` by running `pip` (or `pip3` on Debian):
+  Set up the package in your `PYTHONPATH` by running `pip`:
+
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  % pip install --user --editable .
+  % python3 -m pip install --user --editable .
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Note that the `.` here means to install the Python package defined by the code
+  in the current directory.
+
   This will ***fail*** if you have not already installed `mcscript`. If this
   happens, go back and ensure that `mcscript` has been installed successfully.
 
   a. Subsequently updating source
+
   ~~~~~~~~~~~~~~~~
   % git pull
-  % pip install --user --editable .
+  % python3 -m pip install --user --editable .
   ~~~~~~~~~~~~~~~~
+
+  This subsequent `pip install`, when updating the source code, is a precaution
+  in case, e.g., the package dependencies have changed.
 
 # 2. Environment Configuration
 
@@ -89,7 +102,7 @@ Prerequisites: `mcscript`, `shell`
   * `NCCI_DATA_DIR_H2` for two-body matrix element files
 
   * `NCCI_DATA_DIR_REL` for relative matrix element files
-  
+
   * `NCCI_DATA_DIR_DECOMPOSITION` for decomposition operators coefficient files
 
   But only `NCCI_DATA_DIR_H2` need be set for ordinary MFDn diagonalization runs.
