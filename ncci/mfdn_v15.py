@@ -58,7 +58,9 @@ University of Notre Dame
     MFDn.
 - 05/09/22 (pjf): Split generate_mfdn_input() from run_mfdn().
 - 07/12/22 (pjf): Add sanity check on dimension and numnonzero.
-- 06/05/23 (mac): Make "eigenvectors" optional, e.g., for decomposition run.
+- 06/05/23 (mac):
+  + Make "eigenvectors" optional, e.g., for decomposition run.
+  + Fix save_mfdn_task_data() to gracefully handle missing overlap files for decomposition run.
 """
 import errno
 import os
