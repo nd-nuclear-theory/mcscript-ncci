@@ -76,7 +76,7 @@ def natural_orbital_indicator(natural_orbital_iteration):
 
 
 ################################################################
-# utility calculations
+# oscillator length calculations
 ################################################################
 
 def oscillator_length(hw):
@@ -106,6 +106,10 @@ def hw_from_oscillator_length(b):
     """
     return constants.k_hbar_c**2/(constants.k_mN_csqr*b**2)
 
+
+################################################################
+# J^2 term calculation
+################################################################
 
 def J_sqr_coefficient_for_energy_shift(M, energy_shift, delta_J=1):
     """Determine coefficient needed on J^2 operator for given energy shift.
