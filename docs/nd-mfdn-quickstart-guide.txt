@@ -1,6 +1,6 @@
 ND MFDn workflow quickstart guide
 
-Some initial pointers on where to look to get started.  Needs to be expanded!
+Some initial pointers on where to look to get started.
 
 04/17/23 (mac): Created (with slv, zz, ...).
 06/16/23 (mac): Add mfdn-postprocessor installation instructions.
