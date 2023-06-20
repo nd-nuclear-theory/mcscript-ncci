@@ -127,8 +127,8 @@ task_list = [
         "save_obdme": True,
 
         # two-body observables
-        ## "observable_sets": ["H-components","am-sqr"],
-        "observable_sets": ["H-components"],
+        ## "tb_observable_sets": ["H-components","am-sqr"],
+        "tb_observable_sets": ["H-components"],
 
         # version parameters
         "h2_format": 0,

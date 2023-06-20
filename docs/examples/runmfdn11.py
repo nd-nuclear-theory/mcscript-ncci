@@ -1,19 +1,19 @@
-""" runmfdn11.py
+""" runmfdn12.py
 
-    See runmfdn.txt for description.
+    See examples/README.md for full description.
 
     Mark A. Caprio
     University of Notre Dame
 
-    - 10/17/17 (pjf): Created, copied from runmfd07; add duct-tape postprocessor step.
-    - 12/19/17 (pjf): Update for mfdn->ncci rename.
-    - 09/07/19 (pjf): Remove Nv from truncation_parameters.
+    - 01/04/18 (pjf): Created, copied from runmfd09.
+    - 09/11/19 (pjf):
+        + Remove hard-coded path.
+        + Fix task-data save.
 """
 
 import mcscript
 import ncci
 import ncci.mfdn_v15
-import ncci.mfdn_ducttape
 
 # initialize mcscript
 mcscript.init()
@@ -22,7 +22,7 @@ mcscript.init()
 # build task list
 ##################################################################
 
-ncci.environ.interaction_run_list = [
+ncci.environ.interaction_dir_list = [
     "run0164-JISP16-ob-9",
     "run0164-JISP16-ob-13",
     "run0164-JISP16-tb-10",
@@ -38,7 +38,7 @@ task = {
     # Hamiltonian parameters
     "interaction": "JISP16",
     "use_coulomb": True,
-    "a_cm": 40.,
+    "a_cm": 20.,
     "hw_cm": None,
 
     # input TBME parameters
@@ -58,16 +58,19 @@ task = {
     "target_truncation": None,
 
     # traditional oscillator many-body truncation
-    "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
-    "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
+    "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kManual,
+    "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kWeightMax,
     "truncation_parameters": {
-        "Nmax": 2,
-        "Nstep": 2,
+        "sp_filename": "${HOME}/tmp/Nmax20-orbitals.dat",
+        "sp_weight_max": 20,
+        "mb_weight_max": 2.1,
+        "parity": +1,
         "M": 0,
         },
 
     # diagonalization parameters
-    "eigenvectors": 15,
+    "diagonalization": True,
+    "eigenvectors": 2,
     "initial_vector": -2,
     "max_iterations": 200,
     "tolerance": 1e-6,
@@ -76,21 +79,16 @@ task = {
     # obdme parameters
     ## "hw_for_trans": 20,
     "obdme_multipolarity": 2,
-    "obdme_reference_state_list": None,
+    "obdme_reference_state_list": [(0, 0, 1)],
     "save_obdme": True,
 
     # two-body observables
-    ## "observable_sets": ["H-components","am-sqr"],
-    "observable_sets": ["H-components"],
-    "tb_observables": [],
-
-    # wavefunction storage
-    "save_wavefunctions": True,
+    ## "tb_observable_sets": ["H-components","am-sqr"],
+    "tb_observable_sets": ["H-components"],
 
     # version parameters
     "h2_format": 15099,
-    "mfdn_executable": "v15-beta01/xmfdn-h2-lan",
-    "ducttape_executable": "v15-beta00/xmfdn-h2-ducttape",
+    "mfdn_executable": "v15-beta00/xmfdn-h2-lan",
     "mfdn_driver": ncci.mfdn_v15,
 
 }
@@ -101,18 +99,16 @@ task = {
 
 # add task descriptor metadata field (needed for filenames)
 task["metadata"] = {
-    "descriptor": ncci.descriptors.task_descriptor_7(task)
+    "descriptor": ncci.descriptors.task_descriptor_9(task)
     }
 
 ncci.radial.set_up_interaction_orbitals(task)
 ncci.radial.set_up_orbitals(task)
-ncci.radial.set_up_radial_analytic(task)
+ncci.radial.set_up_xforms_analytic(task)
+ncci.radial.set_up_obme_analytic(task)
 ncci.tbme.generate_tbme(task)
 ncci.mfdn_v15.run_mfdn(task)
-task["obdme_reference_state_list"] = [(0, 0, 1)]
-ncci.mfdn_ducttape.run_mfdn(task)
 ncci.mfdn_v15.save_mfdn_task_data(task)
-# ncci.handlers.task_handler_oscillator(task)
 
 ##################################################################
 # task control

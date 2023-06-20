@@ -39,19 +39,38 @@ University of Notre Dame
 - 06/04/19 (pjf): Save mfdn.out and mfdn.res to subdirectories of results.
 - 06/07/19 (pjf): Check that MFDn launches successfully with
     mcscript.control.FileWatchdog on mfdn.out.
-+ 09/04/19 (pjf): Rename Trel->Tintr.
+- 09/04/19 (pjf): Rename Trel->Tintr.
 - 09/07/19 (pjf): Remove Nv from truncation_parameters.
+- 10/10/19 (pjf): Get tbo basenames from tbme.get_tbme_targets().
+- 12/11/19 (pjf):
+    + Use new results storage helper functions from mcscript.
+    + Deprecate save_mfdn_task_data().
+- 09/09/20 (pjf): Use operators module instead of tbme for operator names.
+- 09/16/20 (pjf):
+    + Check that diagonalization is enabled.
+    + Add "tbme-" to operator id to form basename.
+- 11/13/20 (pjf): Use constants module.
+- 11/24/20 (pjf): Fix natorb filename globbing for non-integer J.
+- 05/09/22 (pjf): Split generate_mfdn_input() from run_mfdn().
 """
+import errno
 import os
 import glob
+import warnings
 
 import mcscript
 
-from . import utils, modes, environ
+from . import (
+    constants,
+    environ,
+    modes,
+    operators,
+    utils,
+)
 
 
-def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
-    """Generate input file and execute MFDn version 14 beta 06.
+def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
+    """Generate input file for MFDn version 14 beta 06.
 
     Arguments:
         task (dict): as described in module docstring
@@ -61,6 +80,12 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     Raises:
         mcscript.exception.ScriptError: if MFDn output not found
     """
+    # check that diagonalization is enabled
+    if not task.get("diagonalization"):
+        raise mcscript.exception.ScriptError(
+            'Task dictionary "diagonalization" flag not enabled.'
+        )
+
     # validate truncation modes
     allowed_sp_truncations = (modes.SingleParticleTruncationMode.kNmax,)
     allowed_mb_truncations = (modes.ManyBodyTruncationMode.kNmax, modes.ManyBodyTruncationMode.kFCI)
@@ -108,21 +133,17 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     lines.append("{eigenvectors:d} {max_iterations:d} {initial_vector:d} {tolerance:e}  # number of eigenvalues/vectors, max number of its, ...)".format(**task))
     lines.append("{:d} {:d}  # rank of input Hamiltonian/interaction".format(2, 2))
     lines.append("{hw_for_trans:g} {k_mN_csqr:g}  # h-bar*omega, Nucleon mass (MeV) ".format(
-        hw_for_trans=hw_for_trans, k_mN_csqr=utils.k_mN_csqr, **task
+        hw_for_trans=hw_for_trans, k_mN_csqr=constants.k_mN_csqr, **task
     ))
 
     # tbo: collect tbo names
-    obs_basename_list = ["tbme-rrel2", "tbme-Ncm"]
-    if ("H-components" in task["observable_sets"]):
-        obs_basename_list += ["tbme-Tintr", "tbme-Tcm", "tbme-VNN"]
-        if (task["use_coulomb"]):
-            obs_basename_list += ["tbme-VC"]
-    if ("am-sqr" in task["observable_sets"]):
-        obs_basename_list += ["tbme-L2", "tbme-Sp2", "tbme-Sn2", "tbme-S2", "tbme-J2"]
-    if ("isospin" in task["observable_sets"]):
-        obs_basename_list += ["tbme-T2"]
-    if ("tb_observables" in task):
-        obs_basename_list += ["tbme-{}".format(basename) for (basename, operator) in task["tb_observables"]]
+    obs_basename_list = [
+        "tbme-{}".format(id_)
+        for id_ in operators.tb.get_tbme_targets(task)[(0,0,0)].keys()
+    ]
+
+    # do not evaluate Hamiltonian as observable
+    obs_basename_list.remove("tbme-H")
 
     # tbo: log tbo names in separate file to aid future data analysis
     mcscript.utils.write_input("tbo_names{:s}.dat".format(postfix), input_lines=obs_basename_list)
@@ -181,8 +202,33 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             partition_filename,
             os.path.join(work_dir, "mfdn_partitioning.info")
             ])
+
+
+def run_mfdn(task, postfix=""):
+    """Execute MFDn version 14 beta 06.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+
+    Raises:
+        mcscript.exception.ScriptError: if MFDn output not found
+    """
+    # check that diagonalization is enabled
+    if not task.get("diagonalization"):
+        raise mcscript.exception.ScriptError(
+            'Task dictionary "diagonalization" flag not enabled.'
+        )
+
     # enter work directory
+    work_dir = "work{:s}".format(postfix)
     os.chdir(work_dir)
+
+    # check that mfdn.input exists
+    if not os.path.isfile("mfdn.input"):
+        raise FileNotFoundError(
+            errno.ENOENT, os.strerror(errno.ENOENT), "mfdn.input"
+        )
 
     # invoke MFDn
     mcscript.call(
@@ -211,31 +257,17 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     res_filename = "{:s}.res".format(filename_prefix)
     out_filename = "{:s}.out".format(filename_prefix)
 
-    # copy results out (if in multi-task run)
-    if (mcscript.task.results_dir is not None):
-        res_dir = os.path.join(mcscript.task.results_dir, "res")
-        mcscript.utils.mkdir(res_dir, exist_ok=True)
-        mcscript.call(
-            [
-                "cp",
-                "--verbose",
-                work_dir+"/mfdn.res",
-                os.path.join(res_dir, res_filename)
-            ]
-        )
-        out_dir = os.path.join(mcscript.task.results_dir, "out")
-        mcscript.utils.mkdir(out_dir, exist_ok=True)
-        mcscript.call(
-            [
-                "cp",
-                "--verbose",
-                work_dir+"/mfdn.out",
-                os.path.join(out_dir, out_filename)
-            ]
-        )
-    else:
-        mcscript.call(["cp", "--verbose", work_dir+"/mfdn.res", res_filename])
-        mcscript.call(["cp", "--verbose", work_dir+"/mfdn.out", out_filename])
+    # ...copy res file
+    res_filename = "{:s}.res".format(filename_prefix)
+    mcscript.task.save_results_single(
+        task, os.path.join(work_dir, "mfdn.res"), res_filename, "res"
+    )
+
+    # ...copy out file
+    out_filename = "{:s}.out".format(filename_prefix)
+    mcscript.task.save_results_single(
+        task, os.path.join(work_dir, "mfdn.out"), out_filename, "out"
+    )
 
 
 def extract_natural_orbitals(task, postfix=""):
@@ -254,7 +286,7 @@ def extract_natural_orbitals(task, postfix=""):
     try:
         (J, g, n) = task["natorb_base_state"]
         obdme_filename = glob.glob(
-            "{:s}/mfdn.statrobdme.seq*.2J{:02d}.p*.n{:02d}.2T*".format(work_dir, 2*J, n)
+            "{:s}/mfdn.statrobdme.seq*.2J{:02d}.p*.n{:02d}.2T*".format(work_dir, int(2*J), n)
             )
     except TypeError:
         obdme_filename = glob.glob(
@@ -287,6 +319,7 @@ def save_mfdn_task_data(task, postfix=""):
     Raises:
         mcscript.exception.ScriptError: if MFDn output not found
     """
+    warnings.warn("MFDn v14 task-data archiving is deprecated.", FutureWarning)
     # save quick inspection copies of mfdn.{res,out}
     natural_orbitals = task.get("natural_orbitals")
     descriptor = task["metadata"]["descriptor"]

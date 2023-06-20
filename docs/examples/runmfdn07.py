@@ -1,6 +1,6 @@
 """ runmfdn07.py
 
-    See runmfdn.txt for description.
+    See examples/README.md for full description.
 
     Mark A. Caprio
     University of Notre Dame
@@ -26,7 +26,8 @@ mcscript.init()
 # build task list
 ##################################################################
 
-ncci.environ.interaction_run_list = [
+ncci.environ.interaction_dir_list = [
+    "example-data",
     "run0164-JISP16-ob-9",
     "run0164-JISP16-ob-13",
     "run0164-JISP16-tb-10",
@@ -46,9 +47,9 @@ task = {
     "hw_cm": None,
 
     # input TBME parameters
-    "truncation_int": ("tb", 10),
+    "truncation_int": ("tb", 6),
     "hw_int": 20.,
-    "truncation_coul": ("tb", 10),
+    "truncation_coul": ("tb", 6),
     "hw_coul": 20.,
 
     # basis parameters
@@ -71,6 +72,7 @@ task = {
         },
 
     # diagonalization parameters
+    "diagonalization": True,
     "eigenvectors": 15,
     "initial_vector": -2,
     "max_iterations": 200,
@@ -82,11 +84,11 @@ task = {
     "obdme_multipolarity": 2,
     "obdme_reference_state_list": [(0, 0, 1)],
     "save_obdme": True,
-    "ob_observables": [('M', 1), ('E', 2)],
+    "ob_observable_sets": ['M1', 'E2'],
 
     # two-body observables
-    ## "observable_sets": ["H-components","am-sqr"],
-    "observable_sets": ["H-components", "am-sqr", "isospin"],
+    ## "tb_observable_sets": ["H-components","am-sqr"],
+    "tb_observable_sets": ["H-components", "am-sqr", "isospin"],
     "tb_observables": [],
 
     # version parameters
@@ -107,11 +109,11 @@ task["metadata"] = {
 
 ncci.radial.set_up_interaction_orbitals(task)
 ncci.radial.set_up_orbitals(task)
-ncci.radial.set_up_radial_analytic(task)
+ncci.radial.set_up_xforms_analytic(task)
+ncci.radial.set_up_obme_analytic(task)
 ncci.tbme.generate_tbme(task)
 ncci.mfdn_v15.run_mfdn(task)
 ncci.mfdn_v15.save_mfdn_task_data(task)
-ncci.postprocessing.generate_em(task)
 ncci.postprocessing.evaluate_ob_observables(task)
 # ncci.handlers.task_handler_oscillator(task)
 

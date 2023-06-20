@@ -41,23 +41,45 @@ University of Notre Dame
 - 06/07/19 (pjf): Check that MFDn launches successfully with
     mcscript.control.FileWatchdog on mfdn.out.
 - 06/11/19 (pjf): Save task-data archives to correct place (under results_dir).
-+ 09/04/19 (pjf): Rename Trel->Tintr.
-- 05/13/21 (mac): Fix many-body parity handling for FCI runs.
+- 09/04/19 (pjf): Rename Trel->Tintr.
+- 10/10/19 (pjf): Implement generation of mfdn_smwf.info from old runs.
+- 10/13/19 (pjf): Fix inclusion of partitioning into mfdn_smwf.info.
+- 12/11/19 (pjf): Use new results storage helper functions from mcscript.
+- 06/03/20 (pjf):
+    + Switch to using quantum numbers to specify natorb base state.
+    + Fix saving of OBDMEs.
+- 09/09/20 (pjf): Use operators module instead of tbme for operator names.
+- 09/16/20 (pjf):
+    + Check that diagonalization is enabled.
+    + Add "tbme-" to operator id to form basename.
+- 11/24/20 (pjf): Fix natorb filename globbing for non-integer J.
+- 11/30/20 (pjf): Add "calculate_tbo" task option.
+- 12/04/20 (pjf): Remove leftover mfdn.res and mfdn.out files before launching
+    MFDn.
+- 05/09/22 (pjf): Split generate_mfdn_input() from run_mfdn().
+- 07/12/22 (pjf): Add sanity check on dimension and numnonzero.
+- 06/05/23 (mac):
+  + Make "eigenvectors" optional, e.g., for decomposition run.
+  + Fix save_mfdn_task_data() to gracefully handle missing overlap files for decomposition run.
 """
+import errno
 import os
 import glob
 import collections
+import re
+import warnings
 
 import mcscript
+import mcscript.exception
 
-from . import modes, environ
+from . import modes, environ, operators
 
 
 def set_up_Nmax_truncation(task, inputlist):
     """Generate Nmax truncation inputs for MFDn v15.
 
     Arguments:
-        task(dict): as described in module docstring
+        task(dict): as described in docs/task.md
         inputlist (dict): MFDn v15 inputlist
     """
     # sanity check
@@ -75,14 +97,14 @@ def set_up_Nmax_truncation(task, inputlist):
         inputlist["Nmin"] = 1
     inputlist["Nmax"] = int(truncation_parameters["Nmax"])
     inputlist["deltaN"] = int(truncation_parameters["Nstep"])
-    inputlist["TwoMj"] = int(2*truncation_parameters["M"])
+    inputlist["TwoMj"] = round(2*truncation_parameters["M"])
 
 
 def set_up_WeightMax_truncation(task, inputlist):
     """Generate weight max truncation inputs for MFDn v15.
 
     Arguments:
-        task(dict): as described in module docstring
+        task(dict): as described in docs/task.md
         inputlist (dict): MFDn v15 inputlist
     """
     # sanity check
@@ -93,14 +115,14 @@ def set_up_WeightMax_truncation(task, inputlist):
 
     inputlist["WTmax"] = truncation_parameters["mb_weight_max"]
     inputlist["parity"] = truncation_parameters["parity"]
-    inputlist["TwoMj"] = int(2*truncation_parameters["M"])
+    inputlist["TwoMj"] = round(2*truncation_parameters["M"])
 
 
 def set_up_FCI_truncation(task, inputlist):
     """Generate FCI truncation inputs for MFDn v15.
 
     Arguments:
-        task(dict): as described in module docstring
+        task(dict): as described in docs/task.md
         inputlist (dict): MFDn v15 inputlist
     """
     # sanity check
@@ -117,7 +139,7 @@ def set_up_FCI_truncation(task, inputlist):
 
     inputlist["WTmax"] = sum(task["nuclide"])*max_sp_weight
     inputlist["parity"] = int(truncation_parameters["parity"])
-    inputlist["TwoMj"] = int(2*truncation_parameters["M"])
+    inputlist["TwoMj"] = round(2*truncation_parameters["M"])
 
 
 truncation_setup_functions = {
@@ -127,17 +149,23 @@ truncation_setup_functions = {
 }
 
 
-def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
-    """Generate input file and execute MFDn version 15 beta 00.
+def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
+    """Generate input file for MFDn version 15.
 
     Arguments:
-        task (dict): as described in module docstring
+        task (dict): as described in docs/task.md
         run_mode (modes.MFDnRunMode): run mode for MFDn
         postfix (string, optional): identifier to add to generated files
 
     Raises:
         mcscript.exception.ScriptError: if MFDn output not found
     """
+    # check that diagonalization is enabled
+    if (run_mode in (modes.MFDnRunMode.kNormal, modes.MFDnRunMode.kLanczosOnly)) and not task.get("diagonalization"):
+        raise mcscript.exception.ScriptError(
+            'Task dictionary "diagonalization" flag not enabled.'
+        )
+
     # create work directory if it doesn't exist yet
     work_dir = "work{:s}".format(postfix)
     mcscript.utils.mkdir(work_dir, exist_ok=True, parents=True)
@@ -148,7 +176,12 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     obslist = collections.OrderedDict()
 
     # run mode
-    inputlist["IFLAG_mode"] = int(run_mode)
+    if (run_mode==modes.MFDnRunMode.kLanczosOnly):
+        # stopgap until MFDn mode implemented to stop after Lanczos
+        print("stopgap until MFDn mode implemented to stop after Lanczos")
+        inputlist["IFLAG_mode"] = int(modes.MFDnRunMode.kNormal)
+    else:
+        inputlist["IFLAG_mode"] = int(run_mode)
 
     # nucleus
     inputlist["Nprotons"], inputlist["Nneutrons"] = task["nuclide"]
@@ -164,12 +197,12 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     # truncation mode
     truncation_setup_functions[task["mb_truncation_mode"]](task, inputlist)
 
-    if run_mode is modes.MFDnRunMode.kNormal:
+    if run_mode in [modes.MFDnRunMode.kNormal,modes.MFDnRunMode.kLanczosOnly]:
         if (task["basis_mode"] in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):
             inputlist["hbomeg"] = float(task["hw"])
 
         # diagonalization parameters
-        inputlist["neivals"] = int(task["eigenvectors"])
+        inputlist["neivals"] = int(task.get("eigenvectors",4))
         inputlist["maxits"] = int(task["max_iterations"])
         inputlist["tol"] = float(task["tolerance"])
         if task.get("reduce_solver_threads"):
@@ -179,18 +212,15 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         inputlist["TBMEfile"] = "tbme-H"
 
         # tbo: collect tbo names
-        obs_basename_list = ["tbme-rrel2", "tbme-Ncm"]
-        observable_sets = task.get("observable_sets", [])
-        if "H-components" in observable_sets:
-            obs_basename_list += ["tbme-Tintr", "tbme-Tcm", "tbme-VNN"]
-            if task.get("use_coulomb"):
-                obs_basename_list += ["tbme-VC"]
-        if "am-sqr" in observable_sets:
-            obs_basename_list += ["tbme-L2", "tbme-Sp2", "tbme-Sn2", "tbme-S2", "tbme-J2"]
-        if "isospin" in observable_sets:
-            obs_basename_list += ["tbme-T2"]
-        tb_observables = task.get("tb_observables", [])
-        obs_basename_list += ["tbme-{}".format(basename) for (basename, operator) in tb_observables]
+        obs_basename_list = [
+            "tbme-{}".format(id_)
+            for id_ in operators.tb.get_tbme_targets(task)[(0,0,0)].keys()
+        ]
+
+        # do not evaluate Hamiltonian as observable
+        #  NOTE (pjf): due to possible bug/precision issues in MFDn, evaluate H
+        #    as a consistency check
+        ##obs_basename_list.remove("tbme-H")
 
         # tbo: log tbo names in separate file to aid future data analysis
         mcscript.utils.write_input("tbo_names{:s}.dat".format(postfix), input_lines=obs_basename_list)
@@ -200,13 +230,14 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         if num_obs > 32:
             raise mcscript.exception.ScriptError("Too many observables for MFDn v15")
 
-        inputlist["numTBops"] = num_obs
-        obslist["TBMEoperators"] = obs_basename_list
+        if task.get("calculate_tbo", True):
+            inputlist["numTBops"] = num_obs
+            obslist["TBMEoperators"] = obs_basename_list
 
         # obdme: parameters
         inputlist["obdme"] = task.get("calculate_obdme", True)
         if task.get("obdme_multipolarity") is not None:
-            obslist["max2K"] = int(2*task["obdme_multipolarity"])
+            obslist["max2K"] = round(2*task["obdme_multipolarity"])
 
         # construct transition observable input if reference states given
         if task.get("obdme_reference_state_list") is not None:
@@ -215,7 +246,7 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             # guard against pathetically common mistakes
             for (J, g_rel, i) in task["obdme_reference_state_list"]:
                 # validate integer/half-integer character of angular momentum
-                twice_J = int(2*J)
+                twice_J = round(2*J)
                 if ((twice_J % 2) != (sum(task["nuclide"]) % 2)):
                     raise ValueError("invalid angular momentum for reference state")
                 # validate grade (here taken relative to natural grade)
@@ -227,7 +258,7 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             obslist["ref2J"] = []
             obslist["refseq"] = []
             for (J, g_rel, i) in task["obdme_reference_state_list"]:
-                obslist["ref2J"].append(int(2*J))
+                obslist["ref2J"].append(round(2*J))
                 obslist["refseq"].append(i)
 
     # manual override inputlist
@@ -244,6 +275,7 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     if partition_filename is not None:
         partition_filename = mcscript.utils.expand_path(partition_filename)
         if not os.path.exists(partition_filename):
+            print("Partition filename: {}".format(partition_filename))
             raise mcscript.exception.ScriptError("partition file not found")
         mcscript.call([
             "cp", "--verbose",
@@ -251,8 +283,33 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             os.path.join(work_dir, "mfdn_partitioning.info")
             ])
 
+
+
+def run_mfdn(task, postfix=""):
+    """Execute MFDn version 15.
+
+    Arguments:
+        task (dict): as described in docs/task.md
+        postfix (string, optional): identifier to add to generated files
+
+    Raises:
+        mcscript.exception.ScriptError: if MFDn output not found
+    """
     # enter work directory
+    work_dir = "work{:s}".format(postfix)
     os.chdir(work_dir)
+
+    # check that mfdn.input exists
+    if not os.path.isfile("mfdn.input"):
+        raise FileNotFoundError(
+            errno.ENOENT, os.strerror(errno.ENOENT), "mfdn.input"
+        )
+
+    # remove any stray files from a previous run
+    if os.path.exists("mfdn.out"):
+        mcscript.call(["rm", "-v", "mfdn.out"])
+    if os.path.exists("mfdn.res"):
+        mcscript.call(["rm", "-v", "mfdn.res"])
 
     # invoke MFDn
     mcscript.call(
@@ -261,7 +318,8 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         ],
         mode=mcscript.CallMode.kHybrid,
         check_return=True,
-        file_watchdog=mcscript.control.FileWatchdog("mfdn.out")
+        file_watchdog=mcscript.control.FileWatchdog("mfdn.out"),
+        file_watchdog_restarts=3,
     )
 
     # test for basic indications of success
@@ -270,51 +328,57 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     if (not os.path.exists("mfdn.res")):
         raise mcscript.exception.ScriptError("mfdn.res not found")
 
+    # check for basic sanity of dimension and numnonzero
+    with open("mfdn.res", "r") as res:
+        neg_dim_regex = re.compile(r"dimension.*=.*(-[0-9]+)")
+        neg_nnz_regex = re.compile(r"numnonzero.*=.*(-[0-9]+)")
+        for line in res:
+            if match := neg_dim_regex.match(line):
+                raise mcscript.exception.ScriptError(
+                    f"negative MFDn dimension: {match.group(1)}"
+                )
+            if match := neg_nnz_regex.match(line):
+                raise mcscript.exception.ScriptError(
+                    f"negative MFDn numnonzero: {match.group(1)}"
+                )
+
+    with open("mfdn.out", "r") as out:
+        for line in out:
+            if "ERROR: group size larger than int(2)" in line:
+                raise mcscript.exception.ScriptError(
+                    f"group size larger than int(2)"
+                )
+            if "Dimension of M-basis" in line:
+                # group size errors should have already happened
+                break
+
     # leave work directory
     os.chdir("..")
 
-    # save quick inspection copies of mfdn.{res,out}
-    descriptor = task["metadata"]["descriptor"]
+    # copy results out
     print("Saving basic output files...")
+    descriptor = task["metadata"]["descriptor"]
     work_dir = "work{:s}".format(postfix)
     filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+
+    # ...copy res file
     res_filename = "{:s}.res".format(filename_prefix)
+    mcscript.task.save_results_single(
+        task, os.path.join(work_dir, "mfdn.res"), res_filename, "res"
+    )
+
+    # ...copy out file
     out_filename = "{:s}.out".format(filename_prefix)
-
-    # copy results out (if in multi-task run)
-    if (mcscript.task.results_dir is not None):
-        res_dir = os.path.join(mcscript.task.results_dir, "res")
-        mcscript.utils.mkdir(res_dir, exist_ok=True)
-        mcscript.call(
-            [
-                "cp",
-                "--verbose",
-                work_dir+"/mfdn.res",
-                os.path.join(res_dir, res_filename)
-            ]
-        )
-        out_dir = os.path.join(mcscript.task.results_dir, "out")
-        mcscript.utils.mkdir(out_dir, exist_ok=True)
-        mcscript.call(
-            [
-                "cp",
-                "--verbose",
-                work_dir+"/mfdn.out",
-                os.path.join(out_dir, out_filename)
-            ]
-        )
-    else:
-        mcscript.call(["cp", "--verbose", work_dir+"/mfdn.res", res_filename])
-        mcscript.call(["cp", "--verbose", work_dir+"/mfdn.out", out_filename])
-
-
+    mcscript.task.save_results_single(
+        task, os.path.join(work_dir, "mfdn.out"), out_filename, "out"
+    )
 
 
 def extract_natural_orbitals(task, postfix=""):
     """Extract OBDME files for subsequent natural orbital iterations.
 
     Arguments:
-        task (dict): as described in module docstring
+        task (dict): as described in docs/task.md
         postfix (string, optional): identifier to add to generated files
     """
     # save OBDME files for next natural orbital iteration
@@ -323,15 +387,10 @@ def extract_natural_orbitals(task, postfix=""):
 
     work_dir = "work{:s}".format(postfix)
     obdme_info_filename = "mfdn.rppobdme.info"
-    try:
-        (J, g, n) = task["natorb_base_state"]
-        obdme_filename = glob.glob(
-            "{:s}/mfdn.statrobdme.seq*.2J{:02d}.n{:02d}.2T*".format(work_dir, 2*J, n)
-            )
-    except TypeError:
-        obdme_filename = glob.glob(
-            "{:s}/mfdn.statrobdme.seq{:03d}*".format(work_dir, task["natorb_base_state"])
-            )
+    (J, g, n) = task["natorb_base_state"]
+    obdme_filename = glob.glob(
+        "{:s}/mfdn.statrobdme.seq*.2J{:02d}.n{:02d}.2T*".format(work_dir, round(2*J), n)
+        )
 
     print("Saving OBDME files for natural orbital generation...")
     mcscript.call(
@@ -353,13 +412,13 @@ def save_mfdn_task_data(task, postfix=""):
     """Collect and save working information.
 
     Arguments:
-        task (dict): as described in module docstring
+        task (dict): as described in docs/task.md
         postfix (string, optional): identifier to add to generated files
     """
     # convenience definitions
     descriptor = task["metadata"]["descriptor"]
     work_dir = "work{:s}".format(postfix)
-    filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+    target_directory_name = descriptor + postfix
 
     # save full archive of input, log, and output files
     print("Saving full output files...")
@@ -374,115 +433,92 @@ def save_mfdn_task_data(task, postfix=""):
         environ.orbitals_filename(postfix),
         ]
     # transformation information
-    archive_file_list += [
-        environ.radial_xform_filename(postfix),
-        # environ.radial_me_filename(postfix, operator_type, power),
-        environ.radial_olap_int_filename(postfix),
-        ]
+    # Use glob to allow for missing files (e.g., in decomposition run).
+    archive_file_list += glob.glob(environ.radial_xform_filename(postfix))
+    archive_file_list += glob.glob(environ.radial_olap_int_filename(postfix))
     # Coulomb information:
     if task["use_coulomb"]:
-        archive_file_list += [
-            environ.orbitals_coul_filename(postfix),
-            environ.radial_olap_coul_filename(postfix),
-        ]
+        archive_file_list += glob.glob(environ.orbitals_coul_filename(postfix))
+        archive_file_list += glob.glob(environ.radial_olap_coul_filename(postfix))
     # natural orbital information
     if task.get("natural_orbitals"):
         archive_file_list += [
             environ.natorb_info_filename(postfix),
             environ.natorb_obdme_filename(postfix),
-            ]
+        ]
         # glob for natural orbital xform
         archive_file_list += glob.glob(environ.natorb_xform_filename(postfix))
-    # MFDn output
-    archive_file_list += [
-        work_dir+"/mfdn.input", work_dir+"/mfdn.out", work_dir+"/mfdn.res",
-    ]
-    if os.path.isfile(work_dir+"/mfdn_partitioning.generated"):
-        archive_file_list += [work_dir+"/mfdn_partitioning.generated"]
-    if os.path.isfile(work_dir+"/mfdn_sp_orbitals.info"):
-        archive_file_list += [work_dir+"/mfdn_sp_orbitals.info"]
+    # MFDn input
+    archive_file_list += [os.path.join(work_dir, "mfdn.input")]
+    if os.path.isfile(os.path.join(work_dir, "mfdn_sp_orbitals.info")):
+        archive_file_list += [os.path.join(work_dir, "mfdn_sp_orbitals.info")]
     # partitioning file
-    if os.path.isfile(work_dir+"/mfdn_partitioning.info"):
-        archive_file_list += [work_dir+"/mfdn_partitioning.info"]
-    # MFDN obdme
-    if (task["save_obdme"]):
-        archive_file_list += glob.glob(work_dir+"/mfdn*obdme*")
-    # observable output
+    if os.path.isfile(os.path.join(work_dir, "mfdn_partitioning.generated")):
+        archive_file_list += [os.path.join(work_dir, "mfdn_partitioning.generated")]
+    if os.path.isfile(os.path.join(work_dir, "mfdn_partitioning.info")):
+        archive_file_list += [os.path.join(work_dir, "mfdn_partitioning.info")]
+    # observable generation
     if os.path.isfile(environ.emgen_filename(postfix)):
         archive_file_list += [environ.emgen_filename(postfix)]
     if os.path.isfile(environ.obscalc_ob_filename(postfix)):
         archive_file_list += [environ.obscalc_ob_filename(postfix)]
-    if os.path.isfile(environ.obscalc_ob_res_filename(postfix)):
-        archive_file_list += [environ.obscalc_ob_res_filename(postfix)]
-    # generate archive (outside work directory)
-    task_data_archive_filename = "{:s}.tgz".format(filename_prefix)
-    mcscript.call(
-        [
-            "tar", "zcvf", task_data_archive_filename,
-            "--transform=s,{:s}/,,".format(work_dir),
-            "--transform=s,^,{:s}/{:s}{:s}/,".format(mcscript.parameters.run.name, descriptor, postfix),
-            "--show-transformed"
-        ] + archive_file_list
+
+    mcscript.task.save_results_multi(
+        task, archive_file_list, target_directory_name, "task-data", command="cp"
     )
 
-    # copy results out (if in multi-task run)
-    if (mcscript.task.results_dir is not None):
 
-        # copy out task data archives
-        task_data_dir = os.path.join(mcscript.task.results_dir, "task-data")
-        mcscript.utils.mkdir(task_data_dir, exist_ok=True)
-        mcscript.call(
-            [
-                "cp",
-                "--verbose",
-                task_data_archive_filename,
-                "--target-directory={}".format(task_data_dir)
-            ]
-        )
+def save_mfdn_obdme(task, postfix=""):
+    """Save MFDn-generated OBDME files.
+
+    Arguments:
+        task (dict): as described in docs/task.md
+        postfix (str, optional): identifier to add to generated files
+    """
+    # convenience definitions
+    descriptor = task["metadata"]["descriptor"]
+    target_directory_name = descriptor + postfix
+    work_dir = "work{:s}".format(postfix)
+
+    # do nothing is obdme saving is turned off
+    if (not task.get("save_obdme")) or (not task.get("calculate_obdme",True)):
+        print("Cowardly refusing to save obdme...")
+        return
+
+    # glob for list of obdme files
+    archive_file_list = glob.glob(os.path.join(work_dir, "mfdn*obdme*"))
+
+    mcscript.task.save_results_multi(
+        task, archive_file_list, target_directory_name, "obdme"
+    )
 
 
 def save_mfdn_wavefunctions(task, postfix=""):
     """Collect and save MFDn wave functions.
 
     Arguments:
-        task (dict): as described in module docstring
+        task (dict): as described in docs/task.md
         postfix (string, optional): identifier to add to generated files
     """
+    # convenience definitions
     descriptor = task["metadata"]["descriptor"]
+    target_directory_name = descriptor + postfix
     work_dir = "work{:s}".format(postfix)
-    filename_prefix = "{:s}-mfdn15wf-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
-    archive_file_list = glob.glob(work_dir+"/mfdn_smwf*")
-    archive_file_list += glob.glob(work_dir+"/mfdn_MBgroups*")
-    archive_file_list += glob.glob(work_dir+"/mfdn_partitioning.*")
-    archive_filename = "{:s}.tar".format(filename_prefix)
-    mcscript.call(
-        [
-            "tar", "cvf", archive_filename,
-            "--transform=s,{:s}/,,".format(work_dir),
-            "--transform=s,^,{:s}/{:s}{:s}/,".format(mcscript.parameters.run.name, descriptor, postfix),
-            "--show-transformed"
-        ] + archive_file_list
-    )
 
-    # move wave function archives out (if in multi-task run)
-    if (mcscript.task.results_dir is not None):
-        wavefunction_dir = os.path.join(mcscript.task.results_dir, "wf")
-        mcscript.utils.mkdir(wavefunction_dir, exist_ok=True)
-        mcscript.call(
-            [
-                "mv",
-                "--verbose",
-                archive_filename,
-                "--target-directory={}".format(wavefunction_dir)
-            ]
-        )
+    archive_file_list = glob.glob(os.path.join(work_dir, "mfdn_smwf*"))
+    archive_file_list += glob.glob(os.path.join(work_dir, "mfdn_MBgroups*"))
+    archive_file_list += glob.glob(os.path.join(work_dir, "mfdn_partitioning.*"))
+
+    mcscript.task.save_results_multi(
+        task, archive_file_list, target_directory_name, "wf"
+    )
 
 
 def cleanup_mfdn_workdir(task, postfix=""):
     """Remove temporary MFDn work files.
 
     Arguments:
-        task (dict): as described in module docstring
+        task (dict): as described in docs/task.md
         postfix (string, optional): identifier to add to generated files
     """
     # cleanup of wave function files
@@ -500,7 +536,7 @@ def extract_mfdn_task_data(
     """Extract task directory from task data archive.
 
     Arguments:
-        task (dict): as described in module docstring
+        task (dict): as described in docs/task.md
         task_data_dir (str, optional): location where results archives can be found;
             defaults to current run results directory
         run_name (str, optional): run name for archive; defaults to current run name
@@ -508,6 +544,7 @@ def extract_mfdn_task_data(
             descriptor
         postfix (str, optional): postfix for archive; defaults to empty string
     """
+    warnings.warn("Extraction of old-style task-data archives is deprecated.", FutureWarning)
     # get defaults
     if task_data_dir is None:
         task_data_dir = os.path.join(mcscript.task.results_dir, "task-data")
@@ -560,6 +597,7 @@ def extract_mfdn_task_data(
     # remove temporary directories
     mcscript.call(["rm", "-vfd", extracted_dir, run_name])
 
+
 def extract_wavefunctions(
         task,
         wavefunctions_dir=None,
@@ -571,7 +609,7 @@ def extract_wavefunctions(
     """Extract wave functions to task directory from output archive.
 
     Arguments:
-        task (dict): as described in module docstring
+        task (dict): as described in docs/task.md
         wavefunctions_dir (str, optional): location where results archives can be found;
             defaults to current run results directory
         run_name (str, optional): run name for archive; defaults to current run name
@@ -583,6 +621,7 @@ def extract_wavefunctions(
             taken relative to such as current working directory
 
     """
+    warnings.warn("Extraction of old-style wave function archives is deprecated.", FutureWarning)
     # get defaults
     if wavefunctions_dir is None:
         wavefunctions_dir = os.path.join(mcscript.task.results_dir, "wf")
@@ -623,3 +662,98 @@ def extract_wavefunctions(
 
     # remove temporary directories
     mcscript.call(["rm", "-vfd", extracted_dir, run_name])
+
+
+def generate_smwf_info(task, orbital_filename, partitioning_filename, res_filename, info_filename='mfdn_smwf.info'):
+    """Generate SMWF info file from given MFDn input files.
+
+    Requires information from task dictionary:
+      "nuclide", "truncation_parameters":"M", "metadata":"descriptor"
+
+    Arguments:
+        task (dict): as described in docs/task.md
+        orbital_filename (str): name of orbital file to be included
+        partitioning_filename (str): name of partitioning file to be included
+        res_filename (str): name of results file to be parsed for state info
+        info_filename (str): output info filename
+    """
+
+    import mfdnres
+    import re
+
+    lines = []
+    lines.append("   15200    ! Version Number")
+    lines.append(
+        " {Z:>3d} {N:>3d} {TwoM:>3d}    ! Z, N, 2Mj".format(
+            Z=task["nuclide"][0], N=task["nuclide"][1], TwoM=round(2*task["truncation_parameters"]["M"])
+        )
+    )
+    lines.append(" {:127s}".format(task["metadata"]["descriptor"]))
+
+    # blank line
+    lines.append("")
+
+    # convert orbitals to 15200
+    mcscript.call(
+        [
+            environ.shell_filename("orbital-gen"),
+            "--convert",
+            "15099", "{:s}".format(orbital_filename),
+            "15200", "{:s}".format(orbital_filename+"15200"),
+        ],
+        mode=mcscript.CallMode.kSerial
+    )
+
+    # append orbitals to info file
+    with open(orbital_filename+"15200") as orbital_fp:
+        for line in orbital_fp:
+            if line.lstrip()[0] == '#':
+                continue
+            if line.lstrip().rstrip() == '15200':
+                continue
+            lines.append(line.rstrip())
+
+    # remove temporary orbital file
+    mcscript.call(["rm","-v",orbital_filename+"15200"])
+
+    # blank line
+    lines.append("")
+
+    # append partitioning
+    with open(partitioning_filename) as partitioning_fp:
+        for line in partitioning_fp:
+            # ignore lines containing anything other than numbers and whitespace
+            if not re.search(r"[^0-9\s]", line):
+                lines.append(line.rstrip())
+
+    # blank line
+    lines.append("")
+
+    # parse res file
+    res_data = mfdnres.res.read_file(res_filename, "mfdn_v15")[0]
+    levels = res_data.levels
+
+    # basis information
+    lines.append(" {:>3d}  {:>12.4f} {:>15d} {:>7d}    ! Par, WTm, Dim, Npe".format(
+        res_data.params["parity"], res_data.params["WTmax"],
+        res_data.params["dimension"], res_data.params["ndiags"]
+    ))
+
+    # blank line
+    lines.append("")
+
+    # state table
+    lines.append(" {:7d}    ! n_states, followed by (i, 2J, nJ, T, -Eb, res)".format(
+        len(levels)
+    ))
+    for index, level in enumerate(levels):
+        (J, g, n) = level
+        T = res_data.get_isospin(level)
+        en = res_data.get_energy(level)
+        residual = res_data.mfdn_level_residuals[level]
+        lines.append(" {:>7d} {:>7d} {:>7d} {:>7.2f} {:>15.4f} {:>15.2e}".format(
+            index+1, round(2*J), n, T, en, residual
+        ))
+
+    mcscript.utils.write_input(info_filename, input_lines=lines, verbose=False)
+

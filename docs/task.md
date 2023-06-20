@@ -114,8 +114,13 @@ University of Notre Dame
 ----------------------------------------------------------------
 ## diagonalization parameters ##
 
-- `eigenvectors`: `int`
+- `eigenvectors`: `int`, optional
   - number of eigenvectors to calculate
+  - must be positive (nonzero!) to avoid failure of MFDn
+  - for decomposition run, the value is largely irrelevant, but does
+    control how many eigenvalues are shown in the Lanzos convergence diagonostic
+    output, which may be useful in test runs
+  - If `None`, defaults to `4`.
 
 - `max_iterations`: `int`
   - maximum number of diagonalization iterations
@@ -159,11 +164,20 @@ University of Notre Dame
 
 ----------------------------------------------------------------
 ## storage ##
-- `save_obdme`: `bool`
-  - whether or not to save obdme files in archive
 
-- `save_wavefunctions`: `bool`
+- `save_tbme`: `bool`, optional
+  - whether or not to save Hamiltonian (and other operator) tbme files in archive
+  - this is useful if you wish to "set up" an MFDn run, by generating the tbme files,
+    then hand them off to someone else to do an unscripted run
+  - defaults to not saving
+
+- `save_obdme`: `bool`, optional
+  - whether or not to save obdme files in archive
+  - defaults to not saving
+
+- `save_wavefunctions`: `bool`, optional
   - whether or not to save smwf files in (separate) archive
+  - defaults to not saving
 
 ----------------------------------------------------------------
 ## version parameters ##

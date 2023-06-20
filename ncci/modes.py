@@ -3,22 +3,23 @@
 Patrick Fasano
 University of Notre Dame
 
-- 3/22/17 (pjf): Created, split from __init__.py.
-- 4/7/17 (pjf): Rename Configuration -> Environment.
-- 6/3/17 (pjf): Remove dependence of filenames on natural orbital iteration.
-- 6/5/17 (pjf): Clean up formatting.
-- 8/11/17 (pjf): Split TruncationMode into SingleParticleTruncationMode and
+- 03/22/17 (pjf): Created, split from __init__.py.
+- 04/07/17 (pjf): Rename Configuration -> Environment.
+- 06/03/17 (pjf): Remove dependence of filenames on natural orbital iteration.
+- 06/05/17 (pjf): Clean up formatting.
+- 08/11/17 (pjf): Split TruncationMode into SingleParticleTruncationMode and
     ManyBodyTruncationMode.
 - 08/26/17 (pjf): Add parity flag for WeightMax many-body truncation mode.
-- 9/12/17 (mac): Put mfdn executable filename under common mcscript install directory.
+- 09/12/17 (mac): Put mfdn executable filename under common mcscript install directory.
 - 09/12/17 (pjf): Split config.py -> mode.py + environ.py.
 - 09/27/17 (pjf): Add MFDnRunMode options for counting-only modes.
 - 01/04/18 (pjf): Add MFDnRunMode kManual for user-provided orbital file.
 - 09/07/19 (pjf): Remove Nv from truncation_parameters.
+- 10/24/19 (mac): Add MFDnRunMode kLanczosOnly.
+- 06/04/23 (mac): Add JFilterMode.
 """
 
 import enum
-
 
 ################################################################
 # radial basis modes
@@ -35,6 +36,7 @@ class BasisMode(enum.Enum):
         needed on VNN TBMEs
       - Coulomb TBMEs need only scaling for dilation (hw_c -> hw)
       - MFDn can use built-in oscillator OBMEs for observables
+
     kDilated:
       - no0 basis is oscillator basis (hw)
       - source basis for VNN is oscillator basis of different
@@ -55,6 +57,32 @@ class BasisMode(enum.Enum):
     kDirect = 0
     kDilated = 1
     kGeneric = 2
+
+################################################################
+# J filtering modes
+################################################################
+
+@enum.unique
+class JFilterMode(enum.Enum):
+    """General modes of operation for J filtering
+
+    kEnabled:
+      - filter for all M
+
+    kDisabled:
+      - do not filter for any M
+
+    kM0Only:
+      - filter only for M=0.0
+      - for common case where J=0.0 states are obtained from M=0.0 run,
+        while all other states are obtained from M=1.0 run, to avoid
+        vanishing "parity" Clebsch-Gordan coefficients when calculating
+        observable RMEs)
+    """
+
+    kDisabled = 0
+    kEnabled = 1
+    kM0Only = 2
 
 
 ################################################################
@@ -146,8 +174,11 @@ class MFDnRunMode(enum.IntEnum):
 
     kNonzeros: 3, count nonzero matrix elements
 
+    kLanczosOnly: 4
+
     """
 
     kNormal = 0
     kDimension = 1
     kNonzeros = 3
+    kLanczosOnly = 4

@@ -83,8 +83,8 @@ task = {
     "save_obdme": True,
 
     # two-body observables
-    ## "observable_sets": ["H-components","am-sqr"],
-    "observable_sets": ["H-components"],
+    ## "tb_observable_sets": ["H-components","am-sqr"],
+    "tb_observable_sets": ["H-components"],
 
     # version parameters
     "h2_format": 0,
@@ -104,7 +104,8 @@ task["metadata"] = {
 
 ncci.radial.set_up_interaction_orbitals(task)
 ncci.radial.set_up_orbitals(task)
-ncci.radial.set_up_radial_analytic(task)
+ncci.radial.set_up_xforms_analytic(task)
+ncci.radial.set_up_obme_analytic(task)
 ncci.tbme.generate_tbme(task)
 ncci.mfdn_v14.run_mfdn(task)
 ncci.mfdn_v14.save_mfdn_output(task)

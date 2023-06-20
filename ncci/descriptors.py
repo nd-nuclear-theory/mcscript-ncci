@@ -13,7 +13,14 @@ University of Notre Dame
 - 10/04/17 (pjf): Add counting-only descriptor.
 - 01/04/18 (pjf): Add task_descriptor_9 for manual orbitals.
 - 04/23/19 (pjf): Make task_descriptor_c1 use two-digit Z and N fields.
+- 12/26/19 (mac): Add task_descriptor_7_trans.
+- 08/13/20 (pjf): Fix passing M to task_descriptor_7_trans
+- 12/02/20 (pjf): Add natural orbital base state info to task_descriptor_7.
+- 01/13/21 (pjf): Add task_descriptor_decomposition_1.
 - 05/27/21 (pjf): Fix mixed parity indicator in task_descriptor_7.
+- 07/08/21 (pjf): Add natural_orbital_indicator to task_descriptor_7_trans.
+- 12/30/22 (zz): Add isoscalar_coulomb_indicator to task_descriptor_7.
+- 06/04/23 (mac): Add task_descriptor_decomposition_2.
 """
 import mcscript.exception
 import mcscript.utils
@@ -34,6 +41,7 @@ def task_descriptor_7(task):
         - Strip back down to basic form for oscillator-like runs only.
         - Adjust some field labels.
         - Add tolerance.
+        - Provide default Nstep=2 for convenience when used in transitions run.
     """
     if (
         task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kNmax
@@ -42,7 +50,7 @@ def task_descriptor_7(task):
     ):
         # traditional oscillator run
         template_string = (
-            "Z{nuclide[0]}-N{nuclide[1]}-{interaction}-coul{coulomb_flag:d}"
+            "Z{nuclide[0]}-N{nuclide[1]}-{interaction}-coul{coulomb_flag:d}{isoscalar_coulomb_indicator}"
             "-hw{hw:06.3f}"
             "-a_cm{a_cm:g}"
             "-Nmax{Nmax:02d}{mixed_parity_indicator}{fci_indicator}-Mj{M:03.1f}"
@@ -62,10 +70,18 @@ def task_descriptor_7(task):
     else:
         mixed_parity_indicator = ""
     coulomb_flag = int(task["use_coulomb"])
-    natural_orbital_indicator = mcscript.utils.ifelse(task.get("natural_orbitals"), "-natorb", "")
+    if task.get("natural_orbitals"):
+        natural_orbital_indicator = "-natorb-J{:04.1f}-g{:1d}-n{:02d}".format(*task["natorb_base_state"])
+    else:
+        natural_orbital_indicator = ""
+    if task.get("use_isoscalar_coulomb") is True:
+        isoscalar_coulomb_indicator = "is"
+    else:
+        isoscalar_coulomb_indicator = ""
 
     descriptor = template_string.format(
         coulomb_flag=coulomb_flag,
+        isoscalar_coulomb_indicator=isoscalar_coulomb_indicator,
         mixed_parity_indicator=mixed_parity_indicator,
         fci_indicator=fci_indicator,
         natural_orbital_indicator=natural_orbital_indicator,
@@ -73,7 +89,6 @@ def task_descriptor_7(task):
         )
 
     return descriptor
-
 
 def task_descriptor_7b(task):
     """Task descriptor format 7b
@@ -120,6 +135,45 @@ def task_descriptor_7b(task):
 
     return descriptor
 
+def task_descriptor_7_trans(task):
+    """Task descriptor format 7_trans
+
+        Set up for use with transitions:
+        - Remove dependence on basis modes (assumed Nmax mode).
+        - Remove max_iterations, and tolerance dependence.
+        - Make M dependence optional.
+        - Strip mixed parity and fci indicators.
+        - Remove a_cm field (may need to restore later).
+        - Provide subsetting index.
+    """
+    truncation_parameters = task["truncation_parameters"]
+    template_string = (
+        "Z{nuclide[0]}-N{nuclide[1]}-{interaction}-coul{coulomb_flag:d}"
+        "-hw{hw:06.3f}"
+        ##"-a_cm{a_cm:g}"
+        "-Nmax{Nmax:02d}"
+        "{M_field}"
+        "{subset_field}"
+        "{natural_orbital_indicator}"
+    )
+
+    coulomb_flag = int(task["use_coulomb"])
+    ##natural_orbital_indicator = mcscript.utils.ifelse(task.get("natural_orbitals"), "-natorb", "")
+    M_field = "-Mj{M:03.1f}".format(**truncation_parameters) if (truncation_parameters.get("M") is not None) else ""
+    subset_field = "-subset{subset[0]:03d}".format(**task) if (task.get("subset") is not None) else ""
+    if task.get("natural_orbitals"):
+        natural_orbital_indicator = "-natorb-J{:04.1f}-g{:1d}-n{:02d}".format(*task["natorb_base_state"])
+    else:
+        natural_orbital_indicator = ""
+    descriptor = template_string.format(
+        coulomb_flag=coulomb_flag,
+        M_field=M_field,
+        subset_field=subset_field,
+        natural_orbital_indicator=natural_orbital_indicator,
+        **mcscript.utils.dict_union(task, truncation_parameters)
+    )
+
+    return descriptor
 
 def task_descriptor_8(task):
     """Task descriptor format 8
@@ -207,6 +261,50 @@ def task_descriptor_9(task):
         natural_orbital_indicator=natural_orbital_indicator,
         **mcscript.utils.dict_union(task, truncation_parameters)
         )
+
+    return descriptor
+
+
+def task_descriptor_decomposition_1(task):
+    """Task descriptor for decomposition.
+
+    Requires task to have "wf_source_info" with "descriptor" function.
+    """
+
+    template_string = (
+        "{source_wf_descriptor:s}"
+        "-J{source_wf_qn[0]:04.1f}-g{source_wf_qn[1]:1d}-n{source_wf_qn[2]:02d}"
+        "-op{decomposition_operator_name:s}-dlan{max_iterations:d}"
+        # 01/19/21 (mac): However, we propose moving away from calling this an "operator",
+        # but rather a decomposition type.  See runmac0566.py.  "-{decomposition_name:s}".
+        # How does this interact with the "decomposition" flag in the format 7 mfdnres parser?
+    )
+
+    descriptor = template_string.format(
+        source_wf_descriptor=task["wf_source_info"]["descriptor"](task["wf_source_info"]),
+        **task
+    )
+
+    return descriptor
+
+
+def task_descriptor_decomposition_2(task):
+    """Task descriptor for decomposition.
+
+    Replaces decomposition_operator_name with decomposition_type.
+    """
+    # extracted from runmac0688
+    template_string = (
+        "{source_wf_descriptor:s}"
+        "-J{source_wf_qn[0]:04.1f}-g{source_wf_qn[1]:1d}-n{source_wf_qn[2]:02d}"
+        "-{decomposition_type:s}-dlan{max_iterations:d}"
+    )
+
+    
+    descriptor = template_string.format(
+        source_wf_descriptor=task["wf_source_info"]["descriptor"](task["wf_source_info"]),
+        **task
+    )
 
     return descriptor
 

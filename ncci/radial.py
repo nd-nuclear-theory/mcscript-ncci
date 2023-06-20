@@ -29,8 +29,21 @@ University of Notre Dame
   + Update for new orbital-gen flags.
   + Rewrite for new em-gen workflow.
 - 09/07/19 (pjf): Remove Nv from truncation_parameters.
+- 06/03/20 (pjf):
+  + Make natural orbital base state selected by quantum numbers.
+  + Pass input to natorb-gen on stdin.
+- 09/02/20 (pjf): Fix set_up_observable_radial_analytic for operators other than
+  E and M.
+- 09/09/20 (pjf): Use obmixer inside set_up_radial_analytic().
+- 09/13/20 (pjf):
+  + Improve source/target handling in set_up_radial_analytic().
+  + Use obmixer inside set_up_radial_natorb().
+  + Pass oscillator length to obmixer.
+- 09/19/20 (pjf): Break out xform generation into set_up_xforms_analytic().
+- 07/08/21 (pjf): Only generate interaction and Coulomb xforms if needed for
+    tbme sources.
+- 01/30/23 (pjf): Rename j0->J0 and tz0->Tz0.
 """
-import errno
 import math
 import os
 
@@ -40,7 +53,8 @@ import mcscript.exception
 from . import (
     utils,
     modes,
-    environ
+    environ,
+    operators
 )
 
 
@@ -190,27 +204,30 @@ def set_up_natural_orbitals(task, source_postfix, target_postfix):
     if not task.get("natural_orbitals"):
         raise mcscript.exception.ScriptError("natural orbitals are not enabled")
 
+    (J, g, n) = task["natorb_base_state"]
+
+    lines = []
+    lines += ["set-indexing {:s}".format(environ.orbitals_filename(source_postfix))]
+    lines += ["define-densities {J:3.1f} {g:d} {n:d} {obdme_filename:s} {info_filename:s}".format(
+            J=J, g=g, n=n,
+            obdme_filename=environ.natorb_obdme_filename(source_postfix),
+            info_filename=environ.natorb_info_filename(source_postfix)
+        )]
+    lines += ["set-output-xform {orbital_filename:s} {xform_filename:s}".format(
+            orbital_filename=environ.orbitals_filename(target_postfix),
+            xform_filename=environ.natorb_xform_filename(target_postfix)
+        )]
+
     mcscript.call(
-        [
-            environ.shell_filename("natorb-gen"),
-            environ.orbitals_filename(source_postfix),
-            environ.natorb_info_filename(source_postfix),
-            environ.natorb_obdme_filename(source_postfix),
-            environ.natorb_xform_filename(target_postfix),
-            environ.orbitals_filename(target_postfix)
-        ],
-        mode=mcscript.CallMode.kSerial
+        [environ.shell_filename("natorb-gen")],
+        mode=mcscript.CallMode.kSerial,
+        input_lines=lines
     )
 
 
-k_kinematic_operators = {"r": (1,1,0), "r.r": (0,0,0), "k": (1,1,0), "k.k": (0,0,0)}
-k_am_operators = {"l": (1,0,0), "s": (1,0,0)}
-k_isospin_operators = {"t+": (0,0,+1), "t-": (0,0,-1)}
-k_radialgen_operators = {**k_kinematic_operators, **k_am_operators, **k_isospin_operators}
-
-def set_up_radial_analytic(task, postfix=""):
-    """Generate radial integrals and overlaps by integration for MFDn run
-    in analytic basis.
+def set_up_obme_analytic(task, postfix=""):
+    """Generate one-body matrix elements by analytic formulae or integration in
+    analytic basis.
 
     Operation mode may in general be direct oscillator, dilated
     oscillator, or generic (TODO).
@@ -226,13 +243,110 @@ def set_up_radial_analytic(task, postfix=""):
     # basis radial code -- expected by radial_utils codes
     basis_radial_code = "oscillator"  # TODO GENERALIZE: if not oscillator basis
 
+    ################################################################
+    # obmixer input
+    ################################################################
+    basis_command = "set-basis {basis_type:s} {orbital_filename:s}"
+    length_command = "set-length-parameter {length_parameter:.17e}"
+    xform_command = "define-xform {id:s} {xform_filename:s}"
+
+    # get obme sources
+    obme_targets = operators.ob.get_obme_targets_obmixer(task)
+    obme_sources = operators.ob.get_obme_sources(task, obme_targets)
+
+    # collect input lines
+    lines = []
+    lines.append(basis_command.format(
+        basis_type=basis_radial_code,
+        orbital_filename=environ.orbitals_filename(postfix)
+    ))
+    lines.append(length_command.format(
+        length_parameter=utils.oscillator_length(task["hw"])
+    ))
+
+    # generate one-body RMEs
+    for (identifier, parameters) in obme_sources.items():
+        filename = parameters.get("filename")
+        (J0, g0, Tz0) = parameters["qn"]
+        if filename is not None:
+            lines += ["define-source input {id:s} {filename:s} {J0:d} {g0:d} {Tz0:d}".format(
+                id=identifier,
+                filename=filename,
+                J0=J0, g0=g0, Tz0=Tz0
+            )]
+        elif "builtin" in parameters:
+            line = "define-source {mode:s} {id:}".format(
+                id=identifier, mode=parameters["builtin"]
+            )
+            if parameters["builtin"] == "solid-harmonic":
+                line += " {coordinate:s} {order:d} {J0:d}".format(J0=J0, **parameters)
+            if "orbital_filename" in parameters:
+                line += " {orbital_filename:s}".format(**parameters)
+            lines.append(line)
+        elif "linear-combination" in parameters:
+            lines += ["define-source linear-combination {id:s}".format(id=identifier)]
+            for (source_id, coefficient) in parameters["linear-combination"].items():
+                lines.append("  add-source {id:s} {coefficient:.17e}".format(
+                    id=source_id, coefficient=coefficient
+                ))
+        elif "tensor-product" in parameters:
+            (factor_a, factor_b) = parameters["tensor-product"]
+            coefficient = parameters.get("coefficient", 1.0)
+            lines += ["define-source tensor-product {id:s} {factor_a:s} {factor_b:s} {J0:d} {coefficient:.17e}".format(
+                id=identifier, factor_a=factor_a, factor_b=factor_b, J0=J0, coefficient=coefficient
+            )]
+        else:
+            raise mcscript.exception.ScriptError("unknown one-body operator {}".format(identifier))
+
+    for identifier in sorted(obme_targets):
+        lines += ["define-target {id:s} {filename:s}".format(
+            id=identifier, filename=environ.obme_filename(postfix, identifier)
+        )]
+
+    # # set up radial matrix elements for observables
+    # lines += set_up_observable_radial_analytic(task, postfix)
+
+    # call obmixer
+    mcscript.call(
+        [
+            environ.shell_filename("obmixer")
+        ],
+        mode=mcscript.CallMode.kSerial,
+        input_lines=lines
+    )
+
+
+def set_up_xforms_analytic(task, postfix=""):
+    """Generate analytic transformation matrix elements (e.g. dilation or Laguerre
+    basis transformation).
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+    # validate basis mode
+    if (task["basis_mode"] not in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):  # no modes.BasisMode.kGeneric yet
+        raise ValueError("invalid basis mode {basis_mode}".format(**task))
+
+    # basis radial code -- expected by radial_utils codes
+    basis_radial_code = "oscillator"  # TODO GENERALIZE: if not oscillator basis
+
+    # get tbme sources
+    targets_by_qn = operators.tb.get_tbme_targets(task)
+    tbme_sources = {}
+    for targets in targets_by_qn.values():
+        tbme_sources.update(operators.tb.get_tbme_sources(task, targets, postfix))
+
+    ################################################################
+    # radial-gen input
+    ################################################################
     # define commands
     ket_basis_command = "set-ket-basis {basis_type:s} {orbital_filename:s}"
     operator_target_command = (
         "define-operator-target {mode:s} {operator_type:s} {output_filename:s}"
     )
     xform_target_command = (
-        "define-xform-target {scale_factor:e} {bra_basis_type:s} {bra_orbital_file:s} {output_filename:s}"
+        "define-xform-target {scale_factor:.17e} {bra_basis_type:s} {bra_orbital_file:s} {output_filename:s}"
     )
 
     # collect input lines
@@ -241,30 +355,6 @@ def set_up_radial_analytic(task, postfix=""):
         basis_type=basis_radial_code,
         orbital_filename=environ.orbitals_filename(postfix)
     ))
-
-    # generate kinematic RMEs
-    for operator_type in k_kinematic_operators.keys():
-        lines.append(operator_target_command.format(
-            mode="kinematic", operator_type=operator_type,
-            output_filename=environ.obme_filename(postfix, operator_type)
-        ))
-
-    # generate am RMEs
-    for operator_type in k_am_operators.keys():
-        lines.append(operator_target_command.format(
-            mode="am", operator_type=operator_type,
-            output_filename=environ.obme_filename(postfix, operator_type)
-        ))
-
-    # generate isospin RMEs
-    for operator_type in k_isospin_operators.keys():
-        lines.append(operator_target_command.format(
-            mode="isospin", operator_type=operator_type,
-            output_filename=environ.obme_filename(postfix, operator_type)
-        ))
-
-    # set up radial matrix elements for observables
-    lines += set_up_observable_radial_analytic(task, postfix)
 
     # generate radial overlaps -- generate trivial identities if applicable
     #
@@ -276,14 +366,15 @@ def set_up_radial_analytic(task, postfix=""):
         )
     )
 
-    # interaction xform
-    b_ratio = math.sqrt(task["hw_int"]/task["hw"])
-    lines.append(xform_target_command.format(
-        scale_factor=b_ratio, bra_basis_type="oscillator",
-        bra_orbital_file=environ.orbitals_int_filename(postfix),
-        output_filename=environ.radial_olap_int_filename(postfix)
-    ))
-    if (task["use_coulomb"]):
+    if "VNN" in tbme_sources:
+        # interaction xform
+        b_ratio = math.sqrt(task.get("hw_int", task["hw"])/task["hw"])
+        lines.append(xform_target_command.format(
+            scale_factor=b_ratio, bra_basis_type="oscillator",
+            bra_orbital_file=environ.orbitals_int_filename(postfix),
+            output_filename=environ.radial_olap_int_filename(postfix)
+        ))
+    if task.get("use_coulomb", False) and ("VC_unscaled" in tbme_sources):
         if task.get("hw_coul_rescaled") is None:
             b_ratio = 1
         else:
@@ -318,6 +409,12 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
     if not task.get("natural_orbitals"):
         raise mcscript.exception.ScriptError("natural orbitals are not enabled")
 
+    # get tbme sources
+    targets_by_qn = operators.tb.get_tbme_targets(task)
+    tbme_sources = {}
+    for targets in targets_by_qn.values():
+        tbme_sources.update(operators.tb.get_tbme_sources(task, targets, target_postfix))
+
     # compose radial transform
     mcscript.call(
         [
@@ -329,19 +426,20 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
         mode=mcscript.CallMode.kSerial
     )
 
-    # compose interaction transform
-    mcscript.call(
-        [
-            environ.shell_filename("radial-compose"),
-            environ.radial_olap_int_filename(source_postfix),
-            environ.natorb_xform_filename(target_postfix),
-            environ.radial_olap_int_filename(target_postfix)
-        ],
-        mode=mcscript.CallMode.kSerial
-    )
+    if "VNN" in tbme_sources:
+        # compose interaction transform
+        mcscript.call(
+            [
+                environ.shell_filename("radial-compose"),
+                environ.radial_olap_int_filename(source_postfix),
+                environ.natorb_xform_filename(target_postfix),
+                environ.radial_olap_int_filename(target_postfix)
+            ],
+            mode=mcscript.CallMode.kSerial
+        )
 
     # compose Coulomb transform
-    if (task["use_coulomb"]):
+    if task.get("use_coulomb", False) and ("VC_unscaled" in tbme_sources):
         mcscript.call(
             [
                 environ.shell_filename("radial-compose"),
@@ -352,106 +450,51 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
             mode=mcscript.CallMode.kSerial
         )
 
-    # transform radial integrals
-    for operator_type in k_radialgen_operators:
-        mcscript.call(
-            [
-                environ.shell_filename("radial-xform"),
-                environ.orbitals_filename(target_postfix),
-                environ.natorb_xform_filename(target_postfix),
-                environ.obme_filename(source_postfix, operator_type),
-                environ.obme_filename(target_postfix, operator_type)
-            ],
-            mode=mcscript.CallMode.kSerial
-            )
+    ################################################################
+    # obmixer input
+    ################################################################
+    basis_command = "set-basis {basis_type:s} {orbital_filename:s}"
+    length_command = "set-length-parameter {length_parameter:.17e}"
+    xform_command = "define-xform natorb {xform_filename:s}"
+    input_source_command = "define-source input {id:s}{source_postfix:s} {filename:s} {J0:d} {g0:d} {Tz0:d}"
+    xform_source_command = "define-source xform {id:s}{target_postfix:s} {id:s}{source_postfix:s} natorb"
+    target_command = "define-target {id:s}{target_postfix:s} {filename:s}"
 
-    # set up radial matrix elements for natural orbitals
-    set_up_observable_radial_natorb(task, source_postfix, target_postfix)
+    # get obme sources
+    obme_targets = operators.ob.get_obme_targets_obmixer(task)
+    obme_sources = operators.ob.get_obme_sources(task, obme_targets)
 
-
-def set_up_observable_radial_analytic(task, postfix=""):
-    """Generate radial integrals and overlaps by integration for one-body observables.
-
-    Operation mode may in general be direct oscillator, dilated
-    oscillator, or generic (TODO).
-
-    Arguments:
-        task (dict): as described in module docstring
-        postfix (string, optional): identifier to add to generated files
-    Returns:
-        (list of str): input lines for radial-gen
-    """
-    # validate basis mode
-    if (task["basis_mode"] not in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):  # no modes.BasisMode.kGeneric yet
-        raise ValueError("invalid basis mode {basis_mode}".format(**task))
-
-    # basis radial code -- expected by radial_utils codes
-    basis_radial_code = "oscillator"  # TODO GENERALIZE: if not oscillator basis
-
-    # radial-gen commands
-    solid_harmonic_target_command = (
-        "define-operator-target solid-harmonic {operator_type:s} {order:d} {output_filename:s}"
-    )
-
-    # input lines
+    # collect input lines
     lines = []
+    lines.append(basis_command.format(
+        basis_type="oscillator",  # dummy -- not used for xforms
+        orbital_filename=environ.orbitals_filename(target_postfix)
+    ))
 
-    for (operator_type, order) in task.get("ob_observables", []):
-        if operator_type == 'E':
-            radial_power = order
-        elif operator_type == 'M':
-            radial_power = order-1
-        else:
-            raise mcscript.exception.ScriptError("only E or M transitions currently supported")
+    lines.append(xform_command.format(
+        xform_filename=environ.natorb_xform_filename(target_postfix)
+    ))
 
-        # short-circuit on solid harmonic of order zero
-        if radial_power == 0:
-            continue
+    for identifier in sorted(obme_targets):
+        (J0, g0, Tz0) = obme_sources[identifier]["qn"]
+        lines += [input_source_command.format(
+            id=identifier, source_postfix=source_postfix, target_postfix=target_postfix,
+            filename=environ.obme_filename(source_postfix, identifier),
+            J0=J0, g0=g0, Tz0=Tz0
+        )]
+        lines += [xform_source_command.format(
+            id=identifier, source_postfix=source_postfix, target_postfix=target_postfix,
+        )]
+        lines += [target_command.format(
+            id=identifier, source_postfix=source_postfix, target_postfix=target_postfix,
+            filename=environ.obme_filename(target_postfix, identifier)
+        )]
 
-        g0 = radial_power % 2
-        Tz0 = 0  # TODO(pjf): generalize to isospin-changing operators
-        operator_id = "rY{:d}".format(radial_power)
-        lines.append(solid_harmonic_target_command.format(
-            operator_type='r', order=radial_power,
-            output_filename=environ.obme_filename(postfix, operator_id)
-        ))
-
-    return lines
-
-def set_up_observable_radial_natorb(task, source_postfix, target_postfix):
-    """Generate radial integrals and overlaps by transformation for MFDn run in natural orbital basis.
-
-    Operation mode must be generic.
-
-    Arguments:
-        task (dict): as described in module docstring
-        source_postfix (str): postfix for old basis
-        target_postfix (str): postfix for new basis
-    """
-    # validate natural orbitals enabled
-    if not task.get("natural_orbitals"):
-        raise mcscript.exception.ScriptError("natural orbitals are not enabled")
-
-    for (operator_type, order) in task.get("ob_observables", []):
-        if operator_type == 'E':
-            radial_power = order
-        elif operator_type == 'M':
-            radial_power = order-1
-        else:
-            raise mcscript.exception.ScriptError("only E or M transitions currently supported")
-
-        # short-circuit on solid harmonic of order zero
-        if radial_power == 0:
-            continue
-
-        operator_id = "rY{:d}".format(order)
-        mcscript.call(
-            [
-                environ.shell_filename("radial-xform"),
-                environ.orbitals_filename(target_postfix),
-                environ.natorb_xform_filename(target_postfix),
-                environ.obme_filename(source_postfix, operator_id),
-                environ.obme_filename(target_postfix, operator_id)
-            ],
-            mode=mcscript.CallMode.kSerial
-        )
+    # call obmixer
+    mcscript.call(
+        [
+            environ.shell_filename("obmixer")
+        ],
+        mode=mcscript.CallMode.kSerial,
+        input_lines=lines
+    )

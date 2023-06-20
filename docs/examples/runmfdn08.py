@@ -1,6 +1,6 @@
 """ runmfdn08.py
 
-    See runmfdn.txt for description.
+    See examples/README.md for full description.
 
     Mark A. Caprio, Patrick J. Fasano
     University of Notre Dame
@@ -32,7 +32,7 @@ mcscript.init()
 # build task list
 ##################################################################
 
-ncci.environ.interaction_run_list = [
+ncci.environ.interaction_dir_list = [
     "run0164-JISP16-ob-9",
     "run0164-JISP16-ob-13",
     "run0164-JISP16-tb-10",
@@ -89,6 +89,7 @@ tasks = [{
         },
 
     # diagonalization parameters
+    "diagonalization": True,
     "eigenvectors": 2,
     "initial_vector": -2,
     "max_iterations": 200,
@@ -102,8 +103,8 @@ tasks = [{
     "save_obdme": True,
 
     # two-body observables
-    ## "observable_sets": ["H-components","am-sqr"],
-    "observable_sets": ["H-components"],
+    ## "tb_observable_sets": ["H-components","am-sqr"],
+    "tb_observable_sets": ["H-components"],
 
     # version parameters
     "h2_format": 15099,
@@ -125,7 +126,8 @@ tasks = [{
 ##     }
 
 ## ncci.radial.set_up_orbitals_ho(task)
-## ncci.radial.set_up_radial_analytic(task)
+## ncci.radial.set_up_xforms_analytic(task)
+## ncci.radial.set_up_obme_analytic(task)
 ## ncci.tbme.generate_tbme(task)
 ## ncci.mfdn_v15.run_mfdn(task)
 ## ncci.mfdn_v15.save_mfdn_task_data(task)

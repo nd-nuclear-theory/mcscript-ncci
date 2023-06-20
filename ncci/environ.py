@@ -21,28 +21,54 @@ University of Notre Dame
 - 04/04/19 (pjf): Add operator_dir_list for operator TBME input file search support.
 - 05/29/19 (mac): Add mfdn_postprocessor_filename.
 - 08/23/19 (pjf): Add obme_filename.
+- 09/20/19 (pjf): Remove observable_me_filename().
+- 06/30/22 (pjf):
+    + Rename interaction_filename() -> find_interaction_file().
+    + Use multi-file mode of mcscript.utils.search_in_subdirectories().
+    + Add filename functions for rel and tbme files.
+- 06/16/23 (mac): Change default location of mfdn and mfdn-transitions executables to bin subdirectory.
 """
 
+from __future__ import annotations
 import os
+from typing import Optional
 
 import mcscript.parameters
 import mcscript.utils
+import mcscript.exception
 
 
 ################################################################
 # environment configuration
 ################################################################
 
-data_dir_h2_list = os.environ.get("NCCI_DATA_DIR_H2").split(":")
+data_dir_h2_list = os.environ.get("NCCI_DATA_DIR_H2", "").split(":")
 # Base directories for interaction tbme files ("NCCI_DATA_DIR_H2")
 # Environment variable is interpreted as a PATH-style colon-delimited list.
 
 interaction_run_list = []
+# subdirectories for interaction tbme files (to be set by calling run script) --
+# DEPRECATED in favor of interaction_dir_list
+
+interaction_dir_list = []
 # subdirectories for interaction tbme files (to be set by calling run script)
 
 operator_dir_list = []
 # subdirectories for operator tbme files (to be set by calling run script)
 
+data_dir_rel_list = os.environ.get("NCCI_DATA_DIR_REL", "").split(":")
+# Base directories for interaction tbme files ("NCCI_DATA_DIR_H2")
+# Environment variable is interpreted as a PATH-style colon-delimited list.
+
+rel_dir_list = []
+# subdirectories for rel and relcm files (to be set by calling run script)
+
+data_dir_decomposition_list = os.environ.get("NCCI_DATA_DIR_DECOMPOSITION", "").split(":")
+# Base directories for decomposition coefficient files ("NCCI_DATA_DIR_DECOMPOSITION")
+# Environment variable is interpreted as a PATH-style colon-delimited list.
+
+decomposition_dir_list = []
+# subdirectories for decomposition coefficient files (to be set by calling run script)
 
 def shell_filename(name):
     """Construct filename for shell package executable."""
@@ -51,17 +77,29 @@ def shell_filename(name):
 
 def mfdn_filename(name):
     """Construct filename for MFDn executable."""
+    # check for absolute path to file (which takes priority)
     if os.path.isfile(mcscript.utils.expand_path(name)):
         return mcscript.utils.expand_path(name)
-    return os.path.join(mcscript.parameters.run.install_dir, "mfdn", name)
+    # check for legacy installation location for executable (not in "bin" subdirectory)
+    if os.path.isfile(os.path.join(mcscript.parameters.run.install_dir, "mfdn", name)):
+        return os.path.join(mcscript.parameters.run.install_dir, "mfdn", name)
+    # standard path
+    return os.path.join(mcscript.parameters.run.install_dir, "mfdn", "bin", name)
 
 def mfdn_postprocessor_filename(name):
     """Construct filename for MFDn postprocessor executable."""
+    # check for absolute path to file (which takes priority)
     if os.path.isfile(mcscript.utils.expand_path(name)):
         return mcscript.utils.expand_path(name)
-    return os.path.join(mcscript.parameters.run.install_dir, "mfdn-transitions", name)
+    # check for legacy installation location for executable (not in "bin" subdirectory)
+    if os.path.isfile(os.path.join(mcscript.parameters.run.install_dir, "mfdn-transitions", name)):
+        return os.path.join(mcscript.parameters.run.install_dir, "mfdn-transitions", name)
+    # standard path
+    return os.path.join(mcscript.parameters.run.install_dir, "mfdn-transitions", "bin", name)
 
-def interaction_filename(interaction, truncation, hw):
+def find_interaction_file(
+    interaction:str, truncation:tuple[str,int], hw:Optional[float]
+):
     """Construct filename for interaction h2 file.
 
     Arguments:
@@ -75,40 +113,105 @@ def interaction_filename(interaction, truncation, hw):
     Raises:
         mcscript.exception.ScriptError: if no suitable match is found
     """
+    truncation_str = mcscript.utils.dashify(truncation)
     if (hw is None):
         # for special operator files
-        interaction_filename_patterns = [
-            "{}-{}.bin",
-            "{}-{}.dat"
+        interaction_filename_candidates = [
+            f"{interaction}_{truncation_str}.bin"
+            f"{interaction}-{truncation_str}.bin"  # DEPRECATED
+            f"{interaction}_{truncation_str}.dat"
+            f"{interaction}-{truncation_str}.dat"  # DEPRECATED
         ]
     else:
-        interaction_filename_patterns = [
-            "{}-{}-{:04.1f}.bin",
-            "{}-{}-{:g}.bin",
-            "{}-{}-{:04.1f}.dat",
-            "{}-{}-{:g}.dat",
+        interaction_filename_candidates = [
+            f"{interaction}_{truncation_str}_{hw:04.1f}.bin",
+            f"{interaction}-{truncation_str}-{hw:04.1f}.bin",  # DEPRECATED
+            f"{interaction}-{truncation_str}-{hw:g}.bin",  # DEPRECATED
+            f"{interaction}_{truncation_str}_{hw:04.1f}.dat",
+            f"{interaction}-{truncation_str}-{hw:04.1f}.dat",  # DEPRECATED
+            f"{interaction}-{truncation_str}-{hw:g}.dat",  # DEPRECATED
         ]
-    for filename_pattern in interaction_filename_patterns:
-        filename = filename_pattern.format(
-            interaction, mcscript.utils.dashify(truncation), hw
-        )
-        path = mcscript.utils.search_in_subdirectories(
-            data_dir_h2_list, interaction_run_list, filename,
-            fail_on_not_found=False
-            )
-        if path is not None:
-            return path
+    full_interaction_dir_list = interaction_run_list + interaction_dir_list  # interaction_run_list is DEPRECATED
+    return mcscript.utils.search_in_subdirectories(
+        data_dir_h2_list, full_interaction_dir_list, interaction_filename_candidates,
+        fail_on_not_found=True
+    )
 
-    # no valid file found
-    raise mcscript.exception.ScriptError("no match on interaction filename")
+def find_rel_file(name:str, Nmax:int, hw:Optional[float]) -> str:
+    """Construct filename for relative file.
 
+    Arguments:
+        operator (str): operator name
+        Nmax (tuple): Nmax
+        hw (float): hw of interaction (or None)
+
+    Returns:
+        (str): fully qualified path of relative file
+
+    Raises:
+        mcscript.exception.ScriptError: if no suitable match is found
+    """
+    if (hw is None):
+        # for special operator files
+        filename_candidates = [
+            f"{name:s}_Nmax{Nmax:02d}_rel.dat"
+        ]
+    else:
+        filename_candidates = [
+            f"{name:s}_Nmax{Nmax:02d}_hw{hw:04.1f}_rel.dat",
+            f"{name:s}_Nmax{Nmax:02d}_hw{hw:g}_rel.dat",  # DEPRECATED
+        ]
+    return mcscript.utils.search_in_subdirectories(
+        data_dir_rel_list, rel_dir_list, filename_candidates,
+        fail_on_not_found=True
+    )
+
+def find_relcm_file(name:str, Nmax:int, hw:Optional[float]) -> str:
+    """Construct filename for relative-cm file.
+
+    Arguments:
+        operator (str): operator name
+        Nmax (tuple): Nmax
+        hw (float): hw of interaction (or None)
+
+    Returns:
+        (str): fully qualified path of relative-cm file
+
+    Raises:
+        mcscript.exception.ScriptError: if no suitable match is found
+    """
+    if (hw is None):
+        # for special operator files
+        filename_candidates = [
+            f"{name:s}_Nmax{Nmax:02d}_relcm.bin"
+            f"{name:s}_Nmax{Nmax:02d}_relcm.dat"
+        ]
+    else:
+        filename_candidates = [
+            f"{name:s}_Nmax{Nmax:02d}_hw{hw:04.1f}_relcm.bin",
+            f"{name:s}_Nmax{Nmax:02d}_hw{hw:g}_relcm.bin",  # DEPRECATED
+            f"{name:s}_Nmax{Nmax:02d}_hw{hw:04.1f}_relcm.dat",
+            f"{name:s}_Nmax{Nmax:02d}_hw{hw:g}_relcm.dat",  # DEPRECATED
+        ]
+    return mcscript.utils.search_in_subdirectories(
+        data_dir_rel_list, rel_dir_list, filename_candidates,
+        fail_on_not_found=True
+    )
 
 
 ################################################################
 # filename configuration
 ################################################################
 
-### orbital filename templates ###
+# filename templates for tbme files
+_tbme_filename_template = "{:s}_{:s}-{:d}_{:04.1f}.{:s}"
+_tbme_filename_template_nohw = "{:s}_{:s}-{:d}.{:s}"
+# filename templates for relative files
+_rel_filename_template = "{:s}_Nmax{:02d}_hw{:04.1f}_rel.dat"
+_rel_filename_template_nohw = "{:s}_Nmax{:02d}_rel.dat"
+# filename templates for relative-cm files
+_relcm_filename_template = "{:s}_Nmax{:02d}_hw{:04.1f}_relcm.{:s}"
+_relcm_filename_template_nohw = "{:s}_Nmax{:02d}_relcm.{:s}"
 # filename template for interaction tbme basis orbitals
 _orbitals_int_filename_template = "orbitals-int{:s}.dat"
 # filename template for Coulomb tbme basis orbitals
@@ -127,8 +230,6 @@ _radial_pn_olap_filename_template = "radial-pn-olap{:s}.dat"
 _radial_olap_int_filename_template = "radial-olap-int{:s}.dat"
 # filename template for overlaps from Coulomb tbme basis
 _radial_olap_coul_filename_template = "radial-olap-coul{:s}.dat"
-# filename template for observable matrix elements
-_observable_me_filename_template = "observable-me-{}{}{}{:s}.dat"  # "{}{}{}" will be replaced by {"E2p","M1n",etc.}
 # filename template for h2mixer input
 _h2mixer_filename_template = "h2mixer{:s}.in"
 # filename template for obscalc-ob input
@@ -143,6 +244,53 @@ _natorb_info_filename_template = "natorb-obdme{:s}.info"
 _natorb_obdme_filename_template = "natorb-obdme{:s}.dat"
 # filename template for natural orbital xform from previous basis
 _natorb_xform_filename_template = "natorb-xform{:s}.dat"
+
+def tmbe_filename(name:str, truncation:tuple[str,int], hw:Optional[float], ext:str="bin") -> str:
+    """Construct filename for tbme file.
+
+    Arguments:
+        name (str): operator/interaction name
+        truncation (tuple[str,int]): truncation tuple, e.g. ("ob",10)
+        hw (float or None): oscillator hw (in MeV) for operator; None if hw-independent
+        ext (str, optional): file extension; defaults to "bin"
+
+    Returns:
+        (str): filename
+    """
+    if hw is None:
+        return _tbme_filename_template_nohw.format(name, *truncation, ext)
+    return _tbme_filename_template.format(name, *truncation, hw, ext)
+
+def rel_filename(name:str, Nmax:int, hw:Optional[float]) -> str:
+    """Construct filename for relative file.
+
+    Arguments:
+        name (str): operator/interaction name
+        Nmax (int): Nmax truncation for operator
+        hw (float or None): oscillator hw (in MeV) for operator; None if hw-independent
+
+    Returns:
+        (str): filename
+    """
+    if hw is None:
+        return _rel_filename_template_nohw.format(name, Nmax)
+    return _rel_filename_template.format(name, Nmax, hw)
+
+def relcm_filename(name:str, Nmax:int, hw:Optional[float], ext:str="bin") -> str:
+    """Construct filename for relative-cm file.
+
+    Arguments:
+        name (str): operator/interaction name
+        Nmax (int): Nmax truncation for operator
+        hw (float or None): oscillator hw (in MeV) for operator; None if hw-independent
+        ext (str, optional): file extension; defaults to "bin"
+
+    Returns:
+        (str): filename
+    """
+    if hw is None:
+        return _relcm_filename_template_nohw.format(name, Nmax, ext)
+    return _relcm_filename_template.format(name, Nmax, hw, ext)
 
 def orbitals_int_filename(postfix):
     """Construct filename for interaction tbme basis orbitals.
@@ -230,18 +378,6 @@ def radial_olap_coul_filename(postfix):
     Returns: (str) filename
     """
     return _radial_olap_coul_filename_template.format(postfix)
-
-def observable_me_filename(postfix, operator_type, power, species):
-    """Construct filename for observable matrix elements.
-
-    Arguments:
-        postfix (str): string to append to end of filename
-        operator_type (str): operator code
-        power (int): radial operator power
-        species (str): species operator applies to
-    Returns: (str) filename
-    """
-    return _observable_me_filename_template.format(operator_type, power, species, postfix)
 
 def h2mixer_filename(postfix):
     """Construct filename for h2mixer input.
