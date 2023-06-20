@@ -1,5 +1,5 @@
 # mcscript-ncci installation #
-Prerequisites: `mcscript`, `shell`
+Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
 
 # 1. Retrieving source
 
