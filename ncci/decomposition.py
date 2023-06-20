@@ -35,8 +35,8 @@ def read_decomposition_operator_coefs(
         nuclide,
         Nmax,
         decomposition_type,
-        decomposition_path=None,
-        coef_filename_format="decomposition_Z{nuclide[0]:02d}_N{nuclide[1]:02d}_Nmax{Nmax:02d}_{decomposition_type}_coefs.dat",
+        decomposition_path,
+        coef_filename_format,
         verbose=False
 ):
     """ Read decomposition operator coefficients from coefs.dat file.
