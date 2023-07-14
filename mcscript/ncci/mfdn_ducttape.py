@@ -10,7 +10,9 @@ University of Notre Dame
 import os
 import collections
 
-import mcscript
+import mcscript.control
+import mcscript.exception
+import mcscript.utils
 
 from . import modes, environ
 from .mfdn_v15 import truncation_setup_functions
@@ -29,7 +31,7 @@ def run_mfdn(task, postfix=""):
     """
     # create work directory if it doesn't exist yet (-p)
     work_dir = "work{:s}".format(postfix)
-    mcscript.call(["mkdir", "-p", work_dir])
+    mcscript.control.call(["mkdir", "-p", work_dir])
 
     # inputlist namelist dictionary
     inputlist = collections.OrderedDict()
@@ -90,11 +92,11 @@ def run_mfdn(task, postfix=""):
     os.chdir(work_dir)
 
     # invoke MFDn
-    mcscript.call(
+    mcscript.control.call(
         [
             environ.mfdn_filename(task["ducttape_executable"])
         ],
-        mode=mcscript.CallMode.kHybrid,
+        mode=mcscript.control.CallMode.kHybrid,
         check_return=True
     )
 

@@ -59,8 +59,9 @@ University of Notre Dame
 """
 import os
 import glob
-import mcscript
 import mcscript.exception
+import mcscript.parameters
+import mcscript.task
 
 from . import (
     library,

@@ -47,8 +47,9 @@ University of Notre Dame
 import math
 import os
 
-import mcscript
+import mcscript.control
 import mcscript.exception
+import mcscript.utils
 
 from . import (
     utils,
@@ -66,24 +67,24 @@ def set_up_interaction_orbitals(task, postfix=""):
         postfix (string, optional): identifier to add to generated files
     """
     # generate orbitals -- interaction bases
-    mcscript.call(
+    mcscript.control.call(
         [
             environ.shell_filename("orbital-gen"),
             "--Nmax",
             "{truncation_int[1]:d}".format(**task),
             "{:s}".format(environ.orbitals_int_filename(postfix))
         ],
-        mode=mcscript.CallMode.kSerial
+        mode=mcscript.control.CallMode.kSerial
     )
     if task["use_coulomb"]:
-        mcscript.call(
+        mcscript.control.call(
             [
                 environ.shell_filename("orbital-gen"),
                 "--Nmax",
                 "{truncation_coul[1]:d}".format(**task),
                 "{:s}".format(environ.orbitals_coul_filename(postfix))
             ],
-            mode=mcscript.CallMode.kSerial
+            mode=mcscript.control.CallMode.kSerial
         )
 
 
@@ -105,7 +106,7 @@ def set_up_orbitals_manual(task, postfix=""):
         sp_filename = mcscript.utils.expand_path(sp_filename)
         if not os.path.exists(sp_filename):
             raise FileNotFoundError(sp_filename)
-    mcscript.call([
+    mcscript.control.call([
         "cp", "--verbose",
         sp_filename,
         environ.orbitals_filename(postfix)
@@ -131,14 +132,14 @@ def set_up_orbitals_Nmax(task, postfix=""):
         Nmax_orb = truncation_parameters["Nmax"] + utils.Nv_for_nuclide(task["nuclide"])
     elif task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kFCI:
         Nmax_orb = truncation_parameters["Nmax"]
-    mcscript.call(
+    mcscript.control.call(
         [
             environ.shell_filename("orbital-gen"),
             "--Nmax",
             "{Nmax_orb:d}".format(Nmax_orb=Nmax_orb),
             "{:s}".format(environ.orbitals_filename(postfix))
         ],
-        mode=mcscript.CallMode.kSerial
+        mode=mcscript.control.CallMode.kSerial
     )
 
 
@@ -155,7 +156,7 @@ def set_up_orbitals_triangular(task, postfix=""):
 
     # generate orbitals -- target basis
     truncation_parameters = task["truncation_parameters"]
-    mcscript.call(
+    mcscript.control.call(
         [
             environ.shell_filename("orbital-gen"),
             "--triangular",
@@ -164,7 +165,7 @@ def set_up_orbitals_triangular(task, postfix=""):
             "{l_coeff:f}".format(**truncation_parameters),
             "{:s}".format(environ.orbitals_filename(postfix))
         ],
-        mode=mcscript.CallMode.kSerial
+        mode=mcscript.control.CallMode.kSerial
     )
 
 
@@ -218,9 +219,9 @@ def set_up_natural_orbitals(task, source_postfix, target_postfix):
             xform_filename=environ.natorb_xform_filename(target_postfix)
         )]
 
-    mcscript.call(
+    mcscript.control.call(
         [environ.shell_filename("natorb-gen")],
-        mode=mcscript.CallMode.kSerial,
+        mode=mcscript.control.CallMode.kSerial,
         input_lines=lines
     )
 
@@ -307,11 +308,11 @@ def set_up_obme_analytic(task, postfix=""):
     # lines += set_up_observable_radial_analytic(task, postfix)
 
     # call obmixer
-    mcscript.call(
+    mcscript.control.call(
         [
             environ.shell_filename("obmixer")
         ],
-        mode=mcscript.CallMode.kSerial,
+        mode=mcscript.control.CallMode.kSerial,
         input_lines=lines
     )
 
@@ -386,11 +387,11 @@ def set_up_xforms_analytic(task, postfix=""):
         ))
 
     # call radial-gen
-    mcscript.call(
+    mcscript.control.call(
         [
             environ.shell_filename("radial-gen")
         ],
-        mode=mcscript.CallMode.kSerial,
+        mode=mcscript.control.CallMode.kSerial,
         input_lines=lines
     )
 
@@ -416,38 +417,38 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
         tbme_sources.update(operators.tb.get_tbme_sources(task, targets, target_postfix))
 
     # compose radial transform
-    mcscript.call(
+    mcscript.control.call(
         [
             environ.shell_filename("radial-compose"),
             environ.radial_xform_filename(source_postfix),
             environ.natorb_xform_filename(target_postfix),
             environ.radial_xform_filename(target_postfix)
         ],
-        mode=mcscript.CallMode.kSerial
+        mode=mcscript.control.CallMode.kSerial
     )
 
     if "VNN" in tbme_sources:
         # compose interaction transform
-        mcscript.call(
+        mcscript.control.call(
             [
                 environ.shell_filename("radial-compose"),
                 environ.radial_olap_int_filename(source_postfix),
                 environ.natorb_xform_filename(target_postfix),
                 environ.radial_olap_int_filename(target_postfix)
             ],
-            mode=mcscript.CallMode.kSerial
+            mode=mcscript.control.CallMode.kSerial
         )
 
     # compose Coulomb transform
     if task.get("use_coulomb", False) and ("VC_unscaled" in tbme_sources):
-        mcscript.call(
+        mcscript.control.call(
             [
                 environ.shell_filename("radial-compose"),
                 environ.radial_olap_coul_filename(source_postfix),
                 environ.natorb_xform_filename(target_postfix),
                 environ.radial_olap_coul_filename(target_postfix)
             ],
-            mode=mcscript.CallMode.kSerial
+            mode=mcscript.control.CallMode.kSerial
         )
 
     ################################################################
@@ -491,10 +492,10 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
         )]
 
     # call obmixer
-    mcscript.call(
+    mcscript.control.call(
         [
             environ.shell_filename("obmixer")
         ],
-        mode=mcscript.CallMode.kSerial,
+        mode=mcscript.control.CallMode.kSerial,
         input_lines=lines
     )

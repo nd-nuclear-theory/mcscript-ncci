@@ -61,7 +61,12 @@ import re
 import sqlite3
 import warnings
 
-import mcscript
+import mcscript.control
+import mcscript.exception
+import mcscript.parameters
+import mcscript.task
+import mcscript.utils
+
 import mfdnres
 try:
     import am
@@ -257,12 +262,12 @@ def evaluate_ob_observables(task, postfix=""):
         )
 
     # invoke em-gen
-    mcscript.call(
+    mcscript.control.call(
         [
             environ.shell_filename("obscalc-ob")
         ],
         input_lines=lines,
-        mode=mcscript.CallMode.kSerial
+        mode=mcscript.control.CallMode.kSerial
     )
 
     # copy results out (if in multi-task run)
@@ -415,7 +420,7 @@ def init_postprocessor_db(task, postfix=""):
     """
 
     # remove and rebuild any previously constructed database
-    mcscript.call(["rm", "-vf", "transitions{}.sqlite".format(postfix)])
+    mcscript.control.call(["rm", "-vf", "transitions{}.sqlite".format(postfix)])
     db = sqlite3.connect("transitions{}.sqlite".format(postfix))
     db.row_factory = sqlite3.Row
 
@@ -603,7 +608,7 @@ def init_postprocessor_db(task, postfix=""):
             continue
         if not allowed_by_masks(task, (bra_qn,ket_qn)):
             continue
-        
+
         (bra_run_descriptor_pair, ket_run_descriptor_pair) = get_run_descriptor_pair(
             bra_mesh_data, ket_mesh_data, (bra_qn, ket_qn), operator_qn
             )
@@ -937,10 +942,10 @@ def run_postprocessor_two_body(task, postfix="", one_body=False):
             "transitions.input",
             input_dict={"transition_data": transitions_inputlist}
             )
-        mcscript.call(["rm", "--force", "transitions.out", "transitions.res"])  # remove old output so file watchdog can work
-        mcscript.call(
+        mcscript.control.call(["rm", "--force", "transitions.out", "transitions.res"])  # remove old output so file watchdog can work
+        mcscript.control.call(
             [transitions_executable],
-            mode=mcscript.CallMode.kHybrid,
+            mode=mcscript.control.CallMode.kHybrid,
             file_watchdog=mcscript.control.FileWatchdog("transitions.out"),
             file_watchdog_restarts=3
         )
@@ -994,14 +999,14 @@ def run_postprocessor_two_body(task, postfix="", one_body=False):
                 mcscript.parameters.run.name, descriptor, postfix, group_hash, "out"
             )
         )
-        mcscript.call(["cp", "--verbose", "transitions.out", out_filename])
+        mcscript.control.call(["cp", "--verbose", "transitions.out", out_filename])
         res_filename = os.path.join(
             transitions_output_dir,
             filename_template.format(
                 mcscript.parameters.run.name, descriptor, postfix, group_hash, "res"
             )
         )
-        mcscript.call(["cp", "--verbose", "transitions.res", res_filename])
+        mcscript.control.call(["cp", "--verbose", "transitions.res", res_filename])
         timer.stop_timer()
 
         # return to task directory
@@ -1177,10 +1182,10 @@ def run_postprocessor_one_body(task, postfix=""):
             "transitions.input",
             input_dict={"transition_data": transitions_inputlist}
             )
-        mcscript.call(["rm", "--force", "transitions.out", "transitions.res"])  # remove old output so file watchdog can work
-        mcscript.call(
+        mcscript.control.call(["rm", "--force", "transitions.out", "transitions.res"])  # remove old output so file watchdog can work
+        mcscript.control.call(
             [transitions_executable],
-            mode=mcscript.CallMode.kHybrid,
+            mode=mcscript.control.CallMode.kHybrid,
             file_watchdog=mcscript.control.FileWatchdog("transitions.out"),
             file_watchdog_restarts=3
         )
@@ -1209,14 +1214,14 @@ def run_postprocessor_one_body(task, postfix=""):
                 mcscript.parameters.run.name, descriptor, postfix, group_hash, "out"
             )
         )
-        mcscript.call(["cp", "--verbose", "transitions.out", out_filename])
+        mcscript.control.call(["cp", "--verbose", "transitions.out", out_filename])
         res_filename = os.path.join(
             transitions_output_dir,
             filename_template.format(
                 mcscript.parameters.run.name, descriptor, postfix, group_hash, "res"
             )
         )
-        mcscript.call(["cp", "--verbose", "transitions.res", res_filename])
+        mcscript.control.call(["cp", "--verbose", "transitions.res", res_filename])
         timer.stop_timer()
 
         # return to task directory
@@ -1253,7 +1258,7 @@ def cleanup_workdir(task, postfix=""):
         postfix (string, optional): identifier to add to generated files
     """
     scratch_file_list = glob.glob("work{:s}/*".format(postfix))
-    mcscript.call(["rm", "-vf"] + scratch_file_list)
+    mcscript.control.call(["rm", "-vf"] + scratch_file_list)
 
 
 @deprecated.deprecated(reason="use handlers.task_handler_mfdn_postprocessor_run instead")
