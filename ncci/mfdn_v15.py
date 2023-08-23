@@ -283,6 +283,8 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             os.path.join(work_dir, "mfdn_partitioning.info")
             ])
 
+    if task["menj_enabled"]:
+        generate_menj_par(task, postfix)
 
 
 def run_mfdn(task, postfix=""):
@@ -304,6 +306,12 @@ def run_mfdn(task, postfix=""):
         raise FileNotFoundError(
             errno.ENOENT, os.strerror(errno.ENOENT), "mfdn.input"
         )
+    # check menj.par exists if a flag in task show that menj extension is enabled
+    if task["menj_enabled"]:
+        if not os.path.isfile("menj.par"):
+            raise FileNotFoundError(
+                errno.ENOENT, os.strerror(errno.ENOENT), "menj.par"
+            )
 
     # remove any stray files from a previous run
     if os.path.exists("mfdn.out"):
@@ -757,3 +765,109 @@ def generate_smwf_info(task, orbital_filename, partitioning_filename, res_filena
 
     mcscript.utils.write_input(info_filename, input_lines=lines, verbose=False)
 
+def generate_menj_par(task, postfix=""):
+
+    """
+    Generate the menj.par input file for the MFDn version 15 with menj extension.
+
+    Arguments:
+        task (dict): as described in docs/task.md
+        run_mode (modes.MFDnRunMode): run mode for MFDn
+        postfix (string, optional): identifier to add to generated files
+
+    Raises:
+        mcscript.exception.ScriptError: if MFDn output not found
+    
+    # check that diagonalization is enabled
+    if (run_mode in (modes.MFDnRunMode.kNormal, modes.MFDnRunMode.kLanczosOnly)) and not task.get("diagonalization"):
+        raise mcscript.exception.ScriptError(
+            'Task dictionary "diagonalization" flag not enabled.'
+        )
+    """
+    # create work directory if it doesn't exist yet
+    work_dir = "work{:s}".format(postfix)
+    mcscript.utils.mkdir(work_dir, exist_ok=True, parents=True)
+    # inputlist namelist dictionary
+    lines = []
+    
+    # nucleus
+    # A       : total nucleon number
+    #           (needs to be the same as (Z+N) in mfdn.input)
+
+    lines.append("A={:d}".format(task["A"]))
+
+    # hwHO    : HO basis parameter
+    #
+
+    lines.append("hwHO={:d}".format(task["hw"]))
+    
+    # lamHcm  : scaling factor for Hcm Hamiltonian (dimensionless)
+    #
+    # TO DO (slv) :  Make sure this has to be float or just integer or string
+    
+    lines.append("lamHcm={:.1f}".format(task["lamHcm"]))
+    
+    # NN      : compute 2-body matrix elements (0=no, 1=yes)
+    #  
+
+    lines.append("NN={:d}".format(task["NN"]))
+    
+    # EMax    : maximum 2-body HO quantum number of the TBME file
+    #
+    lines.append("EMax={:d}".format(task["EMax"]))
+            
+    # MEID    : string containing path/ID of the 2B interaction
+    #           matrix element file that is read in
+
+    lines.append("MEID=" + task["MEID"])
+            
+    # TrelID  : string containing path/ID of the 2B kinetic energy
+    #           matrix element file that is read in
+
+    lines.append("TrelID=" + task["TrelID"])
+            
+    # RsqID   : string containing path/ID of the 2B squared radius
+    #           matrix element file that is read in
+
+    lines.append("RsqID=" + task["RsqID"])
+    
+    # NNN     : compute 3-body matrix elements (0=no, 1=yes)
+    #
+
+    lines.append("NNN={:d}".format(task["NNN"]))
+    
+    # E3Max   : maximum 3-body HO quantum number
+    # This can be pulled from the file name
+
+    lines.append("E3Max={:d}".format(task["E3Max"]))
+    
+    # ME3ID   : string containing path/ID of the 3B interaction
+    #           matrix element file that is read in
+
+    lines.append("ME3ID=" + task["ME3ID"])
+            
+
+    if not os.path.isfile(task["MEID"]+"_eMax"+str(task["EMax"])+ "_EMax" + str(task["E3Max"])+"hwHO"+str(task["hw"])+".me2j.bin"):
+        raise FileNotFoundError(
+            errno.ENOENT, os.strerror(errno.ENOENT), task["MEID"]+"_eMax"+str(task["EMax"])+ "_EMax" + str(task["E3Max"])+"hwHO"+str(task["hw"])+".me2j.bin"
+        )
+
+    if not os.path.isfile(task["TrelID"]+"_eMax"+str(task["EMax"])+ "_EMax" + str(task["E3Max"])+ ".me2j.bin"):
+        raise FileNotFoundError(
+            errno.ENOENT, os.strerror(errno.ENOENT), task["TrelID"]+"_eMax"+str(task["EMax"])+ "_EMax" + str(task["E3Max"])+ ".me2j.bin"
+        )
+            
+    if not os.path.isfile(task["RsqID"]+"_eMax"+str(task["EMax"])+ "_EMax" + str(task["E3Max"])+".me2j.bin"):
+        raise FileNotFoundError(
+            errno.ENOENT, os.strerror(errno.ENOENT), task["RsqID"]+"_eMax"+str(task["EMax"])+ "_EMax" + str(task["E3Max"])+".me2j.bin"
+        )
+
+    if not os.path.isfile(task["ME3ID"]+"_eMax"+str(task["EMax"])+ "_EMax" + str(task["E3Max"])+"hwHO"+str(task["hw"])+".me3j.bin"):
+        raise FileNotFoundError(
+            errno.ENOENT, os.strerror(errno.ENOENT), task["ME3ID"]+"_eMax"+str(task["EMax"])+ "_EMax" + str(task["E3Max"])+"hwHO"+str(task["hw"])+".me3j.bin"
+        )            
+
+    # generate MFDn input file
+    mcscript.utils.write_input(
+        os.path.join(work_dir, "menj.par"), lines
+    )
