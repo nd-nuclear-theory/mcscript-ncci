@@ -5,8 +5,8 @@
 # TODO (slv): This needs to modified according to requirements
 
 import mcscript
-#import ncci
-import mfdn_v15_menj
+import ncci
+import ncci.mfdn_v15
 
 #mcscript.init()
 ##################################################################
@@ -63,22 +63,22 @@ a_cm = 50.
 
 tasks = {
         # nuclide parameters
-        # "nuclide": nuclide,
+        "nuclide": (3,3),
         "A" : A,
         # Hamiltonian parameters
         # "interaction": interaction,
-        #"use_coulomb": coulomb,
+        # "use_coulomb": coulomb,
         "a_cm": a_cm,
         "hw_cm": None,
 
         # input TBME parameters
-        #"truncation_int": truncation_int,
+        # "truncation_int": truncation_int,
         "hw_int": hw,
-        #"truncation_coul": truncation_int,
+        # "truncation_coul": truncation_int,
         "hw_coul": hw_coul,
 
         # basis parameters
-        # "basis_mode": ncci.modes.BasisMode.kDirect,
+        "basis_mode": ncci.modes.BasisMode.kDirect,
         "hw": hw,
 
         # transformation parameters
@@ -88,8 +88,8 @@ tasks = {
         "target_truncation": None,
 
         # traditional oscillator many-body truncation
-        # "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
-        # "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
+        "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
+        "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
         "truncation_parameters": {
             "Nmax": 10,
             "Nstep": 2,
@@ -129,7 +129,7 @@ tasks = {
         # ],
 
         # Flag to enable menj
-        "menj_enabled"=True
+        "menj_enabled":True,
         
         # parameters for menj.par
         "lamHcm" : 3.0,
@@ -148,7 +148,7 @@ tasks = {
         # version parameters
         "h2_format": 15099,
         "mfdn_executable": "xmfdn-h2-lan",
-        #"mfdn_driver": ncci.mfdn_v15,
+        "mfdn_driver": ncci.mfdn_v15,
     }
 
 
@@ -158,4 +158,4 @@ tasks = {
 # Test generate mfdn input
 ##################################################################
 
-mfdn_v15_menj.generate_menj_par(tasks)
+ncci.mfdn_v15.generate_menj_par(tasks)
