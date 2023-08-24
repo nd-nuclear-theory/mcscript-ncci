@@ -61,6 +61,10 @@ University of Notre Dame
 - 06/05/23 (mac):
   + Make "eigenvectors" optional, e.g., for decomposition run.
   + Fix save_mfdn_task_data() to gracefully handle missing overlap files for decomposition run.
+- 8/23/23 (slv): 
+    + Created generate_menj_par()
+    + Added a call to generate_menj_par() from generate_mfdn_input()
+    + Added a menj.par file existence check in run_mfdn() 
 """
 import errno
 import os
