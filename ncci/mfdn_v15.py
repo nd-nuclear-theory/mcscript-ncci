@@ -856,9 +856,9 @@ def generate_menj_par(task, postfix=""):
     lines.append("ME3ID={:>1}".format(task["ME3ID"]))
             
     
-    if not os.path.isfile("{:>}_eMax{:d}_EMax{:d}_hwHO{:d}.me2j.bin".format(task["MEID"],task["EMax"],task["E3Max"],task["hw"])):
+    if not os.path.isfile("{:>}_eMax{:d}_EMax{:d}_hwHO{0:03.0f}.me2j.bin".format(task["MEID"],task["EMax"],task["E3Max"],task["hw"])):
         raise FileNotFoundError(
-            errno.ENOENT, os.strerror(errno.ENOENT), "{:>}_eMax{:d}_EMax{:d}_hwHO{:d}.me2j.bin".format(task["MEID"],task["EMax"],task["E3Max"],task["hw"])
+            errno.ENOENT, os.strerror(errno.ENOENT), "{:>}_eMax{:d}_EMax{:d}_hwHO{0:03.0f}.me2j.bin".format(task["MEID"],task["EMax"],task["E3Max"],task["hw"])
         )
 
     if not os.path.isfile("{:>}_eMax{:d}_E3Max{:d}.me2j.bin".format(task["TrelID"],task["EMax"],task["E3Max"])):
@@ -871,9 +871,9 @@ def generate_menj_par(task, postfix=""):
             errno.ENOENT, os.strerror(errno.ENOENT), "{:>}_eMax{:d}_E3Max{:d}.me2j.bin".format(task["RsqID"],task["EMax"],task["E3Max"])
         )
 
-    if not os.path.isfile("{:>}_eMax{:d}_EMax{:d}_hwHO{:d}.me3j.bin".format(task["ME3ID"],task["EMax"],task["E3Max"],task["hw"])):
+    if not os.path.isfile("{:>}_eMax{:d}_EMax{:d}_hwHO{0:03.0f}.me3j.bin".format(task["ME3ID"],task["EMax"],task["E3Max"],task["hw"])):
         raise FileNotFoundError(
-            errno.ENOENT, os.strerror(errno.ENOENT), "{:>}_eMax{:d}_EMax{:d}_hwHO{:d}.me3j.bin".format(task["ME3ID"],task["EMax"],task["E3Max"],task["hw"])
+            errno.ENOENT, os.strerror(errno.ENOENT), "{:>}_eMax{:d}_EMax{:d}_hwHO{0:03.0f}.me3j.bin".format(task["ME3ID"],task["EMax"],task["E3Max"],task["hw"])
         )            
 
     # generate MFDn input file
