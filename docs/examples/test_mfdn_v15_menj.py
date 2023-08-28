@@ -8,11 +8,11 @@ import mcscript
 import ncci
 import ncci.mfdn_v15
 
-#mcscript.init()
+mcscript.init()
 ##################################################################
 # environment
 ##################################################################
-"""
+
 # TBME paths
 ncci.environ.interaction_dir_list = [
     "example-data",
@@ -20,7 +20,7 @@ ncci.environ.interaction_dir_list = [
 ncci.environ.operator_dir_list = [
     "example-data"
 ]
-"""
+
 ##################################################################
 # run parameters
 ##################################################################
@@ -63,8 +63,8 @@ a_cm = 50.
 
 tasks = {
         # nuclide parameters
-        "nuclide": (3,3),
-        "A" : A,
+        "nuclide": nuclide_list[0],
+
         # Hamiltonian parameters
         # "interaction": interaction,
         # "use_coulomb": coulomb,
@@ -121,18 +121,18 @@ tasks = {
 
         # sources
         "obme_sources": [],
-        # "tbme_sources": [
-        #    ("CSU3-U", {"filename": "CSU3-U-tb-6.bin", "qn": (0,0,0)}),
-        #    ("CSU3-V", {"filename": "CSU3-V-tb-6.bin", "qn": (0,0,0)}),
-        #    ("CSp3R-U", {"filename": "CSp3R-U-tb-6.bin", "qn": (0,0,0)}),
-        #    ("CSp3R-V", {"filename": "CSp3R-V-tb-6.bin", "qn": (0,0,0)}),
-        # ],
+        "tbme_sources": [
+            ("CSU3-U", {"filename": "CSU3-U-tb-6.bin", "qn": (0,0,0)}),
+            ("CSU3-V", {"filename": "CSU3-V-tb-6.bin", "qn": (0,0,0)}),
+            ("CSp3R-U", {"filename": "CSp3R-U-tb-6.bin", "qn": (0,0,0)}),
+            ("CSp3R-V", {"filename": "CSp3R-V-tb-6.bin", "qn": (0,0,0)}),
+         ],
 
         # Flag to enable menj
         "menj_enabled":True,
         
         # parameters for menj.par
-        "lamHcm" : 3.0,
+        # "lamHcm" : 3.0,
         "NN" : 1,
         "EMax" : 12,
         "MEID" : "chi2b_srg0625",
@@ -147,6 +147,7 @@ tasks = {
 
         # version parameters
         "h2_format": 15099,
+        # This should be changed to proper executable
         "mfdn_executable": "xmfdn-h2-lan",
         "mfdn_driver": ncci.mfdn_v15,
     }
