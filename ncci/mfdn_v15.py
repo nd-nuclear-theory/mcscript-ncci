@@ -855,7 +855,8 @@ def generate_menj_par(task, postfix=""):
 
     lines.append("ME3ID={:>1}".format(task["ME3ID"]))
             
-    
+    print(os.path)
+    """
     if not os.path.isfile("{:>}_eMax{:d}_EMax{:d}_hwHO{:03d}.me2j.bin".format(task["MEID"],task["EMax"],task["E3Max"],task["hw"])):
         raise FileNotFoundError(
             errno.ENOENT, os.strerror(errno.ENOENT), "{:>}_eMax{:d}_EMax{:d}_hwHO{:03d}.me2j.bin".format(task["MEID"],task["EMax"],task["E3Max"],task["hw"])
@@ -875,7 +876,7 @@ def generate_menj_par(task, postfix=""):
         raise FileNotFoundError(
             errno.ENOENT, os.strerror(errno.ENOENT), "{:>}_eMax{:d}_EMax{:d}_hwHO{:03d}.me3j.bin".format(task["ME3ID"],task["EMax"],task["E3Max"],task["hw"])
         )            
-
+    """
     # generate MFDn input file
     mcscript.utils.write_input(
         os.path.join(work_dir, "menj.par"), lines
