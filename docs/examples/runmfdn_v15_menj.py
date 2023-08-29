@@ -162,4 +162,4 @@ tasks = {
 # Test generate mfdn input
 ##################################################################
 
-ncci.mfdn_v15.generate_menj_par(tasks)
+ncci.mfdn_v15.generate_mfdn_input(tasks)
