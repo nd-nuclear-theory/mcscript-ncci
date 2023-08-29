@@ -2,7 +2,6 @@
 
 # This code is adapted from runmfdn13.py
 
-# TODO (slv): This needs to modified according to requirements
 
 import mcscript
 import ncci
@@ -126,7 +125,11 @@ tasks = {
             ("CSU3-V", {"filename": "CSU3-V-tb-6.bin", "qn": (0,0,0)}),
             ("CSp3R-U", {"filename": "CSp3R-U-tb-6.bin", "qn": (0,0,0)}),
             ("CSp3R-V", {"filename": "CSp3R-V-tb-6.bin", "qn": (0,0,0)}),
-         ],
+            ("chi2b_srg0625", {"filename": "chi2b_srg0625_eMax12_EMax12_hwHO020.me2j.bin", "qn":(0,0,0)}),
+            ("trel",{"filename": "trel_eMax12_EMax12.me2j.bin", "qn"=(0,0,0)}),
+            ("rsq",{"filename": "rsq_eMax12_EMax12.me2j.bin", "qn"=(0,0,0)}),
+            ("chi2b3b_srg0625ho40C",{"filename": "chi2b3b_srg0625ho40C_eMax12_EMax12_hwHO020.me3j.bin","qn"=(0,0,0)})
+        ],
 
         # Flag to enable menj
         "menj_enabled":True,
