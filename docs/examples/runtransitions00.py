@@ -186,6 +186,7 @@ mcscript.task.init(
         ncci.handlers.task_handler_mfdn_postprocessor_run,
         ncci.handlers.task_handler_mfdn_postprocessor_post,
     ],
+    archive_phase_handler_list=[ncci.handlers.archive_handler_mfdn_postprocessor_hsi],
 )
 
 ################################################################
