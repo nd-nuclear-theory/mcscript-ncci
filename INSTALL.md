@@ -67,7 +67,7 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
   e.g., ```run0164-JISP16-tb-20/JISP16-tb-20-20.bin```.
 
   #### @NDCRC: ####
-  `.cshrc`:
+  `.cshrc` or `.tcshrc`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
   setenv GROUP_HOME "/afs/crc.nd.edu/group/nuclthy"
@@ -82,17 +82,21 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   #### @NERSC: ####
-  `.cshrc`:
+  `.cshrc` or `.tcshrc`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
-  setenv GROUP_HOME "/global/cfs/cdirs/m2032"
+  # Use read-only mount point for /global/cfs/cdirs/m2032.
+  # See https://docs.nersc.gov/performance/io/dvs/.
+  setenv GROUP_HOME "/dvs_ro/cfs/cdirs/m2032"
   setenv NCCI_DATA_DIR_H2 "${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/docs/examples"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   `.bashrc` or `.bash_profile`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
-  export GROUP_HOME="/global/cfs/cdirs/m2032"
+  # Use read-only mount point for /global/cfs/cdirs/m2032.
+  # See https://docs.nersc.gov/performance/io/dvs/.
+  export GROUP_HOME="/dvs_ro/cfs/cdirs/m2032"
   export NCCI_DATA_DIR_H2="${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/docs/examples"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -116,7 +120,7 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
   the example runs are in `${HOME}/code/mcscript-ncci/docs/examples`, you might
   define the following search path:
 
-  `.cshrc`:
+  `.cshrc` or `.tcshrc`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   setenv NCCI_LIBRARY_PATH "${SCRATCH}/runs:${SCRATCH}/library:${HOME}/code/mcscript-ncci/docs/examples"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
