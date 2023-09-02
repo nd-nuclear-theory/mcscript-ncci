@@ -1,4 +1,4 @@
-# This is a code to test if both mfdn.input and menj.par file are created using mfdn_v15_menj.py
+# This is a code to test if both mfdn.input and menj.par file are created using mfdn_v15.py
 
 # This code is adapted from runmfdn13.py
 
@@ -90,7 +90,7 @@ tasks = {
         "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
         "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
         "truncation_parameters": {
-            "Nmax": 10,
+            "Nmax": 2,
             "Nstep": 2,
             "M": M,
             },
@@ -113,18 +113,18 @@ tasks = {
         # two-body observables
         "tb_observable_sets": ["H-components","am-sqr", "isospin"],
         # "tb_observable_sets": ["H-components"],
-        "tb_observables": [
-            ("CSU3",  (0,0,0), {"CSU3-U": 1/(A-1), "CSU3-V": 1.0}),
-            ("CSp3R", (0,0,0), {"CSp3R-U": 1/(A-1), "CSp3R-V": 1.0}),
-            ],
+        # "tb_observables": [
+           # ("CSU3",  (0,0,0), {"CSU3-U": 1/(A-1), "CSU3-V": 1.0}),
+           # ("CSp3R", (0,0,0), {"CSp3R-U": 1/(A-1), "CSp3R-V": 1.0}),
+           # ],
 
         # sources
         "obme_sources": [],
         "tbme_sources": [
-            ("CSU3-U", {"filename": "CSU3-U-tb-6.bin", "qn": (0,0,0)}),
-            ("CSU3-V", {"filename": "CSU3-V-tb-6.bin", "qn": (0,0,0)}),
-            ("CSp3R-U", {"filename": "CSp3R-U-tb-6.bin", "qn": (0,0,0)}),
-            ("CSp3R-V", {"filename": "CSp3R-V-tb-6.bin", "qn": (0,0,0)}),
+            # ("CSU3-U", {"filename": "CSU3-U-tb-6.bin", "qn": (0,0,0)}),
+            # ("CSU3-V", {"filename": "CSU3-V-tb-6.bin", "qn": (0,0,0)}),
+            # ("CSp3R-U", {"filename": "CSp3R-U-tb-6.bin", "qn": (0,0,0)}),
+            # ("CSp3R-V", {"filename": "CSp3R-V-tb-6.bin", "qn": (0,0,0)}),
             ("chi2b_srg0625", {"filename": "chi2b_srg0625_eMax12_EMax12_hwHO020.me2j.bin", "qn":(0,0,0)}),
             ("trel",{"filename": "trel_eMax12_EMax12.me2j.bin", "qn":(0,0,0)}),
             ("rsq",{"filename": "rsq_eMax12_EMax12.me2j.bin", "qn":(0,0,0)}),
@@ -151,15 +151,41 @@ tasks = {
         # version parameters
         "h2_format": 15099,
         # This should be changed to proper executable
-        "mfdn_executable": "xmfdn-h2-lan",
+        "mfdn_executable": "xmfdn-menj-lan",
         "mfdn_driver": ncci.mfdn_v15,
     }
 
-
-
-
+"""
 ##################################################################
 # Test generate mfdn input
 ##################################################################
 
 ncci.mfdn_v15.generate_mfdn_input(tasks)
+
+"""
+
+##################################################################
+# task dictionary postprocessing functions
+##################################################################
+
+def task_pool(current_task):
+    pool = "Nmax{truncation_parameters[Nmax]:02d}".format(**current_task)
+    return pool
+
+
+##################################################################
+# task control
+##################################################################
+
+mcscript.task.init(
+    tasks,
+    task_descriptor=ncci.descriptors.task_descriptor_7,
+    task_pool=task_pool,
+    phase_handler_list=ncci.handlers.task_handler_mfdn_phases,
+    )
+
+################################################################
+# termination
+################################################################
+
+mcscript.termination()
