@@ -60,7 +60,7 @@ a_cm = 50.
 # build task list
 ##################################################################
 
-tasks = {
+tasks = [{
         # nuclide parameters
         "nuclide": nuclide_list[0],
 
@@ -154,6 +154,7 @@ tasks = {
         "mfdn_executable": "xmfdn-menj-lan",
         "mfdn_driver": ncci.mfdn_v15,
     }
+   ]
 
 """
 ##################################################################
