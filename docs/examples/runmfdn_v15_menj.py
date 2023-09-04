@@ -65,15 +65,15 @@ tasks = [{
         "nuclide": nuclide_list[0],
 
         # Hamiltonian parameters
-        # "interaction": interaction,
-        # "use_coulomb": coulomb,
+        "interaction": "EntemMachleidt",
+        "use_coulomb": True,
         "a_cm": a_cm,
         "hw_cm": None,
 
         # input TBME parameters
-        # "truncation_int": truncation_int,
+        "truncation_int": ("tb",6),
         "hw_int": hw,
-        # "truncation_coul": truncation_int,
+        "truncation_coul": ("tb",6),
         "hw_coul": hw_coul,
 
         # basis parameters
