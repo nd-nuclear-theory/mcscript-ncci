@@ -786,11 +786,6 @@ def generate_menj_par(task, postfix=""):
     Raises:
         mcscript.exception.ScriptError: if MFDn output not found
     
-    # check that diagonalization is enabled
-    if (run_mode in (modes.MFDnRunMode.kNormal, modes.MFDnRunMode.kLanczosOnly)) and not task.get("diagonalization"):
-        raise mcscript.exception.ScriptError(
-            'Task dictionary "diagonalization" flag not enabled.'
-        )
     """
     # create work directory if it doesn't exist yet
     work_dir = "work{:s}".format(postfix)
@@ -801,8 +796,7 @@ def generate_menj_par(task, postfix=""):
     # nucleus
     # A       : total nucleon number
     #           (needs to be the same as (Z+N) in mfdn.input)
-
-    # TO DO (slv): include the summation of nuclides 
+    
     Z, N = task["nuclide"]
     lines.append("A={:d}".format(Z+N))
 
@@ -817,9 +811,10 @@ def generate_menj_par(task, postfix=""):
     lines.append("lamHcm={:.1f}".format(task["a_cm"]/task["hw"]))
     
     # NN      : compute 2-body matrix elements (0=no, 1=yes)
-    #  
+    # Hardcoded to be 1, since there is no point in using the menj
+    # variant without two body interaction  
 
-    lines.append("NN={:d}".format(task["NN"]))
+    lines.append("NN={:d}".format(1))
     
     # EMax    : maximum 2-body HO quantum number of the TBME file
     #
@@ -828,22 +823,24 @@ def generate_menj_par(task, postfix=""):
     # MEID    : string containing path/ID of the 2B interaction
     #           matrix element file that is read in
     
-    lines.append("MEID={:>1}".format(task["MEID"]))
+    lines.append("MEID={:>1}".format(task["me2j_file_id"]))
             
     # TrelID  : string containing path/ID of the 2B kinetic energy
     #           matrix element file that is read in
-
-    lines.append("TrelID={:>1}".format(task["TrelID"]))
+    # Hardcoding "trel" as file ID
+    
+    lines.append("TrelID={:>1}".format("trel"))
             
     # RsqID   : string containing path/ID of the 2B squared radius
     #           matrix element file that is read in
+    # Hardcoding "rsq" as file ID
 
-    lines.append("RsqID={:>1}".format(task["RsqID"]))
+    lines.append("RsqID={:>1}".format("rsq"))
     
     # NNN     : compute 3-body matrix elements (0=no, 1=yes)
     #
 
-    lines.append("NNN={:d}".format(task["NNN"]))
+    lines.append("NNN={:d}".format(task["use_3b"]))
     
     # E3Max   : maximum 3-body HO quantum number
     # 
@@ -853,7 +850,7 @@ def generate_menj_par(task, postfix=""):
     # ME3ID   : string containing path/ID of the 3B interaction
     #           matrix element file that is read in
 
-    lines.append("ME3ID={:>1}".format(task["ME3ID"]))
+    lines.append("ME3ID={:>1}".format(task["me3j_file_id"]))
             
     print(os.path)
     """

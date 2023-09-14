@@ -17,6 +17,8 @@ University of Notre Dame
 - 09/07/19 (pjf): Remove Nv from truncation_parameters.
 - 10/24/19 (mac): Add MFDnRunMode kLanczosOnly.
 - 06/04/23 (mac): Add JFilterMode.
+- 09/14/23 (slv): Add VariantMode
+
 """
 
 import enum
@@ -182,3 +184,20 @@ class MFDnRunMode(enum.IntEnum):
     kDimension = 1
     kNonzeros = 3
     kLanczosOnly = 4
+
+    
+################################################################
+# MFDn variant  modes
+################################################################
+
+@enum.unique
+class VariantMode(enum.IntEnum):
+    """MFDn Variant mode 
+
+    kH2 = 0      H2 mode 
+
+    kMENJ = 1    Menj variant mode
+    
+    """
+    kH2 = 0
+    kMENJ = 1    

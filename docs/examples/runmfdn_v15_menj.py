@@ -1,6 +1,13 @@
 # This is a code to test if both mfdn.input and menj.par file are created using mfdn_v15.py
 
 # This code is adapted from runmfdn13.py
+# -9/13/2023 (slv): Made the following changes to the Input parameters specific to calling menj extension of MFDn
+#    + Created ncci.modes.VariantMode.kMENJ as a mode to differ from h2 mode
+#      This will be used to construct the appropriate descriptor
+#    + The following task dictionary keys are deprecated for MENJ
+#      use_coulomb, hw_cm, NN, TrelID, RsqID 
+#    + Rename NNN to use_3n
+#    + Hardcode TRel and Rsq file id
 
 
 import mcscript
@@ -52,7 +59,7 @@ hw = 20
 eigenvectors = 4
 max_iterations = 600
 tolerance = 1e-6
-
+alpha =[625] # can be [625, 400]
 # Lawson
 a_cm = 50.
 
@@ -62,29 +69,33 @@ a_cm = 50.
 
 tasks = [{
         # nuclide parameters
-        "nuclide": nuclide_list[0],
+
+        "nuclide": nuclide,
 
         # Hamiltonian parameters
         "interaction": "EntemMachleidt",
-        "use_coulomb": True,
-        "a_cm": a_cm,
-        "hw_cm": None,
 
-        # input TBME parameters
-        "truncation_int": ("tb",6),
-        "hw_int": hw,
-        "truncation_coul": ("tb",6),
-        "hw_coul": hw_coul,
+        "a_cm": a_cm,
+
+        # Flag to enable menj
+        #"menj_enabled":True, # MODE VARIABLE AS kMENJ
+        #mfdn_variant": ncci.modes.VariantMode.kH2,
+        "mfdn_variant": ncci.modes.VariantMode.kMENJ,
+    
+        
+        # parameters for menj.par
+        
+        "EMax" : 12, # NOT REQUIRED IN THE DESCRIPTOR
+        "me2j_file_id" : "chi2b_srg{:04d}".format(a),  # NAME??
+        "use_3b" : False,
+        "E3Max" : 12, # "N3_max", "N3max", "E3_max"???   how will this appear in the descriptor?
+        "me3j_file_id" : "chi2b3b_srg{:04d}ho40C".format(a),  # NAME??
+        # relation of MEID and ME3ID to interaction?  Is a dummy ok for ME3ID if use_3n=False???
+        # and how will we reflect that in the interaction name used in the descriptor?
 
         # basis parameters
-        "basis_mode": ncci.modes.BasisMode.kDirect,
+        "basis_mode": ncci.modes.BasisMode.kDirect, 
         "hw": hw,
-
-        # transformation parameters
-        "xform_truncation_int": None,
-        "xform_truncation_coul": None,
-        "hw_coul_rescaled": None,
-        "target_truncation": None,
 
         # traditional oscillator many-body truncation
         "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
@@ -131,20 +142,6 @@ tasks = [{
             ("chi2b3b_srg0625ho40C",{"filename": "chi2b3b_srg0625ho40C_eMax12_EMax12_hwHO020.me3j.bin","qn":(0,0,0)}),
         ],
 
-        # Flag to enable menj
-        "menj_enabled":True,
-        
-        # parameters for menj.par
-        # "lamHcm" : 3.0,
-        "NN" : 1,
-        "EMax" : 12,
-        "MEID" : "chi2b_srg0625",
-        "TrelID" : "trel",
-        "RsqID" : "rsq",
-        "NNN" : 0,
-        "E3Max" : 12,
-        "ME3ID" : "chi2b3b_srg0625ho40C",
-
         # wavefunction storage
         "save_wavefunctions": True,
 
@@ -154,14 +151,16 @@ tasks = [{
         "mfdn_executable": "xmfdn-menj-lan",
         "mfdn_driver": ncci.mfdn_v15,
     }
-   ]
+    for a in alpha
+    for nuclide in nuclide_list
+]   
 
 """
 ##################################################################
 # Test generate mfdn input
 ##################################################################
 
-ncci.mfdn_v15.generate_mfdn_input(tasks)
+ncci.mfdn_v15.generate_menj_par(tasks)
 
 """
 
@@ -180,7 +179,7 @@ def task_pool(current_task):
 
 mcscript.task.init(
     tasks,
-    task_descriptor=ncci.descriptors.task_descriptor_7,
+    task_descriptor=ncci.descriptors.task_descriptor_menj,
     task_pool=task_pool,
     phase_handler_list=ncci.handlers.task_handler_mfdn_phases,
     )
@@ -190,3 +189,4 @@ mcscript.task.init(
 ################################################################
 
 mcscript.termination()
+

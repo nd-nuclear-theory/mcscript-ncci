@@ -21,6 +21,8 @@ University of Notre Dame
 - 07/08/21 (pjf): Add natural_orbital_indicator to task_descriptor_7_trans.
 - 12/30/22 (zz): Add isoscalar_coulomb_indicator to task_descriptor_7.
 - 06/04/23 (mac): Add task_descriptor_decomposition_2.
+- 09/14/23 (slv): Add task_descriptor_menj
+
 """
 import mcscript.exception
 import mcscript.utils
@@ -174,6 +176,55 @@ def task_descriptor_7_trans(task):
     )
 
     return descriptor
+
+################################################################
+# task descriptor for menj runs
+################################################################
+
+def task_descriptor_menj(task):
+    """Task descriptor format 7 for menj runs 
+
+        TO DO (slv) : Create appropriate doc string
+
+        Overhaul for new h2utils scripting:
+        - Strip back down to basic form for oscillator-like runs only.
+        - Adjust some field labels.
+        - Add tolerance.
+        - Provide default Nstep=2 for convenience when used in transitions run.
+    """
+    if (
+        task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kNmax
+        and
+        task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated)
+        and
+        task["mfdn_variant"] is modes.VariantMode.kMENJ
+    ):
+        # traditional oscillator run
+        template_string = (
+            "Z{nuclide[0]}-N{nuclide[1]}-{me2j_file_id}"
+            "-hw{hw:06.3f}"
+            "-a_cm{a_cm:g}"
+            "-Nmax{Nmax:02d}"
+            )
+    else:
+        raise mcscript.exception.ScriptError("mode not supported by task descriptor")
+
+    truncation_parameters = task["truncation_parameters"]
+    if task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kFCI:
+        fci_indicator = "-fci"
+    else:
+        fci_indicator = ""
+    if (truncation_parameters.get("Nstep") == 1) or (truncation_parameters.get("parity") == 0):
+        mixed_parity_indicator = "x"
+    else:
+        mixed_parity_indicator = ""
+        
+    descriptor = template_string.format(
+        **mcscript.utils.dict_union(task, truncation_parameters)
+        )
+
+    return descriptor
+
 
 def task_descriptor_8(task):
     """Task descriptor format 8
