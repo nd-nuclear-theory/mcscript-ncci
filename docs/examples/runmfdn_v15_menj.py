@@ -122,7 +122,7 @@ tasks = [{
         "ob_observable_sets": ['M1', 'E2'],
 
         # two-body observables
-        "tb_observable_sets": ["H-components","am-sqr", "isospin"],
+        #"tb_observable_sets": ["H-components","am-sqr", "isospin"],
         # "tb_observable_sets": ["H-components"],
         # "tb_observables": [
            # ("CSU3",  (0,0,0), {"CSU3-U": 1/(A-1), "CSU3-V": 1.0}),
