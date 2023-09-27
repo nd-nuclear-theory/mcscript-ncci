@@ -181,7 +181,9 @@ mcscript.task.init(
     tasks,
     task_descriptor=ncci.descriptors.task_descriptor_menj,
     task_pool=task_pool,
-    phase_handler_list=ncci.handlers.task_handler_mfdn_phases,
+    phase_handler_list=[task_handler_mfdn_run],
+    # Having just one phase on the phase_handler_list
+    # Check the repercussions of this move
     )
 
 ################################################################
