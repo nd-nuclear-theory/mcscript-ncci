@@ -216,31 +216,34 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         if task.get("reduce_solver_threads"):
             inputlist["reduce_solver_threads"] = task["reduce_solver_threads"]
 
-        # Hamiltonian input
-        inputlist["TBMEfile"] = "tbme-H"
+        # (slv) If menj_enabled is True, other tbme and two body observables are not included in the
+        # mfdn.input
+        if not task["menj_enabled"]:
+            # Hamiltonian input
+            inputlist["TBMEfile"] = "tbme-H"
 
-        # tbo: collect tbo names
-        obs_basename_list = [
-            "tbme-{}".format(id_)
-            for id_ in operators.tb.get_tbme_targets(task)[(0,0,0)].keys()
-        ]
+            # tbo: collect tbo names
+            obs_basename_list = [
+                "tbme-{}".format(id_)
+                for id_ in operators.tb.get_tbme_targets(task)[(0,0,0)].keys()
+            ]
 
-        # do not evaluate Hamiltonian as observable
-        #  NOTE (pjf): due to possible bug/precision issues in MFDn, evaluate H
-        #    as a consistency check
-        ##obs_basename_list.remove("tbme-H")
+            # do not evaluate Hamiltonian as observable
+            #  NOTE (pjf): due to possible bug/precision issues in MFDn, evaluate H
+            #    as a consistency check
+            ##obs_basename_list.remove("tbme-H")
 
-        # tbo: log tbo names in separate file to aid future data analysis
-        mcscript.utils.write_input("tbo_names{:s}.dat".format(postfix), input_lines=obs_basename_list)
+            # tbo: log tbo names in separate file to aid future data analysis
+            mcscript.utils.write_input("tbo_names{:s}.dat".format(postfix), input_lines=obs_basename_list)
 
-        # tbo: count number of observables
-        num_obs = len(obs_basename_list)
-        if num_obs > 32:
-            raise mcscript.exception.ScriptError("Too many observables for MFDn v15")
+            # tbo: count number of observables
+            num_obs = len(obs_basename_list)
+            if num_obs > 32:
+                raise mcscript.exception.ScriptError("Too many observables for MFDn v15")
 
-        if task.get("calculate_tbo", True):
-            inputlist["numTBops"] = num_obs
-            obslist["TBMEoperators"] = obs_basename_list
+            if task.get("calculate_tbo", True):
+                inputlist["numTBops"] = num_obs
+                obslist["TBMEoperators"] = obs_basename_list
 
         # obdme: parameters
         inputlist["obdme"] = task.get("calculate_obdme", True)
@@ -851,7 +854,8 @@ def generate_menj_par(task, postfix=""):
     #           matrix element file that is read in
 
     lines.append("ME3ID={:>1}".format(task["me3j_file_id"]))
-            
+
+    # Diagnostics        
     print(os.path)
     """
     if not os.path.isfile("{:>}_eMax{:d}_EMax{:d}_hwHO{:03d}.me2j.bin".format(task["MEID"],task["EMax"],task["E3Max"],task["hw"])):
