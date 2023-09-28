@@ -68,7 +68,11 @@ University of Notre Dame
 - 8/28/23 (slv): 
     + used .format for strings inputs in generate_menj_par() 
     + lamHcm computed as a_cm/hw instead of getting it as an input in the task dictionary
-
+- 9/28/2023 (slv):
+    + Instead of "menj_enabled" key in the task dictionary, we use modes.VariantMode.kMENJ
+    + If the variant mode is kMENJ, then generate_mfdn_input will not look for TBME files
+      needed for computing two body observables in modes.VariantMode.kH2 mode
+       
 """
 import errno
 import os
@@ -216,9 +220,10 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         if task.get("reduce_solver_threads"):
             inputlist["reduce_solver_threads"] = task["reduce_solver_threads"]
 
-        # (slv) If menj_enabled is True, other tbme and two body observables are not included in the
+        # (slv) If mfdn_variant is kMENJ, other tbme and two body observables are not included in the
         # mfdn.input
-        if not task["menj_enabled"]:
+        
+        if not (task["mfdn_variant"] is modes.VariantMode.kMENJ):
             # Hamiltonian input
             inputlist["TBMEfile"] = "tbme-H"
 
@@ -294,7 +299,7 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             os.path.join(work_dir, "mfdn_partitioning.info")
             ])
 
-    if task["menj_enabled"]:
+    if task["mfdn_variant"] is modes.VariantMode.kMENJ:
         generate_menj_par(task, postfix)
 
 
@@ -318,7 +323,7 @@ def run_mfdn(task, postfix=""):
             errno.ENOENT, os.strerror(errno.ENOENT), "mfdn.input"
         )
     # check menj.par exists if a flag in task show that menj extension is enabled
-    if task["menj_enabled"]:
+    if task["mfdn_variant"] is modes.VariantMode.kMENJ:
         if not os.path.isfile("menj.par"):
             raise FileNotFoundError(
                 errno.ENOENT, os.strerror(errno.ENOENT), "menj.par"

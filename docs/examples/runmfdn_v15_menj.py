@@ -9,7 +9,6 @@
 #    + Rename NNN to use_3n
 #    + Hardcode TRel and Rsq file id
 
-
 import mcscript
 import ncci
 import ncci.mfdn_v15
