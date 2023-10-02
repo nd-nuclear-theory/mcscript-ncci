@@ -198,14 +198,6 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     # nucleus
     inputlist["Nprotons"], inputlist["Nneutrons"] = task["nuclide"]
 
-    # single-particle orbitals
-    inputlist["orbitalfile"] = environ.orbitals_filename(postfix)
-    mcscript.call([
-        "cp", "--verbose",
-        environ.orbitals_filename(postfix),
-        os.path.join(work_dir, environ.orbitals_filename(postfix))
-    ])
-
     # truncation mode
     truncation_setup_functions[task["mb_truncation_mode"]](task, inputlist)
 
@@ -231,6 +223,15 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         # mfdn.input
         
         if not (task["mfdn_variant"] is modes.VariantMode.kMENJ):
+            # (slv) orbitalfile is created if variant mode is not kMENJ
+            # single-particle orbitals
+            inputlist["orbitalfile"] = environ.orbitals_filename(postfix)
+            mcscript.call([
+                "cp", "--verbose",
+                environ.orbitals_filename(postfix),
+                os.path.join(work_dir, environ.orbitals_filename(postfix))
+            ])
+
             # Hamiltonian input
             inputlist["TBMEfile"] = "tbme-H"
 
