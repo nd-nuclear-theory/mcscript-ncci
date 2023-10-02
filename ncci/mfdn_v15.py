@@ -72,7 +72,7 @@ University of Notre Dame
     + Instead of "menj_enabled" key in the task dictionary, we use modes.VariantMode.kMENJ
     + If the variant mode is kMENJ, then generate_mfdn_input will not look for TBME files
       needed for computing two body observables in modes.VariantMode.kH2 mode
-       
+- 10/2/2023 (slv): Hardcoded Nshell=11 if variant mode is modes.VariantMode.kMENJ in generate_mfdn_input()       
 """
 import errno
 import os
@@ -213,6 +213,13 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         if (task["basis_mode"] in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):
             inputlist["hbomeg"] = float(task["hw"])
 
+        # (slv) If mfdn_variant is kMENJ, Nshell is hardcoded to 11
+        # This is temporary. (TO DO: Understand what this number means.
+        # In src_common/module_MFDn_input.f90, it says the default is -1
+        
+        if (task["mfdn_variant"] is modes.VariantMode.kMENJ):
+            inputlist["Nshell"] = 11
+            
         # diagonalization parameters
         inputlist["neivals"] = int(task.get("eigenvectors",4))
         inputlist["maxits"] = int(task["max_iterations"])

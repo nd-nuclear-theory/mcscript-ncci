@@ -8,6 +8,7 @@
 #      use_coulomb, hw_cm, NN, TrelID, RsqID 
 #    + Rename NNN to use_3n
 #    + Hardcode TRel and Rsq file id
+# -10/2/2023 (slv): Changed a_cm to 60 so that lamHcm = 3.0
 
 import mcscript
 import ncci
@@ -60,7 +61,7 @@ max_iterations = 600
 tolerance = 1e-6
 alpha =[625] # can be [625, 400]
 # Lawson
-a_cm = 50.
+a_cm = 60.
 
 ##################################################################
 # build task list
