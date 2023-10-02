@@ -43,7 +43,7 @@ Setup:
     So first please make sure you are familiar with the principles of running
     jobs on your machine and of doing so properly with `mcscript`.  Some notes
     on submission at NERSC are provided under examples `runmfdn13` and
-    `runmfdn13-gpu` below.
+    `runmfdn13gpu` below.
 
 Recommended examples:
 
@@ -184,7 +184,7 @@ runmfdn13: harmonic oscillator direct run with MFDn v15, for use with postproces
     sequence these jobs, without having to wait for each one to finish.
 
 
-runmfdn13-gpu: harmonic oscillator direct run with MFDn v15, for use with postprocessor
+runmfdn13gpu: harmonic oscillator direct run with MFDn v15, for use with postprocessor
 
     For a GPU run, we must disable calculation of one-body observables, since
     these are not yet GPU enabled, and use gpu version of the mfdn executable.
@@ -195,7 +195,7 @@ runmfdn13-gpu: harmonic oscillator direct run with MFDn v15, for use with postpr
     module files for the CPU programming environment):
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    qsubm mfdn13-gpu debug 30 --phase=0 --pool="Nmax02" --serialthreads=256 --mail-type=END,FAIL
+    qsubm mfdn13gpu debug 30 --phase=0 --pool="Nmax02" --serialthreads=256 --mail-type=END,FAIL
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Then, for the MFDn diagonalization phase should be submitted to the GPU
@@ -203,7 +203,7 @@ runmfdn13-gpu: harmonic oscillator direct run with MFDn v15, for use with postpr
     programming environment):
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    qsubm mfdn13-gpu debug 30 --phase=1 --pool="Nmax02" --node-type=gpu --ranks=1 --nodes=1 --threads=32 --mail-type=END,FAIL --account=<account>
+    qsubm mfdn13gpu debug 30 --phase=1 --pool="Nmax02" --node-type=gpu --ranks=1 --nodes=1 --threads=32 --mail-type=END,FAIL --account=<account>
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Notice the `--node-type=gpu` option.  In place of `<account>` you should
@@ -212,7 +212,7 @@ runmfdn13-gpu: harmonic oscillator direct run with MFDn v15, for use with postpr
     above:
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    qsubm mfdn13-gpu xfer 30 --phase=2 --pool="Nmax02" --mail-type=END,FAIL
+    qsubm mfdn13gpu xfer 30 --phase=2 --pool="Nmax02" --mail-type=END,FAIL
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
