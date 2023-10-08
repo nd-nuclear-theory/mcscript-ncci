@@ -72,7 +72,10 @@ University of Notre Dame
     + Instead of "menj_enabled" key in the task dictionary, we use modes.VariantMode.kMENJ
     + If the variant mode is kMENJ, then generate_mfdn_input will not look for TBME files
       needed for computing two body observables in modes.VariantMode.kH2 mode
-- 10/2/2023 (slv): Hardcoded Nshell=11 if variant mode is modes.VariantMode.kMENJ in generate_mfdn_input()       
+- 10/2/2023 (slv): Hardcoded Nshell=11 if variant mode is modes.VariantMode.kMENJ in generate_mfdn_inp
+ut()
+
+- 10/7/2023 (slv): Applied a condition such that, if the variant mode is modes.VariantMode.kMENJ,       then no attempt is made to save the  h2 related files 
 """
 import errno
 import os
@@ -455,23 +458,26 @@ def save_mfdn_task_data(task, postfix=""):
     # save full archive of input, log, and output files
     print("Saving full output files...")
     # logging
-    archive_file_list = [
-        environ.h2mixer_filename(postfix),
-        "tbo_names{:s}.dat".format(postfix)
-        ]
-    # orbital information
-    archive_file_list += [
-        environ.orbitals_int_filename(postfix),
-        environ.orbitals_filename(postfix),
-        ]
-    # transformation information
-    # Use glob to allow for missing files (e.g., in decomposition run).
-    archive_file_list += glob.glob(environ.radial_xform_filename(postfix))
-    archive_file_list += glob.glob(environ.radial_olap_int_filename(postfix))
-
+    
     # If MFDn is run on kMENJ variant mode, the "use coulomb" key will not be
     # present in the task dictionary
+    archive_file_list = []
     if not(task["mfdn_variant"] is modes.VariantMode.kMENJ):
+        archive_file_list = [
+            environ.h2mixer_filename(postfix),
+            "tbo_names{:s}.dat".format(postfix)
+        ]
+        # orbital information
+        archive_file_list += [
+            environ.orbitals_int_filename(postfix),
+            environ.orbitals_filename(postfix),
+        ]
+        # transformation information
+        # Use glob to allow for missing files (e.g., in decomposition run).
+        archive_file_list += glob.glob(environ.radial_xform_filename(postfix))
+        archive_file_list += glob.glob(environ.radial_olap_int_filename(postfix))
+
+
         # Coulomb information:
         if task["use_coulomb"]:
             archive_file_list += glob.glob(environ.orbitals_coul_filename(postfix))
