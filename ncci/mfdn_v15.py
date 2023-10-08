@@ -468,18 +468,22 @@ def save_mfdn_task_data(task, postfix=""):
     # Use glob to allow for missing files (e.g., in decomposition run).
     archive_file_list += glob.glob(environ.radial_xform_filename(postfix))
     archive_file_list += glob.glob(environ.radial_olap_int_filename(postfix))
-    # Coulomb information:
-    if task["use_coulomb"]:
-        archive_file_list += glob.glob(environ.orbitals_coul_filename(postfix))
-        archive_file_list += glob.glob(environ.radial_olap_coul_filename(postfix))
-    # natural orbital information
-    if task.get("natural_orbitals"):
-        archive_file_list += [
-            environ.natorb_info_filename(postfix),
-            environ.natorb_obdme_filename(postfix),
-        ]
-        # glob for natural orbital xform
-        archive_file_list += glob.glob(environ.natorb_xform_filename(postfix))
+
+    # If MFDn is run on kMENJ variant mode, the "use coulomb" key will not be
+    # present in the task dictionary
+    if not(task["mfdn_variant"] is modes.VariantMode.kMENJ):
+        # Coulomb information:
+        if task["use_coulomb"]:
+            archive_file_list += glob.glob(environ.orbitals_coul_filename(postfix))
+            archive_file_list += glob.glob(environ.radial_olap_coul_filename(postfix))
+        # natural orbital information
+        if task.get("natural_orbitals"):
+            archive_file_list += [
+                environ.natorb_info_filename(postfix),
+                environ.natorb_obdme_filename(postfix),
+            ]
+            # glob for natural orbital xform
+            archive_file_list += glob.glob(environ.natorb_xform_filename(postfix))
     # MFDn input
     archive_file_list += [os.path.join(work_dir, "mfdn.input")]
     if os.path.isfile(os.path.join(work_dir, "mfdn_sp_orbitals.info")):
