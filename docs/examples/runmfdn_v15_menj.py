@@ -181,7 +181,8 @@ mcscript.task.init(
     tasks,
     task_descriptor=ncci.descriptors.task_descriptor_menj,
     task_pool=task_pool,
-    phase_handler_list=[ncci.handlers.task_handler_mfdn_run],
+    phase_handler_list=[ncci.handlers.task_handler_mfdn_run,
+                        ncci.handlers.task_handler_mfdn_post],
     )
 
 ################################################################
