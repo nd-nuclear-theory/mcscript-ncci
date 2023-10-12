@@ -21,7 +21,7 @@ mcscript.init()
 
 # TBME paths
 ncci.environ.interaction_dir_list = [
-    "example-data",
+    "$MCSCRIPT_DIR/../mcscript-ncci/docs/examples/example-data",
 ]
 ncci.environ.operator_dir_list = [
     "example-data"
@@ -132,7 +132,7 @@ tasks = [{
         # sources
         "obme_sources": [],
         "tbme_sources": [
-            # ("CSU3-U", {"filename": "CSU3-U-tb-6.bin", "qn": (0,0,0)}),
+            #("CSU3-U", {"filename": "CSU3-U-tb-6.bin", "qn": (0,0,0)}),
             # ("CSU3-V", {"filename": "CSU3-V-tb-6.bin", "qn": (0,0,0)}),
             # ("CSp3R-U", {"filename": "CSp3R-U-tb-6.bin", "qn": (0,0,0)}),
             # ("CSp3R-V", {"filename": "CSp3R-V-tb-6.bin", "qn": (0,0,0)}),
@@ -181,8 +181,7 @@ mcscript.task.init(
     tasks,
     task_descriptor=ncci.descriptors.task_descriptor_menj,
     task_pool=task_pool,
-    phase_handler_list=[ncci.handlers.task_handler_mfdn_run,
-                        ncci.handlers.task_handler_mfdn_post],
+    phase_handler_list=[ncci.handlers.task_handler_mfdn_menj_pre],
     )
 
 ################################################################

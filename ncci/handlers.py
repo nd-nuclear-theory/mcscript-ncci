@@ -56,11 +56,14 @@ University of Notre Dame
 - 07/06/22 (pjf): Improve relative task handlers.
 - 08/15/22 (pjf): Implement cleanup in task_handler_mfdn_postprocessor_post.
 - 05/31/23 (pjf): Add postprocessor archive handlers.
+- 10/12/23 (slv): Add mfdn_menj_pre handler and a function that runs all three phase sequentially
+
 """
 import os
 import glob
 import mcscript
 import mcscript.exception
+import subprocess
 
 from . import (
     library,
@@ -486,6 +489,55 @@ task_handler_relative_phases = [
     task_handler_relative_post,
 ]
 
+
+################################################################
+# MENJ enabled variant mode of MFDn
+################################################################
+
+def task_handler_mfdn_menj_pre(task, postfix=""):
+    """Task handler for ensuring relevant interaction files in the working directory before MFDn run phase
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+    work_dir = "work{:s}".format(postfix)
+    mcscript.utils.mkdir(work_dir, exist_ok=True, parents=True)
+
+    # TO DO (slv): test this
+    source_filenames = task.get("tbme_sources")
+    for source in source_filenames:
+        mcscript.call(
+            [
+                "cp",
+                "--verbose",
+                os.path.join(environ.interaction_dir_list[0],source[1].get("filename")),
+                os.path.join(work_dir)
+            ],
+            shell=True
+        )
+        
+                
+
+def task_handler_mfdn_menj(task, postfix=""):
+    """Task handler for MENJ enabled run, including serial pre and post
+    steps.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+
+    """
+
+    task_handler_mfdn_menj_pre(task, postfix=postfix)
+    task_handler_mfdn_run(task, postfix=postfix)
+    task_handler_mfdn_post(task, postfix=postfix)
+
+task_handler_mfdn_menj_phases = [
+    task_handler_mfdn_menj_pre,
+    task_handler_mfdn_run,
+    task_handler_mfdn_post,
+]
 
 ################################################################
 # mfdn archiving
