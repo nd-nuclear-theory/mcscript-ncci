@@ -74,6 +74,7 @@ from . import (
     relative,
     utils,
     mfdn_v15,
+    environ, # (slv) : added to copy interaction files
 )
 
 # set default MFDn driver
