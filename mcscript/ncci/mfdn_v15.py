@@ -69,8 +69,11 @@ import collections
 import re
 import warnings
 
-import mcscript
+import mcscript.control
 import mcscript.exception
+import mcscript.parameters
+import mcscript.task
+import mcscript.utils
 
 from . import modes, environ, operators
 
@@ -188,7 +191,7 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
 
     # single-particle orbitals
     inputlist["orbitalfile"] = environ.orbitals_filename(postfix)
-    mcscript.call([
+    mcscript.control.call([
         "cp", "--verbose",
         environ.orbitals_filename(postfix),
         os.path.join(work_dir, environ.orbitals_filename(postfix))
@@ -277,7 +280,7 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         if not os.path.exists(partition_filename):
             print("Partition filename: {}".format(partition_filename))
             raise mcscript.exception.ScriptError("partition file not found")
-        mcscript.call([
+        mcscript.control.call([
             "cp", "--verbose",
             partition_filename,
             os.path.join(work_dir, "mfdn_partitioning.info")
@@ -307,16 +310,16 @@ def run_mfdn(task, postfix=""):
 
     # remove any stray files from a previous run
     if os.path.exists("mfdn.out"):
-        mcscript.call(["rm", "-v", "mfdn.out"])
+        mcscript.control.call(["rm", "-v", "mfdn.out"])
     if os.path.exists("mfdn.res"):
-        mcscript.call(["rm", "-v", "mfdn.res"])
+        mcscript.control.call(["rm", "-v", "mfdn.res"])
 
     # invoke MFDn
-    mcscript.call(
+    mcscript.control.call(
         [
             environ.mfdn_filename(task["mfdn_executable"])
         ],
-        mode=mcscript.CallMode.kHybrid,
+        mode=mcscript.control.CallMode.kHybrid,
         check_return=True,
         file_watchdog=mcscript.control.FileWatchdog("mfdn.out"),
         file_watchdog_restarts=3,
@@ -393,14 +396,14 @@ def extract_natural_orbitals(task, postfix=""):
         )
 
     print("Saving OBDME files for natural orbital generation...")
-    mcscript.call(
+    mcscript.control.call(
         [
             "cp", "--verbose",
             os.path.join(work_dir, obdme_info_filename),
             environ.natorb_info_filename(postfix)
         ]
     )
-    mcscript.call(
+    mcscript.control.call(
         [
             "cp", "--verbose",
             obdme_filename[0],
@@ -523,7 +526,7 @@ def cleanup_mfdn_workdir(task, postfix=""):
     """
     # cleanup of wave function files
     scratch_file_list = glob.glob("work{:s}/*".format(postfix))
-    mcscript.call(["rm", "-vf"] + scratch_file_list)
+    mcscript.control.call(["rm", "-vf"] + scratch_file_list)
 
 
 def extract_mfdn_task_data(
@@ -562,7 +565,7 @@ def extract_mfdn_task_data(
     archive_path = os.path.join(task_data_dir, task_data_archive_filename)
 
     # extract archive
-    mcscript.call(
+    mcscript.control.call(
         [
             "tar", "zxvf", archive_path,
         ]
@@ -588,14 +591,14 @@ def extract_mfdn_task_data(
     # MFDN obdme
     if (glob.glob(extracted_dir+"/mfdn.*obdme*")):
         file_list += glob.glob(extracted_dir+"/mfdn.*obdme*")
-    mcscript.call(["mv", "-t", work_dir+"/",] + file_list)
+    mcscript.control.call(["mv", "-t", work_dir+"/",] + file_list)
 
     # move remaining files into task directory
     file_list = glob.glob(extracted_dir+"/*")
-    mcscript.call(["mv", "-t", "./",] + file_list)
+    mcscript.control.call(["mv", "-t", "./",] + file_list)
 
     # remove temporary directories
-    mcscript.call(["rm", "-vfd", extracted_dir, run_name])
+    mcscript.control.call(["rm", "-vfd", extracted_dir, run_name])
 
 
 def extract_wavefunctions(
@@ -647,7 +650,7 @@ def extract_wavefunctions(
         archive_path = os.path.join(wavefunctions_dir, wavefunctions_archive_filename)
 
     # extract archive
-    mcscript.call(
+    mcscript.control.call(
         [
             "tar", "xvf", archive_path,
         ]
@@ -658,10 +661,10 @@ def extract_wavefunctions(
 
     # move files into task directory
     file_list = glob.glob(os.path.join(extracted_dir,"*"))
-    mcscript.call(["mv", "-t", target_dir,] + file_list)
+    mcscript.control.call(["mv", "-t", target_dir,] + file_list)
 
     # remove temporary directories
-    mcscript.call(["rm", "-vfd", extracted_dir, run_name])
+    mcscript.control.call(["rm", "-vfd", extracted_dir, run_name])
 
 
 def generate_smwf_info(task, orbital_filename, partitioning_filename, res_filename, info_filename='mfdn_smwf.info'):
@@ -694,14 +697,14 @@ def generate_smwf_info(task, orbital_filename, partitioning_filename, res_filena
     lines.append("")
 
     # convert orbitals to 15200
-    mcscript.call(
+    mcscript.control.call(
         [
             environ.shell_filename("orbital-gen"),
             "--convert",
             "15099", "{:s}".format(orbital_filename),
             "15200", "{:s}".format(orbital_filename+"15200"),
         ],
-        mode=mcscript.CallMode.kSerial
+        mode=mcscript.control.CallMode.kSerial
     )
 
     # append orbitals to info file
@@ -714,7 +717,7 @@ def generate_smwf_info(task, orbital_filename, partitioning_filename, res_filena
             lines.append(line.rstrip())
 
     # remove temporary orbital file
-    mcscript.call(["rm","-v",orbital_filename+"15200"])
+    mcscript.control.call(["rm","-v",orbital_filename+"15200"])
 
     # blank line
     lines.append("")

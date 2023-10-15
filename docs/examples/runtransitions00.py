@@ -15,13 +15,17 @@
 import math
 
 import mcscript
-import ncci
-import ncci.masks
-import ncci.mfdn_v15
-import ncci.postprocessing
+import mcscript.control
+import mcscript.task
+import mcscript.utils
+
+import mcscript.ncci as ncci
+import mcscript.ncci.masks
+import mcscript.ncci.mfdn_v15
+import mcscript.ncci.postprocessing
 
 # initialize mcscript
-mcscript.init()
+mcscript.control.init()
 
 ##################################################################
 # environment
@@ -70,7 +74,7 @@ tasks = [
         "interaction": interaction,
         "use_coulomb": coulomb,
         "hw": hw,
-    
+
         # basis mode parameters for OBME/TBME generation
         #
         # traditional oscillator many-body truncation
@@ -81,7 +85,7 @@ tasks = [
             "Nmax": Nmax,
             "Nstep": 2,
             },
-    
+
         # wf selection parameters for postprocessor
         "wf_source_run_list": ["mfdn13"],
         "wf_source_bra_selector": {
@@ -100,11 +104,11 @@ tasks = [
             (ncci.masks.mask_allow_near_yrast, {"ni_max": 1, "nf_max": 1}),
         ],
         "postprocessor_mask_verbose": False,
-    
+
         # obdme parameters
         "obdme_multipolarity": 2,
         "save_obdme": True,
-    
+
         # one-body observables
         #  ob_observable_sets: ["E0", "E1", "M1", "E2", "M2", ..., "GT", "F"]
         "ob_observable_sets": ["M1", "E2"],
@@ -112,7 +116,7 @@ tasks = [
             # (name, qn, operator_id)
             #            ^-from obme_sources (or builtin)
         ],
-    
+
         # two-body observables
         # "tb_observable_sets": ["H-components", "am-sqr", "isospin", "intrinsic-E0", "intrinsic-M1", "intrinsic-E2"],
         "tb_observable_sets": ["intrinsic-M1", "intrinsic-E2"],
@@ -134,7 +138,7 @@ tasks = [
             ("QpxQp_0", (0,0,0), {"U[QpxQp_0]": 1.0, "V[Qp,Qp]": 2.0}),
             ("QnxQn_0", (0,0,0), {"U[QnxQn_0]": 1.0, "V[Qn,Qn]": 2.0}),
             ],
-    
+
         # one-body sources
         "obme_sources": [
             # examples of direct construction:
@@ -147,7 +151,7 @@ tasks = [
             ("QpxQp_0", {"tensor-product": ["Qp","Qp"], "qn": (0,0,0)}),
             ("QnxQn_0", {"tensor-product": ["Qn","Qn"], "qn": (0,0,0)}),
         ],
-    
+
         # two-body sources
         "tbme_sources": [
             ("CSU3-U", {"filename": "CSU3-U-tb-6.bin", "qn": (0,0,0)}),
@@ -155,11 +159,11 @@ tasks = [
             ("CSp3R-U", {"filename": "CSp3R-U-tb-6.bin", "qn": (0,0,0)}),
             ("CSp3R-V", {"filename": "CSp3R-V-tb-6.bin", "qn": (0,0,0)}),
         ],
-    
+
         # file format parameters
         "h2_format": 15099,
         "h2_extension": "dat",  # TODO mac (10/12/20): switch to bin when safe
-    
+
         # executable name
         "mfdn-transitions_executable": "xtransitions"
 
@@ -193,4 +197,4 @@ mcscript.task.init(
 # termination
 ################################################################
 
-mcscript.termination()
+mcscript.control.termination()

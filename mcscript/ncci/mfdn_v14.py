@@ -58,7 +58,11 @@ import os
 import glob
 import warnings
 
-import mcscript
+import mcscript.control
+import mcscript.exception
+import mcscript.parameters
+import mcscript.task
+import mcscript.utils
 
 from . import (
     constants,
@@ -186,7 +190,7 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
 
     # create work directory if it doesn't exist yet (-p)
     work_dir = "work{:s}".format(postfix)
-    mcscript.call(["mkdir", "-p", work_dir])
+    mcscript.control.call(["mkdir", "-p", work_dir])
 
     # generate MFDn input file
     mcscript.utils.write_input(work_dir+"/mfdn.dat", input_lines=lines)
@@ -197,7 +201,7 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         partition_filename = mcscript.utils.expand_path(partition_filename)
         if not os.path.exists(partition_filename):
             raise mcscript.exception.ScriptError("partition file not found")
-        mcscript.call([
+        mcscript.control.call([
             "cp", "--verbose",
             partition_filename,
             os.path.join(work_dir, "mfdn_partitioning.info")
@@ -231,11 +235,11 @@ def run_mfdn(task, postfix=""):
         )
 
     # invoke MFDn
-    mcscript.call(
+    mcscript.control.call(
         [
             environ.mfdn_filename(task["mfdn_executable"])
         ],
-        mode=mcscript.CallMode.kHybrid,
+        mode=mcscript.control.CallMode.kHybrid,
         check_return=True,
         file_watchdog=mcscript.control.FileWatchdog("mfdn.out")
     )
@@ -294,14 +298,14 @@ def extract_natural_orbitals(task, postfix=""):
             )
 
     print("Saving OBDME files for natural orbital generation...")
-    mcscript.call(
+    mcscript.control.call(
         [
             "cp", "--verbose",
             os.path.join(work_dir, obdme_info_filename),
             environ.natorb_info_filename(postfix)
         ]
     )
-    mcscript.call(
+    mcscript.control.call(
         [
             "cp", "--verbose",
             obdme_filename[0],
@@ -327,9 +331,9 @@ def save_mfdn_task_data(task, postfix=""):
     print("Saving basic output files...")
     filename_prefix = "{:s}-mfdn-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
     res_filename = "{:s}.res".format(filename_prefix)
-    mcscript.call(["cp", "--verbose", work_dir+"/mfdn.res", res_filename])
+    mcscript.control.call(["cp", "--verbose", work_dir+"/mfdn.res", res_filename])
     out_filename = "{:s}.out".format(filename_prefix)
-    mcscript.call(["cp", "--verbose", work_dir+"/mfdn.out", out_filename])
+    mcscript.control.call(["cp", "--verbose", work_dir+"/mfdn.out", out_filename])
 
     # append obscalc-ob output to res file
     if os.path.exists(environ.obscalc_ob_res_filename(postfix)):
@@ -390,7 +394,7 @@ def save_mfdn_task_data(task, postfix=""):
     archive_file_list += glob.glob("obscalc-ob.*")
     # generate archive (outside work directory)
     archive_filename = "{:s}.tgz".format(filename_prefix)
-    mcscript.call(
+    mcscript.control.call(
         [
             "tar", "zcvf", archive_filename,
             "--transform=s,{:s}/,,".format(work_dir),
@@ -404,7 +408,7 @@ def save_mfdn_task_data(task, postfix=""):
         smwf_archive_file_list = glob.glob(work_dir+"/mfdn_smwf*")
         smwf_archive_file_list += glob.glob(work_dir+"/mfdn_MBgroups*")
         smwf_archive_filename = "{:s}-wf.tar".format(filename_prefix)
-        mcscript.call(
+        mcscript.control.call(
             [
                 "tar", "cvf", smwf_archive_filename,
                 "--transform=s,{:s}/,,".format(work_dir),
@@ -415,7 +419,7 @@ def save_mfdn_task_data(task, postfix=""):
 
     # copy results out (if in multi-task run)
     if (mcscript.task.results_dir is not None):
-        mcscript.call(
+        mcscript.control.call(
             [
                 "cp",
                 "--verbose",
@@ -425,8 +429,8 @@ def save_mfdn_task_data(task, postfix=""):
         )
         if task.get("save_wavefunctions"):
             wavefunction_dir = os.path.join(mcscript.parameters.run.work_dir, "wavefunctions")
-            mcscript.call(["mkdir", "-p", wavefunction_dir])
-            mcscript.call(
+            mcscript.control.call(["mkdir", "-p", wavefunction_dir])
+            mcscript.control.call(
                 [
                     "mv",
                     "--verbose",
@@ -445,4 +449,4 @@ def cleanup_mfdn_workdir(task, postfix=""):
     """
     # cleanup of wave function files
     scratch_file_list = glob.glob("work{:s}/*".format(postfix))
-    mcscript.call(["rm", "-vf"] + scratch_file_list)
+    mcscript.control.call(["rm", "-vf"] + scratch_file_list)

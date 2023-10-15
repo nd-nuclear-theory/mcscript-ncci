@@ -9,7 +9,7 @@
 
 import math
 
-import mcscript
+import mcscript.utils
 
 from . import constants
 
@@ -46,7 +46,7 @@ def mask_allow_near_yrast(task:dict, mask_params:dict, qn_pair, verbose=False):
     (qnf,qni) = qn_pair
     (Ji,gi,ni) = qni
     (Jf,gf,nf) = qnf
-    
+
     # get parameters
     ni_max = mask_params.get("ni_max", 999)
     if (isinstance(ni_max, dict)):
@@ -65,7 +65,7 @@ def mask_allow_near_yrast(task:dict, mask_params:dict, qn_pair, verbose=False):
     allow = (ni<=ni_max) and (nf<=nf_max)
     if negate_mask:
         allow = not allow
-        
+
     return allow
 
 
@@ -172,7 +172,7 @@ def mask_by_energy_cutoff(task:dict, mask_params:dict, qn_pair, verbose=False):
     E_max = mask_params.get("E_max", None)
     Ei_max = mask_params.get("Ei_max", None)
     Ef_max = mask_params.get("Ef_max", None)
-    
+
     # calculate mask value
     ket_results_data = task["metadata"]["ket_results_data"]
     bra_results_data = task["metadata"]["bra_results_data"]

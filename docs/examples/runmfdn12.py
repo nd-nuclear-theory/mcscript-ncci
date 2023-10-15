@@ -10,12 +10,14 @@
 """
 
 import mcscript
-import ncci
-import ncci.mfdn_v15
-import ncci.postprocessing
+import mcscript.control
+
+import mcscript.ncci as ncci
+import mcscript.ncci.mfdn_v15
+import mcscript.ncci.postprocessing
 
 # initialize mcscript
-mcscript.init()
+mcscript.control.init()
 
 ##################################################################
 # build task list
@@ -138,4 +140,4 @@ ncci.postprocessing.evaluate_ob_observables(task)
 # termination
 ################################################################
 
-mcscript.termination()
+mcscript.control.termination()

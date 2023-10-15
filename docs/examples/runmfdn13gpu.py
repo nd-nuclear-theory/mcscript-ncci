@@ -18,9 +18,9 @@
 """
 
 import mcscript
-import ncci
-import ncci.mfdn_v15
-import ncci.postprocessing
+import mcscript.ncci as ncci
+import mcscript.ncci.mfdn_v15
+import mcscript.ncci.postprocessing
 
 # initialize mcscript
 mcscript.init()
