@@ -180,14 +180,46 @@ def task_handler_mfdn_pre(task, postfix=""):
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
+    if (task["mfdn_variant"] is modes.VariantMode.kMENJ):
+        work_dir = "work{:s}".format(postfix)
+        mcscript.utils.mkdir(work_dir, exist_ok=True, parents=True) 
 
-    radial.set_up_interaction_orbitals(task, postfix=postfix)
-    radial.set_up_orbitals(task, postfix=postfix)
-    radial.set_up_xforms_analytic(task, postfix=postfix)
-    radial.set_up_obme_analytic(task, postfix=postfix)
-    tbme.generate_tbme(task, postfix=postfix)
-    if task.get("save_tbme"):
-        tbme.save_tbme(task, postfix=postfix)
+        # Construct the file names
+        me2j_filename = "{:>}_eMax{:d}_EMax{:d}_hwHO{:03d}.me2j.bin".format(task["me2j_file_id"],task["EMax"],task["E3Max"],task["hw"])
+        trel_filename = "trel_eMax{:d}_E3Max{:d}.me2j.bin".format(task["EMax"],task["E3Max"])
+        rsq_filename =  "rsq_eMax{:d}_E3Max{:d}.me2j.bin".format(task["EMax"],task["E3Max"])
+        me3j_filename = "{:>}_eMax{:d}_EMax{:d}_hwHO{:03d}.me3j.bin".format(task["me3j_file_id"],task["EMax"],task["E3Max"],task["hw"])
+
+        source_filenames = [me2j_filename, trel_filename, rsq_filename, me3j_filename]
+
+        """
+        # DIAGNOSTICs
+        print ("Found path :", mcscript.utils.search_in_subdirectories(os.environ.get("NCCI_DATA_DIR_H2","").split(":"), environ.interaction_dir_list, me2j_filename))
+        """
+
+        # Find and copy the above filenames to the working directory
+        for source in source_filenames:
+            mcscript.call(
+                [
+                    "cp",
+                    "--verbose",
+                    mcscript.utils.search_in_subdirectories(os.environ.get("NCCI_DATA_DIR_H2","").split(":"), environ.interaction_dir_list, source),
+                    # TO DO (slv): check how this function takes the base path
+                    os.path.join(work_dir)
+                ],
+                shell=True
+            )
+            
+    else:
+           
+       radial.set_up_interaction_orbitals(task, postfix=postfix)
+       radial.set_up_orbitals(task, postfix=postfix)
+       radial.set_up_xforms_analytic(task, postfix=postfix)
+       radial.set_up_obme_analytic(task, postfix=postfix)
+       tbme.generate_tbme(task, postfix=postfix)
+       if task.get("save_tbme"):
+           tbme.save_tbme(task, postfix=postfix)
+           
 
 def task_handler_mfdn_run(task, postfix=""):
     """Task handler for MFDn phase of oscillator basis run.
@@ -505,7 +537,9 @@ def task_handler_mfdn_menj_pre(task, postfix=""):
     work_dir = "work{:s}".format(postfix)
     mcscript.utils.mkdir(work_dir, exist_ok=True, parents=True)
 
-    # TO DO (slv): test this
+    # This will copy all the interaction files listed in the tbme_sources from its location given
+    # in the runscript, ncci.environ.interaction_dir_list to the working directory
+    
     source_filenames = task.get("tbme_sources")
     for source in source_filenames:
         mcscript.call(
@@ -519,7 +553,6 @@ def task_handler_mfdn_menj_pre(task, postfix=""):
         )
         
                 
-
 def task_handler_mfdn_menj(task, postfix=""):
     """Task handler for MENJ enabled run, including serial pre and post
     steps.
