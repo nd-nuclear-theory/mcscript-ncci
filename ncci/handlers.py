@@ -57,6 +57,8 @@ University of Notre Dame
 - 08/15/22 (pjf): Implement cleanup in task_handler_mfdn_postprocessor_post.
 - 05/31/23 (pjf): Add postprocessor archive handlers.
 - 10/12/23 (slv): Add mfdn_menj_pre handler and a function that runs all three phase sequentially
+- 10/19/23 (slv): Removed the menj_pre handler and used the modes.VariantMode.kMENJ as the 
+                  determining condition to copy the interaction files.
 
 """
 import os
@@ -181,6 +183,10 @@ def task_handler_mfdn_pre(task, postfix=""):
         postfix (string, optional): identifier to add to generated files
     """
     if (task["mfdn_variant"] is modes.VariantMode.kMENJ):
+        # Copy the required interaction files from the location given
+        # in the runscript, ncci.environ.interaction_dir_list to the working directory
+        # if MFDn is run in MENJ mode.
+
         work_dir = "work{:s}".format(postfix)
         mcscript.utils.mkdir(work_dir, exist_ok=True, parents=True) 
 
@@ -192,11 +198,6 @@ def task_handler_mfdn_pre(task, postfix=""):
 
         source_filenames = [me2j_filename, trel_filename, rsq_filename, me3j_filename]
 
-        """
-        # DIAGNOSTICs
-        print ("Found path :", mcscript.utils.search_in_subdirectories(os.environ.get("NCCI_DATA_DIR_H2","").split(":"), environ.interaction_dir_list, me2j_filename))
-        """
-
         # Find and copy the above filenames to the working directory
         for source in source_filenames:
             mcscript.call(
@@ -204,14 +205,13 @@ def task_handler_mfdn_pre(task, postfix=""):
                     "cp",
                     "--verbose",
                     mcscript.utils.search_in_subdirectories(os.environ.get("NCCI_DATA_DIR_H2","").split(":"), environ.interaction_dir_list, source),
-                    # TO DO (slv): check how this function takes the base path
                     os.path.join(work_dir)
                 ],
                 shell=True
             )
             
     else:
-           
+       # This section is executed if MFDn is run in H2 mode (not in modes.VariantMode.kMENJ).    
        radial.set_up_interaction_orbitals(task, postfix=postfix)
        radial.set_up_orbitals(task, postfix=postfix)
        radial.set_up_xforms_analytic(task, postfix=postfix)
@@ -522,56 +522,6 @@ task_handler_relative_phases = [
     task_handler_relative_post,
 ]
 
-
-################################################################
-# MENJ enabled variant mode of MFDn
-################################################################
-
-def task_handler_mfdn_menj_pre(task, postfix=""):
-    """Task handler for ensuring relevant interaction files in the working directory before MFDn run phase
-
-    Arguments:
-        task (dict): as described in module docstring
-        postfix (string, optional): identifier to add to generated files
-    """
-    work_dir = "work{:s}".format(postfix)
-    mcscript.utils.mkdir(work_dir, exist_ok=True, parents=True)
-
-    # This will copy all the interaction files listed in the tbme_sources from its location given
-    # in the runscript, ncci.environ.interaction_dir_list to the working directory
-    
-    source_filenames = task.get("tbme_sources")
-    for source in source_filenames:
-        mcscript.call(
-            [
-                "cp",
-                "--verbose",
-                os.path.join(environ.interaction_dir_list[0],source[1].get("filename")),
-                os.path.join(work_dir)
-            ],
-            shell=True
-        )
-        
-                
-def task_handler_mfdn_menj(task, postfix=""):
-    """Task handler for MENJ enabled run, including serial pre and post
-    steps.
-
-    Arguments:
-        task (dict): as described in module docstring
-        postfix (string, optional): identifier to add to generated files
-
-    """
-
-    task_handler_mfdn_menj_pre(task, postfix=postfix)
-    task_handler_mfdn_run(task, postfix=postfix)
-    task_handler_mfdn_post(task, postfix=postfix)
-
-task_handler_mfdn_menj_phases = [
-    task_handler_mfdn_menj_pre,
-    task_handler_mfdn_run,
-    task_handler_mfdn_post,
-]
 
 ################################################################
 # mfdn archiving

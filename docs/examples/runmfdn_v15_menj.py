@@ -131,12 +131,7 @@ tasks = [{
 
         # sources
         "obme_sources": [],
-        "tbme_sources": [
-            #("chi2b_srg0625", {"filename": "chi2b_srg0625_eMax12_EMax12_hwHO020.me2j.bin", "qn":(0,0,0)}),
-            #("trel",{"filename": "trel_eMax12_EMax12.me2j.bin", "qn":(0,0,0)}),
-            #("rsq",{"filename": "rsq_eMax12_EMax12.me2j.bin", "qn":(0,0,0)}),
-            #("chi2b3b_srg0625ho40C",{"filename": "chi2b3b_srg0625ho40C_eMax12_EMax12_hwHO020.me3j.bin","qn":(0,0,0)}),
-        ],
+        "tbme_sources": [],
 
         # wavefunction storage
         "save_wavefunctions": True,
@@ -177,7 +172,7 @@ mcscript.task.init(
     tasks,
     task_descriptor=ncci.descriptors.task_descriptor_menj,
     task_pool=task_pool,
-    phase_handler_list=[ncci.handlers.task_handler_mfdn_pre],
+    phase_handler_list=ncci.handlers.task_handler_mfdn_phases,
     )
 
 ################################################################
