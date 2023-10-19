@@ -186,8 +186,8 @@ def task_handler_mfdn_pre(task, postfix=""):
 
         # Construct the file names
         me2j_filename = "{:>}_eMax{:d}_EMax{:d}_hwHO{:03d}.me2j.bin".format(task["me2j_file_id"],task["EMax"],task["E3Max"],task["hw"])
-        trel_filename = "trel_eMax{:d}_E3Max{:d}.me2j.bin".format(task["EMax"],task["E3Max"])
-        rsq_filename =  "rsq_eMax{:d}_E3Max{:d}.me2j.bin".format(task["EMax"],task["E3Max"])
+        trel_filename = "trel_eMax{:d}_EMax{:d}.me2j.bin".format(task["EMax"],task["E3Max"])
+        rsq_filename =  "rsq_eMax{:d}_EMax{:d}.me2j.bin".format(task["EMax"],task["E3Max"])
         me3j_filename = "{:>}_eMax{:d}_EMax{:d}_hwHO{:03d}.me3j.bin".format(task["me3j_file_id"],task["EMax"],task["E3Max"],task["hw"])
 
         source_filenames = [me2j_filename, trel_filename, rsq_filename, me3j_filename]
