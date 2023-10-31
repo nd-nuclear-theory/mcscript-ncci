@@ -104,6 +104,7 @@ tasks = [{
             "Nmax": 2,
             "Nstep": 2,
             "M": M,
+            "Nmax_orb":11, # This is mapped to NShell in mfdn.input
             },
 
         # diagonalization parameters

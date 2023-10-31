@@ -61,21 +61,24 @@ University of Notre Dame
 - 06/05/23 (mac):
   + Make "eigenvectors" optional, e.g., for decomposition run.
   + Fix save_mfdn_task_data() to gracefully handle missing overlap files for decomposition run.
-- 8/23/23 (slv): 
+- 08/23/23 (slv): 
     + Created generate_menj_par()
     + Added a call to generate_menj_par() from generate_mfdn_input()
     + Added a menj.par file existence check in run_mfdn() 
-- 8/28/23 (slv): 
+- 08/28/23 (slv): 
     + used .format for strings inputs in generate_menj_par() 
     + lamHcm computed as a_cm/hw instead of getting it as an input in the task dictionary
-- 9/28/2023 (slv):
+- 09/28/2023 (slv):
     + Instead of "menj_enabled" key in the task dictionary, we use modes.VariantMode.kMENJ
     + If the variant mode is kMENJ, then generate_mfdn_input will not look for TBME files
       needed for computing two body observables in modes.VariantMode.kH2 mode
-- 10/2/2023 (slv): Hardcoded Nshell=11 if variant mode is modes.VariantMode.kMENJ in generate_mfdn_inp
+- 10/02/2023 (slv): Hardcoded Nshell=11 if variant mode is modes.VariantMode.kMENJ in generate_mfdn_inp
 ut()
 
-- 10/7/2023 (slv): Applied a condition such that, if the variant mode is modes.VariantMode.kMENJ,       then no attempt is made to save the  h2 related files 
+- 10/07/2023 (slv): Applied a condition such that, if the variant mode is modes.VariantMode.kMENJ,
+                   then no attempt is made to save the  h2 related files 
+- 10/30/2023 (slv): NShell is not hardcoded but instead it takes value from task dictionary
+                    truncation_parameters["Nmax_orb"]
 """
 import errno
 import os
@@ -114,6 +117,10 @@ def set_up_Nmax_truncation(task, inputlist):
     inputlist["deltaN"] = int(truncation_parameters["Nstep"])
     inputlist["TwoMj"] = round(2*truncation_parameters["M"])
 
+    # (slv) If mfdn_variant is kMENJ, Nshell is added to inputlist
+        
+    if (task["mfdn_variant"] is modes.VariantMode.kMENJ):
+        inputlist["Nshell"] = int(truncation_parameters["Nmax_orb"])
 
 def set_up_WeightMax_truncation(task, inputlist):
     """Generate weight max truncation inputs for MFDn v15.
@@ -208,13 +215,6 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         if (task["basis_mode"] in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):
             inputlist["hbomeg"] = float(task["hw"])
 
-        # (slv) If mfdn_variant is kMENJ, Nshell is hardcoded to 11
-        # This is temporary. (TO DO: Understand what this number means.
-        # In src_common/module_MFDn_input.f90, it says the default is -1
-        
-        if (task["mfdn_variant"] is modes.VariantMode.kMENJ):
-            inputlist["Nshell"] = 11
-            
         # diagonalization parameters
         inputlist["neivals"] = int(task.get("eigenvectors",4))
         inputlist["maxits"] = int(task["max_iterations"])
@@ -878,29 +878,7 @@ def generate_menj_par(task, postfix=""):
 
     lines.append("ME3ID={:>1}".format(task["me3j_file_id"]))
 
-    # Diagnostics        
-    print(os.path)
-    """
-    if not os.path.isfile("{:>}_eMax{:d}_EMax{:d}_hwHO{:03d}.me2j.bin".format(task["MEID"],task["EMax"],task["E3Max"],task["hw"])):
-        raise FileNotFoundError(
-            errno.ENOENT, os.strerror(errno.ENOENT), "{:>}_eMax{:d}_EMax{:d}_hwHO{:03d}.me2j.bin".format(task["MEID"],task["EMax"],task["E3Max"],task["hw"])
-        )
 
-    if not os.path.isfile("{:>}_eMax{:d}_E3Max{:d}.me2j.bin".format(task["TrelID"],task["EMax"],task["E3Max"])):
-        raise FileNotFoundError(
-            errno.ENOENT, os.strerror(errno.ENOENT), "{:>}_eMax{:d}_E3Max{:d}.me2j.bin".format(task["TrelID"],task["EMax"],task["E3Max"])
-        )
-            
-    if not os.path.isfile("{:>}_eMax{:d}_E3Max{:d}.me2j.bin".format(task["RsqID"],task["EMax"],task["E3Max"])):
-        raise FileNotFoundError(
-            errno.ENOENT, os.strerror(errno.ENOENT), "{:>}_eMax{:d}_E3Max{:d}.me2j.bin".format(task["RsqID"],task["EMax"],task["E3Max"])
-        )
-
-    if not os.path.isfile("{:>}_eMax{:d}_EMax{:d}_hwHO{:03d}.me3j.bin".format(task["ME3ID"],task["EMax"],task["E3Max"],task["hw"])):
-        raise FileNotFoundError(
-            errno.ENOENT, os.strerror(errno.ENOENT), "{:>}_eMax{:d}_EMax{:d}_hwHO{:03d}.me3j.bin".format(task["ME3ID"],task["EMax"],task["E3Max"],task["hw"])
-        )            
-    """
     # generate MFDn input file
     mcscript.utils.write_input(
         os.path.join(work_dir, "menj.par"), lines
