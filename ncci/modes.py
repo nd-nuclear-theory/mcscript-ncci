@@ -196,7 +196,7 @@ class VariantMode(enum.IntEnum):
 
     kH2 = 0      H2 mode 
 
-    kMENJ = 1    Menj variant mode
+    kMENJ = 1    Menj mode
     
     """
     kH2 = 0

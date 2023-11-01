@@ -5,6 +5,7 @@ University of Notre Dame
 
 + 01/05/18 (pjf): Created, documentation moved from `__init__.py`.
 + 04/02/18 (pjf): Moved to `input.md`.
++ 11/01/23 (slv): Added descriptions of parameters required for menj mode of MFDn
 
 ----------------------------------------------------------------
 ## nuclide parameters ##
@@ -44,6 +45,11 @@ University of Notre Dame
   - specification of Hamiltonian as a `CoefficientDict` of
     two-body operators passed as sources to h2mixer (see `mfdn.operators`)
   - If `None`, use standard H = Tintr + VNN + a_cm*N_cm
+
+- `hamiltonian_rank`: `int`, optional
+  - particle rank of the Hamiltonian
+  - default is `2` for two body interactions
+  - `3` for including three body interactions
 
 ----------------------------------------------------------------
 ## input TBME parameters ##
@@ -200,3 +206,37 @@ University of Notre Dame
 - `natorb_base_state`: `int`
   - MFDn sequence number of state off which to
     build natural orbitals
+
+----------------------------------------------------------------
+## menj parameters ##
+
+- `mfdn_variant`: `member of class VariantMode` required
+  - there are two different VariantMode to choose.
+    ncci.modes.VariantMode.kH2 or ncci.modes.VariantMode.kMENJ
+  - certain features of MFDn related to two body observables (for H2 runs)
+    work only if kH2 is selected.
+
+- `EMax` : `int`
+  - max energy quanta for 2 body truncation
+  - this number has to match with the me2j, me3j, trel and rsq interaction
+    files that are to be read.
+
+- `E3Max` : `int`
+  - Max energy quanta for 3 body truncation
+  - this number has to match with the me2j, me3j, trel and rsq interaction
+    files that are to be read.
+
+- `me2j_file_id` : `str`
+  - file ID of the me2j interaction file.(This is part of the me2j
+    interaction filename)
+  - part of this string contains the SRG flow parameter
+
+- `me3j_file_id` : `str`
+  - file ID of the me3j interaction file.(This is part of the me3j
+    interaction filename)
+  - part of this string contains the SRG flow parameter
+
+- `use_3b` : `bool`
+  - if enabled 3 body interactions are also read
+
+

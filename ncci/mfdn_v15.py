@@ -62,23 +62,29 @@ University of Notre Dame
   + Make "eigenvectors" optional, e.g., for decomposition run.
   + Fix save_mfdn_task_data() to gracefully handle missing overlap files for decomposition run.
 - 08/23/23 (slv): 
-    + Created generate_menj_par()
-    + Added a call to generate_menj_par() from generate_mfdn_input()
-    + Added a menj.par file existence check in run_mfdn() 
+    + Created generate_menj_par().
+    + Added a call to generate_menj_par() from generate_mfdn_input().
+    + Added a menj.par file existence check in run_mfdn().
 - 08/28/23 (slv): 
-    + used .format for strings inputs in generate_menj_par() 
-    + lamHcm computed as a_cm/hw instead of getting it as an input in the task dictionary
+    + used .format for strings inputs in generate_menj_par().
+    + lamHcm computed as a_cm/hw instead of getting it as an input in the task dictionary.
 - 09/28/2023 (slv):
-    + Instead of "menj_enabled" key in the task dictionary, we use modes.VariantMode.kMENJ
+    + Instead of "menj_enabled" key in the task dictionary, we use modes.VariantMode.kMENJ.
     + If the variant mode is kMENJ, then generate_mfdn_input will not look for TBME files
-      needed for computing two body observables in modes.VariantMode.kH2 mode
-- 10/02/2023 (slv): Hardcoded Nshell=11 if variant mode is modes.VariantMode.kMENJ in generate_mfdn_inp
-ut()
+      needed for computing two body observables in modes.VariantMode.kH2 mode.
+- 10/02/2023 (slv): Hardcoded Nshell=11 if variant mode is modes.VariantMode.kMENJ in generate_mfdn_input().
 
 - 10/07/2023 (slv): Applied a condition such that, if the variant mode is modes.VariantMode.kMENJ,
-                   then no attempt is made to save the  h2 related files 
+                   then no attempt is made to save the  h2 related files.
 - 10/30/2023 (slv): NShell is not hardcoded but instead it takes value from task dictionary
-                    truncation_parameters["Nmax_orb"]
+                    truncation_parameters["Nmax_orb"].
+- 11/01/2023 (slv): 
+    + Hrank is added to the inputlist of mfdn.input.
+    + Revised the action done on 09/28/2023 mentioned above. Only if the variant mode
+      is modes.VariantMode.kH2 then generate_mfdn_input will look for TBME files.
+    + Revised the action done on 10/07/2023 mentioned above. Only if variant mode is 
+      kH2, h2 related files are saved.
+
 """
 import errno
 import os
@@ -208,6 +214,9 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     # nucleus
     inputlist["Nprotons"], inputlist["Nneutrons"] = task["nuclide"]
 
+    # particle rank
+    inputlist["Hrank"] = int(task.get("hamiltonian_rank", 2))
+    
     # truncation mode
     truncation_setup_functions[task["mb_truncation_mode"]](task, inputlist)
 
@@ -222,12 +231,10 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         if task.get("reduce_solver_threads"):
             inputlist["reduce_solver_threads"] = task["reduce_solver_threads"]
 
-        # (slv) If mfdn_variant is kMENJ, other tbme and two body observables are not included in the
-        # mfdn.input
-        
-        if not (task["mfdn_variant"] is modes.VariantMode.kMENJ):
-            # (slv) orbitalfile is created if variant mode is not kMENJ
-            # single-particle orbitals
+        # orbitalfile is created and tbo names are collected only if variant mode
+        # is kH2
+        if (task["mfdn_variant"] is modes.VariantMode.kH2):
+            
             inputlist["orbitalfile"] = environ.orbitals_filename(postfix)
             mcscript.call([
                 "cp", "--verbose",
@@ -462,7 +469,7 @@ def save_mfdn_task_data(task, postfix=""):
     # If MFDn is run on kMENJ variant mode, the "use coulomb" key will not be
     # present in the task dictionary
     archive_file_list = []
-    if not(task["mfdn_variant"] is modes.VariantMode.kMENJ):
+    if (task["mfdn_variant"] is modes.VariantMode.kH2):
         archive_file_list = [
             environ.h2mixer_filename(postfix),
             "tbo_names{:s}.dat".format(postfix)

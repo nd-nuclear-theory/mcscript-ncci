@@ -59,7 +59,7 @@ hw = 20
 eigenvectors = 4
 max_iterations = 600
 tolerance = 1e-6
-alpha =[625] # can be [625, 400]
+alpha_list =[625] # can be [625, 400]
 # Lawson
 a_cm = 60.
 
@@ -75,21 +75,22 @@ tasks = [{
         # Hamiltonian parameters
         "interaction": "EntemMachleidt",
 
+        "hamiltonian_rank": 2,
         "a_cm": a_cm,
 
-        # Flag to enable menj
-        #"menj_enabled":True, # MODE VARIABLE AS kMENJ
+        # Flag to enable menj. This parameter is essential for MFDn to run on H2 mode as well.
         #mfdn_variant": ncci.modes.VariantMode.kH2,
         "mfdn_variant": ncci.modes.VariantMode.kMENJ,
+        
     
         
         # parameters for menj.par
         
         "EMax" : 12, # NOT REQUIRED IN THE DESCRIPTOR
-        "me2j_file_id" : "chi2b_srg{:04d}".format(a),  # NAME??
+        "me2j_file_id" : "chi2b_srg{:04d}".format(alpha),  # NAME??
         "use_3b" : False,
         "E3Max" : 12, # "N3_max", "N3max", "E3_max"???   how will this appear in the descriptor?
-        "me3j_file_id" : "chi2b3b_srg{:04d}ho40C".format(a),  # NAME??
+        "me3j_file_id" : "chi2b3b_srg{:04d}ho40C".format(alpha),  # NAME??
         # relation of MEID and ME3ID to interaction?  Is a dummy ok for ME3ID if use_3n=False???
         # and how will we reflect that in the interaction name used in the descriptor?
 
@@ -104,7 +105,7 @@ tasks = [{
             "Nmax": 2,
             "Nstep": 2,
             "M": M,
-            "Nmax_orb":11, # This is mapped to NShell in mfdn.input
+            "Nmax_orb":11, # This is mapped to NShell in mfdn.input and is required to run MFDn in MENJ mode
             },
 
         # diagonalization parameters
@@ -143,7 +144,7 @@ tasks = [{
         "mfdn_executable": "xmfdn-menj-lan",
         "mfdn_driver": ncci.mfdn_v15,
     }
-    for a in alpha
+    for alpha in alpha_list
     for nuclide in nuclide_list
 ]   
 
