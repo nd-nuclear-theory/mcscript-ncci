@@ -59,31 +59,21 @@ University of Notre Dame
 - 05/09/22 (pjf): Split generate_mfdn_input() from run_mfdn().
 - 07/12/22 (pjf): Add sanity check on dimension and numnonzero.
 - 06/05/23 (mac):
-  + Make "eigenvectors" optional, e.g., for decomposition run.
-  + Fix save_mfdn_task_data() to gracefully handle missing overlap files for decomposition run.
+    + Make "eigenvectors" optional, e.g., for decomposition run.
+    + Fix save_mfdn_task_data() to gracefully handle missing overlap files for decomposition run.
 - 08/23/23 (slv): 
-    + Created generate_menj_par().
-    + Added a call to generate_menj_par() from generate_mfdn_input().
-    + Added a menj.par file existence check in run_mfdn().
+    + Create generate_menj_par().
+    + Add a call to generate_menj_par() from generate_mfdn_input().
+    + Add a menj.par file existence check in run_mfdn().
 - 08/28/23 (slv): 
-    + used .format for strings inputs in generate_menj_par().
-    + lamHcm computed as a_cm/hw instead of getting it as an input in the task dictionary.
-- 09/28/2023 (slv):
-    + Instead of "menj_enabled" key in the task dictionary, we use modes.VariantMode.kMENJ.
-    + If the variant mode is kMENJ, then generate_mfdn_input will not look for TBME files
-      needed for computing two body observables in modes.VariantMode.kH2 mode.
-- 10/02/2023 (slv): Hardcoded Nshell=11 if variant mode is modes.VariantMode.kMENJ in generate_mfdn_input().
-
-- 10/07/2023 (slv): Applied a condition such that, if the variant mode is modes.VariantMode.kMENJ,
-                   then no attempt is made to save the  h2 related files.
-- 10/30/2023 (slv): NShell is not hardcoded but instead it takes value from task dictionary
-                    truncation_parameters["Nmax_orb"].
-- 11/01/2023 (slv): 
-    + Hrank is added to the inputlist of mfdn.input.
-    + Revised the action done on 09/28/2023 mentioned above. Only if the variant mode
-      is modes.VariantMode.kH2 then generate_mfdn_input will look for TBME files.
-    + Revised the action done on 10/07/2023 mentioned above. Only if variant mode is 
-      kH2, h2 related files are saved.
+    + Use .format for strings inputs in generate_menj_par().
+    + For menj mode, compute lamHcm as a_cm/hw instead of getting it as an input in the task dictionary.
+- 09/28/23 (slv):
+    + Add "variant_mode" key to task dictionary.
+    + In menj mode, omit looking for observable TBME files.
+- 10/07/23 (slv): In menj mode, in save_mfdn_task_data(), do not save h2 related files.
+- 10/30/23 (slv): In menj mode, take value of NShell from task dictionary truncation_parameters["Nmax_orb"].
+- 11/01/23 (slv): Add Hrank to inputlist of mfdn.input.
 
 """
 import errno
@@ -106,6 +96,7 @@ def set_up_Nmax_truncation(task, inputlist):
         task(dict): as described in docs/task.md
         inputlist (dict): MFDn v15 inputlist
     """
+
     # sanity check
     if task["sp_truncation_mode"] is not modes.SingleParticleTruncationMode.kNmax:
         raise ValueError("expecting sp_truncation_mode to be {} but found {sp_truncation_mode}".format(modes.SingleParticleTruncationMode.kNmax, **task))
@@ -122,11 +113,6 @@ def set_up_Nmax_truncation(task, inputlist):
     inputlist["Nmax"] = int(truncation_parameters["Nmax"])
     inputlist["deltaN"] = int(truncation_parameters["Nstep"])
     inputlist["TwoMj"] = round(2*truncation_parameters["M"])
-
-    # (slv) If mfdn_variant is kMENJ, Nshell is added to inputlist
-        
-    if (task["mfdn_variant"] is modes.VariantMode.kMENJ):
-        inputlist["Nshell"] = int(truncation_parameters["Nmax_orb"])
 
 def set_up_WeightMax_truncation(task, inputlist):
     """Generate weight max truncation inputs for MFDn v15.
@@ -188,6 +174,9 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     Raises:
         mcscript.exception.ScriptError: if MFDn output not found
     """
+
+    variant_mode = task.get("mfdn_variant", modes.VariantMode.kH2)
+    
     # check that diagonalization is enabled
     if (run_mode in (modes.MFDnRunMode.kNormal, modes.MFDnRunMode.kLanczosOnly)) and not task.get("diagonalization"):
         raise mcscript.exception.ScriptError(
@@ -220,6 +209,7 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     # truncation mode
     truncation_setup_functions[task["mb_truncation_mode"]](task, inputlist)
 
+   
     if run_mode in [modes.MFDnRunMode.kNormal,modes.MFDnRunMode.kLanczosOnly]:
         if (task["basis_mode"] in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):
             inputlist["hbomeg"] = float(task["hw"])
@@ -231,17 +221,29 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         if task.get("reduce_solver_threads"):
             inputlist["reduce_solver_threads"] = task["reduce_solver_threads"]
 
-        # orbitalfile is created and tbo names are collected only if variant mode
-        # is kH2
-        if (task["mfdn_variant"] is modes.VariantMode.kH2):
-            
+        # define single particle orbitals
+        if variant_mode is modes.VariantMode.kH2:
             inputlist["orbitalfile"] = environ.orbitals_filename(postfix)
             mcscript.call([
                 "cp", "--verbose",
                 environ.orbitals_filename(postfix),
                 os.path.join(work_dir, environ.orbitals_filename(postfix))
             ])
+        elif variant_mode is modes.VariantMode.kMENJ:
+            # define single-particle orbital cutoff
+            #
+            # Since menj variant is not given an explicit orbital list, we must provide
+            # the Nshell parameter.
+            #
+            # 11/03/23 (mac): Beware, definition of Nshell in menj variant of MFDn is
+            # equivalent to Nmax_orb, i.e., maximum single-particle N=2n+l.  This
+            # appears to differ by one from Nshell in the h2 variant of MFDn, so the
+            # following code is likely not safe for use with the h2 variant of MFDn (to
+            # be investigated further).
+            inputlist["Nshell"] = int(truncation_parameters["Nmax_orb"])
 
+        # provide Hamiltonian and two-body observable TBME file names
+        if variant_mode is modes.VariantMode.kH2:
             # Hamiltonian input
             inputlist["TBMEfile"] = "tbme-H"
 
@@ -274,6 +276,8 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             obslist["max2K"] = round(2*task["obdme_multipolarity"])
 
         # construct transition observable input if reference states given
+        #
+        # Note: MFDn native transitions are no longer available after v15b00.
         if task.get("obdme_reference_state_list") is not None:
             # obdme: validate reference state list
             #
@@ -317,7 +321,8 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             os.path.join(work_dir, "mfdn_partitioning.info")
             ])
 
-    if task["mfdn_variant"] is modes.VariantMode.kMENJ:
+    # generate input file for menj input routines
+    if variant_mode is modes.VariantMode.kMENJ:
         generate_menj_par(task, postfix)
 
 
@@ -340,12 +345,6 @@ def run_mfdn(task, postfix=""):
         raise FileNotFoundError(
             errno.ENOENT, os.strerror(errno.ENOENT), "mfdn.input"
         )
-    # check menj.par exists if a flag in task show that menj extension is enabled
-    if task["mfdn_variant"] is modes.VariantMode.kMENJ:
-        if not os.path.isfile("menj.par"):
-            raise FileNotFoundError(
-                errno.ENOENT, os.strerror(errno.ENOENT), "menj.par"
-            )
 
     # remove any stray files from a previous run
     if os.path.exists("mfdn.out"):
@@ -465,7 +464,8 @@ def save_mfdn_task_data(task, postfix=""):
     # save full archive of input, log, and output files
     print("Saving full output files...")
     # logging
-    
+
+    # TODO: clean up use of variant_mode and stick with imperative comments
     # If MFDn is run on kMENJ variant mode, the "use coulomb" key will not be
     # present in the task dictionary
     archive_file_list = []

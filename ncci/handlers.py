@@ -61,22 +61,23 @@ University of Notre Dame
                   determining condition to copy the interaction files.
 
 """
-import os
 import glob
-import mcscript
-import mcscript.exception
+import os
 import subprocess
 
+import mcscript
+import mcscript.exception
+
 from . import (
+    environ,
     library,
+    mfdn_v15,
     modes,
     postprocessing,
     radial,
-    tbme,
     relative,
+    tbme,
     utils,
-    mfdn_v15,
-    environ, # (slv) : added to copy interaction files
 )
 
 # set default MFDn driver
