@@ -182,7 +182,22 @@ def task_handler_mfdn_pre(task, postfix=""):
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
-    if (task["mfdn_variant"] is modes.VariantMode.kMENJ):
+
+    variant_mode = task.get("mfdn_variant", modes.VariantMode.kH2)
+    if variant_mode is modes.VariantMode.kH2:
+        radial.set_up_interaction_orbitals(task, postfix=postfix)
+        radial.set_up_orbitals(task, postfix=postfix)
+        radial.set_up_xforms_analytic(task, postfix=postfix)
+        radial.set_up_obme_analytic(task, postfix=postfix)
+        tbme.generate_tbme(task, postfix=postfix)
+        if task.get("save_tbme"):
+            tbme.save_tbme(task, postfix=postfix)
+    elif variant_mode is modes.VariantMode.kMENJ:
+        # TODO (mac): factor this code out, into new functionset_up_menj_files()
+        ## menj.set_up_menj_files(task, postfix=postfix)
+        ## along with menj.generate_menj_input(task=task, postfix=postfix)???
+
+        
         # Copy the required interaction files from the location given
         # in the runscript, ncci.environ.interaction_dir_list to the working directory
         # if MFDn is run in MENJ mode.
@@ -190,15 +205,14 @@ def task_handler_mfdn_pre(task, postfix=""):
         work_dir = "work{:s}".format(postfix)
         mcscript.utils.mkdir(work_dir, exist_ok=True, parents=True) 
 
-        # Construct the file names
+        # construct the matrix element file names
         me2j_filename = "{:>}_eMax{:d}_EMax{:d}_hwHO{:03d}.me2j.bin".format(task["me2j_file_id"],task["EMax"],task["E3Max"],task["hw"])
         trel_filename = "trel_eMax{:d}_EMax{:d}.me2j.bin".format(task["EMax"],task["E3Max"])
         rsq_filename =  "rsq_eMax{:d}_EMax{:d}.me2j.bin".format(task["EMax"],task["E3Max"])
         me3j_filename = "{:>}_eMax{:d}_EMax{:d}_hwHO{:03d}.me3j.bin".format(task["me3j_file_id"],task["EMax"],task["E3Max"],task["hw"])
 
+        # find and copy matrix element files to the working directory
         source_filenames = [me2j_filename, trel_filename, rsq_filename, me3j_filename]
-
-        # Find and copy the above filenames to the working directory
         for source in source_filenames:
             mcscript.call(
                 [
@@ -209,18 +223,9 @@ def task_handler_mfdn_pre(task, postfix=""):
                 ],
                 shell=True
             )
-            
     else:
-       # This section is executed if MFDn is run in H2 mode (not in modes.VariantMode.kMENJ).    
-       radial.set_up_interaction_orbitals(task, postfix=postfix)
-       radial.set_up_orbitals(task, postfix=postfix)
-       radial.set_up_xforms_analytic(task, postfix=postfix)
-       radial.set_up_obme_analytic(task, postfix=postfix)
-       tbme.generate_tbme(task, postfix=postfix)
-       if task.get("save_tbme"):
-           tbme.save_tbme(task, postfix=postfix)
-           
-
+        raise(ValueError("unsupported variant mode"))
+            
 def task_handler_mfdn_run(task, postfix=""):
     """Task handler for MFDn phase of oscillator basis run.
 

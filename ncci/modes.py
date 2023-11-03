@@ -192,12 +192,15 @@ class MFDnRunMode(enum.IntEnum):
 
 @enum.unique
 class VariantMode(enum.IntEnum):
-    """MFDn Variant mode 
+    """MFDn variant mode
 
-    kH2 = 0      H2 mode 
+    Different compilation variants of MFDn, corresponding to different input
+    matrix element formats, require different handling in the scripting.
 
-    kMENJ = 1    Menj mode
-    
+    kH2: 0, H2 mode 
+
+    kMENJ: 1, MENJ mode
+
     """
     kH2 = 0
     kMENJ = 1    
