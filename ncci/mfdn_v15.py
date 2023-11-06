@@ -86,7 +86,12 @@ import warnings
 import mcscript
 import mcscript.exception
 
-from . import modes, environ, operators
+from . import (
+    environ,
+    menj,
+    modes,
+    operators,
+)
 
 
 def set_up_Nmax_truncation(task, inputlist):
@@ -323,7 +328,7 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
 
     # generate input file for menj input routines
     if variant_mode is modes.VariantMode.kMENJ:
-        generate_menj_par(task, postfix)
+        menj.generate_menj_par(task, postfix)
 
 
 def run_mfdn(task, postfix=""):
@@ -466,10 +471,13 @@ def save_mfdn_task_data(task, postfix=""):
     # logging
 
     # TODO: clean up use of variant_mode and stick with imperative comments
-    # If MFDn is run on kMENJ variant mode, the "use coulomb" key will not be
-    # present in the task dictionary
+
     archive_file_list = []
-    if (task["mfdn_variant"] is modes.VariantMode.kH2):
+
+    variant_mode = task.get("mfdn_variant", modes.VariantMode.kH2)
+    
+    # save H2 related files if MFDn is run on kH2 mode    
+    if (variant_mode is modes.VariantMode.kH2):
         archive_file_list = [
             environ.h2mixer_filename(postfix),
             "tbo_names{:s}.dat".format(postfix)
@@ -806,87 +814,3 @@ def generate_smwf_info(task, orbital_filename, partitioning_filename, res_filena
 
     mcscript.utils.write_input(info_filename, input_lines=lines, verbose=False)
 
-def generate_menj_par(task, postfix=""):
-
-    """
-    Generate the menj.par input file for the MFDn version 15 with menj extension.
-
-    Arguments:
-        task (dict): as described in docs/task.md
-        run_mode (modes.MFDnRunMode): run mode for MFDn
-        postfix (string, optional): identifier to add to generated files
-
-    Raises:
-        mcscript.exception.ScriptError: if MFDn output not found
-    
-    """
-    # create work directory if it doesn't exist yet
-    work_dir = "work{:s}".format(postfix)
-    mcscript.utils.mkdir(work_dir, exist_ok=True, parents=True)
-    # inputlist namelist dictionary
-    lines = []
-    
-    # nucleus
-    # A       : total nucleon number
-    #           (needs to be the same as (Z+N) in mfdn.input)
-    
-    Z, N = task["nuclide"]
-    lines.append("A={:d}".format(Z+N))
-
-    # hwHO    : HO basis parameter
-    #
-
-    lines.append("hwHO={:d}".format(task["hw"]))
-    
-    # lamHcm  : scaling factor for Hcm Hamiltonian (dimensionless)
-    #
-    
-    lines.append("lamHcm={:.1f}".format(task["a_cm"]/task["hw"]))
-    
-    # NN      : compute 2-body matrix elements (0=no, 1=yes)
-    # Hardcoded to be 1, since there is no point in using the menj
-    # variant without two body interaction  
-
-    lines.append("NN={:d}".format(1))
-    
-    # EMax    : maximum 2-body HO quantum number of the TBME file
-    #
-    lines.append("EMax={:d}".format(task["EMax"]))
-            
-    # MEID    : string containing path/ID of the 2B interaction
-    #           matrix element file that is read in
-    
-    lines.append("MEID={:>1}".format(task["me2j_file_id"]))
-            
-    # TrelID  : string containing path/ID of the 2B kinetic energy
-    #           matrix element file that is read in
-    # Hardcoding "trel" as file ID
-    
-    lines.append("TrelID={:>1}".format("trel"))
-            
-    # RsqID   : string containing path/ID of the 2B squared radius
-    #           matrix element file that is read in
-    # Hardcoding "rsq" as file ID
-
-    lines.append("RsqID={:>1}".format("rsq"))
-    
-    # NNN     : compute 3-body matrix elements (0=no, 1=yes)
-    #
-
-    lines.append("NNN={:d}".format(task["use_3b"]))
-    
-    # E3Max   : maximum 3-body HO quantum number
-    # 
-
-    lines.append("E3Max={:d}".format(task["E3Max"]))
-    
-    # ME3ID   : string containing path/ID of the 3B interaction
-    #           matrix element file that is read in
-
-    lines.append("ME3ID={:>1}".format(task["me3j_file_id"]))
-
-
-    # generate MFDn input file
-    mcscript.utils.write_input(
-        os.path.join(work_dir, "menj.par"), lines
-    )

@@ -71,6 +71,7 @@ import mcscript.exception
 from . import (
     environ,
     library,
+    menj,
     mfdn_v15,
     modes,
     postprocessing,
@@ -203,27 +204,8 @@ def task_handler_mfdn_pre(task, postfix=""):
         # in the runscript, ncci.environ.interaction_dir_list to the working directory
         # if MFDn is run in MENJ mode.
 
-        work_dir = "work{:s}".format(postfix)
-        mcscript.utils.mkdir(work_dir, exist_ok=True, parents=True) 
-
-        # construct the matrix element file names
-        me2j_filename = "{:>}_eMax{:d}_EMax{:d}_hwHO{:03d}.me2j.bin".format(task["me2j_file_id"],task["EMax"],task["E3Max"],task["hw"])
-        trel_filename = "trel_eMax{:d}_EMax{:d}.me2j.bin".format(task["EMax"],task["E3Max"])
-        rsq_filename =  "rsq_eMax{:d}_EMax{:d}.me2j.bin".format(task["EMax"],task["E3Max"])
-        me3j_filename = "{:>}_eMax{:d}_EMax{:d}_hwHO{:03d}.me3j.bin".format(task["me3j_file_id"],task["EMax"],task["E3Max"],task["hw"])
-
-        # find and copy matrix element files to the working directory
-        source_filenames = [me2j_filename, trel_filename, rsq_filename, me3j_filename]
-        for source in source_filenames:
-            mcscript.call(
-                [
-                    "cp",
-                    "--verbose",
-                    mcscript.utils.search_in_subdirectories(os.environ.get("NCCI_DATA_DIR_H2","").split(":"), environ.interaction_dir_list, source),
-                    os.path.join(work_dir)
-                ],
-                shell=True
-            )
+        menj.set_up_menj_files(task, postfix = postfix)
+        
     else:
         raise(ValueError("unsupported variant mode"))
             
