@@ -88,7 +88,7 @@ tasks = [{
         
         "EMax" : 12, # NOT REQUIRED IN THE DESCRIPTOR
         "me2j_file_id" : "chi2b_srg{:04d}".format(alpha),  # NAME??
-        "use_3b" : False,
+        "use_3b" : True,
         "E3Max" : 12, # "N3_max", "N3max", "E3_max"???   how will this appear in the descriptor?
         "me3j_file_id" : "chi2b3b_srg{:04d}ho40C".format(alpha),  # NAME??
         # relation of MEID and ME3ID to interaction?  Is a dummy ok for ME3ID if use_3n=False???
@@ -148,14 +148,6 @@ tasks = [{
     for nuclide in nuclide_list
 ]   
 
-"""
-##################################################################
-# Test generate mfdn input
-##################################################################
-
-ncci.mfdn_v15.generate_menj_par(tasks)
-
-"""
 
 ##################################################################
 # task dictionary postprocessing functions
