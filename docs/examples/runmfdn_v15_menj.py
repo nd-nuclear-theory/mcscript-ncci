@@ -75,7 +75,7 @@ tasks = [{
         # Hamiltonian parameters
         "interaction": "EntemMachleidt",
 
-        "hamiltonian_rank": 2,
+        "hamiltonian_rank": 3,
         "a_cm": a_cm,
 
         # Flag to enable menj
