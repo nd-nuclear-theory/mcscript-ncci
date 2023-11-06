@@ -77,9 +77,6 @@ tasks = [
         "a_cm": a_cm,
         "hw_cm": None,
 
-        # Flag to enable menj. This parameter is essential for MFDn to run on H2 mode as well.
-        "mfdn_variant": ncci.modes.VariantMode.kH2,
-
         # input TBME parameters
         "truncation_int": truncation_int,
         "hw_int": hw,

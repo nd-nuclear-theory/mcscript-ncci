@@ -78,7 +78,7 @@ tasks = [{
         "hamiltonian_rank": 2,
         "a_cm": a_cm,
 
-        # Flag to enable menj. This parameter is essential for MFDn to run on H2 mode as well.
+        # Flag to enable menj
         #mfdn_variant": ncci.modes.VariantMode.kH2,
         "mfdn_variant": ncci.modes.VariantMode.kMENJ,
         

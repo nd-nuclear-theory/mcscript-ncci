@@ -181,6 +181,7 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     """
 
     variant_mode = task.get("mfdn_variant", modes.VariantMode.kH2)
+    truncation_parameters = task["truncation_parameters"]
     
     # check that diagonalization is enabled
     if (run_mode in (modes.MFDnRunMode.kNormal, modes.MFDnRunMode.kLanczosOnly)) and not task.get("diagonalization"):
@@ -469,8 +470,6 @@ def save_mfdn_task_data(task, postfix=""):
     # save full archive of input, log, and output files
     print("Saving full output files...")
     # logging
-
-    # TODO: clean up use of variant_mode and stick with imperative comments
 
     archive_file_list = []
 
