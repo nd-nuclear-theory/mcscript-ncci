@@ -240,13 +240,11 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             #
             # Since menj variant is not given an explicit orbital list, we must provide
             # the Nshell parameter.
-            #
-            # 11/03/23 (mac): Beware, definition of Nshell in menj variant of MFDn is
-            # equivalent to Nmax_orb, i.e., maximum single-particle N=2n+l.  This
-            # appears to differ by one from Nshell in the h2 variant of MFDn, so the
-            # following code is likely not safe for use with the h2 variant of MFDn (to
-            # be investigated further).
-            inputlist["Nshell"] = int(truncation_parameters["Nmax_orb"])
+            if truncation_parameters.get("Nmax_orb") is not None:
+                Nmax_orb = truncation_parameters["Nmax_orb"]
+            elif task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kNmax:
+                Nmax_orb = truncation_parameters["Nmax"] + utils.Nv_for_nuclide(task["nuclide"])
+            inputlist["Nshell"] = Nmax_orb + 1
 
         # provide Hamiltonian and two-body observable TBME file names
         if variant_mode is modes.VariantMode.kH2:

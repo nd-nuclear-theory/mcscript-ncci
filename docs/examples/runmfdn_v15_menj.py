@@ -105,7 +105,7 @@ tasks = [{
             "Nmax": 2,
             "Nstep": 2,
             "M": M,
-            "Nmax_orb":11, # This is mapped to NShell in mfdn.input and is required to run MFDn in MENJ mode
+            # "Nmax_orb":11, # This is mapped to NShell in mfdn.input and is required to run MFDn in MENJ mode
             },
 
         # diagonalization parameters
