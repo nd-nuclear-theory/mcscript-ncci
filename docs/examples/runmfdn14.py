@@ -202,6 +202,7 @@ mcscript.task.init(
     task_descriptor=ncci.descriptors.task_descriptor_decomposition_2,
     task_pool=task_pool,
     phase_handler_list=ncci.handlers.task_handler_mfdn_decomposition_phases,
+    archive_phase_handler_list=[ncci.handlers.archive_handler_mfdn_hsi],
 )
 
 ################################################################
