@@ -91,6 +91,7 @@ from . import (
     menj,
     modes,
     operators,
+    utils,
 )
 
 
@@ -784,7 +785,7 @@ def generate_smwf_info(task, orbital_filename, partitioning_filename, res_filena
     lines.append("")
 
     # parse res file
-    res_data = mfdnres.res.read_file(res_filename, "mfdn_v15")[0]
+    res_data = mfdnres.input.read_file(res_filename, res_format="mfdn_v15")[0]
     levels = res_data.levels
 
     # basis information
