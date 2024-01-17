@@ -4,8 +4,13 @@ Shwetha Vittal
 University of Notre Dame
 
 - 11/05/23 (slv): 
-    + Create function to copy interaction files to working directory
-    + Move generate_menj_par() from mfdn_v15.py
+    + Create function to copy interaction files to working directory.
+    + Move generate_menj_par() from mfdn_v15.py.
+
+- 01/13/23 (zz): 
+    + Skip copying 3b files for 2b runs.
+    + Fix file names to use the correct truncations.
+
 
 """
 import os
@@ -24,7 +29,8 @@ def set_up_menj_files(task, postfix=""):
     work_dir = "work{:s}".format(postfix)
     mcscript.utils.mkdir(work_dir, exist_ok=True, parents=True) 
 
-    energy_truncation = "eMax{:d}_EMax{:d}".format(task["EMax"],task["E3Max"])
+    energy_truncation_2b = "eMax{:d}_EMax{:d}".format(task["EMax"],task["EMax"])
+    energy_truncation_3b = "eMax{:d}_EMax{:d}".format(task["E3Max"],task["E3Max"])
     bin_extension_2b = "me2j.bin"
     bin_extension_3b = "me3j.bin"
     
@@ -38,11 +44,12 @@ def set_up_menj_files(task, postfix=""):
     # source_filenames = [me2j_filename, trel_filename, rsq_filename, me3j_filename]
 
     source_filenames = [
-        "{:>}_{:>}_hwHO{:03d}.{:>}".format(task["me2j_file_id"], energy_truncation, task["hw"], bin_extension_2b),
-        "trel_{:>}.{:>}".format(energy_truncation, bin_extension_2b),
-        "rsq_{:>}.{:>}".format(energy_truncation, bin_extension_2b),
-        "{:>}_{:>}_hwHO{:03d}.{:>}".format(task["me3j_file_id"],energy_truncation, task["hw"], bin_extension_3b),
+        "{:>}_{:>}_hwHO{:03d}.{:>}".format(task["me2j_file_id"], energy_truncation_2b, task["hw"], bin_extension_2b),
+        "trel_{:>}.{:>}".format(energy_truncation_2b, bin_extension_2b),
+        "rsq_{:>}.{:>}".format(energy_truncation_2b, bin_extension_2b),
     ]
+    if task["use_3b"]:
+        source_filenames.append("{:>}_{:>}_hwHO{:03d}.{:>}".format(task["me3j_file_id"],energy_truncation_3b, task["hw"], bin_extension_3b))
     for source in source_filenames:
         mcscript.call(
             [
