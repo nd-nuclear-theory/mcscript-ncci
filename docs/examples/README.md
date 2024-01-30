@@ -161,7 +161,8 @@ runmfdn13: harmonic oscillator direct run with MFDn v15, for use with postproces
 
     Notes on job submission at NERSC.  This provides a simple example of a
     single-node run.  First, make sure the appropriate module files are loaded
-    for the programming environment the code was compiled.  For the setup phase:
+    for the programming environment for which the code was compiled.  For the
+    setup phase:
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     qsubm mfdn13 debug 30 --phase=0 --pool="Nmax02" --serialthreads=256 --mail-type=END,FAIL
@@ -278,3 +279,28 @@ runtransitions00: mfdn-transitions postprocessor run
     mfdn installation directory.
 
     See `mcscript-ncci/docs/examples/example-results` for example results output.
+
+    Notes on job submission at NERSC.  This provides a simple example of a
+    single-node run.  First, make sure the appropriate module files are loaded
+    for the programming environment for which the code was compiled.  For the
+    setup phase:
+
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    qsubm transitions00 debug 30 --phase=0 --pool="Nmax02" --serialthreads=256 --mail-type=END,FAIL
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    Then, for the MFDn diagonalization phase:
+
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    qsubm transitions00 debug 30 --phase=1 --pool="Nmax02" --ranks=8 --nodes=1 --threads=32 --mail-type=END,FAIL
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    Then, the mop-up phase only involves some file system operations, and it can
+    run either in a regular compute cue on the transfer queue:
+
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    qsubm transitions00 xfer 30 --phase=2 --pool="Nmax02" --mail-type=END,FAIL
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    You can use a dependency option (`--dependency=afterok:<job_id>`) to
+    sequence these jobs, without having to wait for each one to finish.
