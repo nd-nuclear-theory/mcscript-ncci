@@ -514,7 +514,8 @@ def save_mfdn_task_data(task, postfix=""):
             archive_file_list += glob.glob(environ.natorb_xform_filename(postfix))
     # MFDn input
     archive_file_list += [os.path.join(work_dir, "mfdn.input")]
-    archive_file_list += [os.path.join(work_dir, "menj.par")]
+    if os.path.isfile(os.path.join(work_dir, "menj.par")):
+        archive_file_list += [os.path.join(work_dir, "menj.par")]
     if os.path.isfile(os.path.join(work_dir, "mfdn_sp_orbitals.info")):
         archive_file_list += [os.path.join(work_dir, "mfdn_sp_orbitals.info")]
     # partitioning file
