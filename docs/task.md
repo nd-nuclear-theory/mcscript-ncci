@@ -5,7 +5,8 @@ University of Notre Dame
 
 + 01/05/18 (pjf): Created, documentation moved from `__init__.py`.
 + 04/02/18 (pjf): Moved to `input.md`.
-+ 11/01/23 (slv): Added descriptions of parameters required for menj mode of MFDn
++ 11/01/23 (slv): Add descriptions of parameters required for menj mode of MFDn
++ 02/12/24 (zz): For menj, add description for `interaction` and delete `hamiltonian_rank`.
 
 ----------------------------------------------------------------
 ## nuclide parameters ##
@@ -30,6 +31,7 @@ University of Notre Dame
 
 - `interaction`: `str`
   - name for interaction (for use in descriptor and filenames)
+  - interaction descriptor override (for menj)
 
 - `use_coulomb`: `bool`
   - whether or not to include Coulomb
@@ -45,11 +47,6 @@ University of Notre Dame
   - specification of Hamiltonian as a `CoefficientDict` of
     two-body operators passed as sources to h2mixer (see `mfdn.operators`)
   - If `None`, use standard H = Tintr + VNN + a_cm*N_cm
-
-- `hamiltonian_rank`: `int`, optional
-  - particle rank of the Hamiltonian
-  - default is `2` for two body interactions
-  - `3` for including three body interactions
 
 ----------------------------------------------------------------
 ## input TBME parameters ##

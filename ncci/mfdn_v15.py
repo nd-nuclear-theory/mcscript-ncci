@@ -74,6 +74,9 @@ University of Notre Dame
 - 10/07/23 (slv): In menj mode, in save_mfdn_task_data(), do not save h2 related files.
 - 10/30/23 (slv): In menj mode, take value of NShell from task dictionary truncation_parameters["Nmax_orb"].
 - 11/01/23 (slv): Add Hrank to inputlist of mfdn.input.
+- 02/12/24 (zz): 
+    + Remove hamiltonian_rank. 
+    + Add menj.par to archive list.
 
 """
 import errno
@@ -211,7 +214,10 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     inputlist["Nprotons"], inputlist["Nneutrons"] = task["nuclide"]
 
     # particle rank
-    inputlist["Hrank"] = int(task.get("hamiltonian_rank", 2))
+    if (task.get("use_3b", False)):
+        inputlist["Hrank"] = 3
+    else:
+        inputlist["Hrank"] = 2
     
     # truncation mode
     truncation_setup_functions[task["mb_truncation_mode"]](task, inputlist)
@@ -505,6 +511,7 @@ def save_mfdn_task_data(task, postfix=""):
             archive_file_list += glob.glob(environ.natorb_xform_filename(postfix))
     # MFDn input
     archive_file_list += [os.path.join(work_dir, "mfdn.input")]
+    archive_file_list += [os.path.join(work_dir, "menj.par")]
     if os.path.isfile(os.path.join(work_dir, "mfdn_sp_orbitals.info")):
         archive_file_list += [os.path.join(work_dir, "mfdn_sp_orbitals.info")]
     # partitioning file

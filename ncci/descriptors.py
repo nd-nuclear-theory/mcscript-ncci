@@ -22,7 +22,8 @@ University of Notre Dame
 - 12/30/22 (zz): Add isoscalar_coulomb_indicator to task_descriptor_7.
 - 06/04/23 (mac): Add task_descriptor_decomposition_2.
 - 09/14/23 (slv): Add task_descriptor_menj.
-- 01/16/23 (zz): Revise task_descriptor_menj and add task_descriptor_menj_trans. 
+- 01/16/24 (zz): Revise task_descriptor_menj and add task_descriptor_menj_trans. 
+- 02/12/24 (zz): Revise task_descriptor_menj and task_descriptor_menj_trans.
 
 """
 import mcscript.exception
@@ -207,22 +208,30 @@ def task_descriptor_menj(task):
     ):
         # traditional oscillator run
         template_string = (
-            "Z{nuclide[0]}-N{nuclide[1]}-{me2j_file_id}"
-            "{me3j_indicator}"
+            "Z{nuclide[0]}-N{nuclide[1]}"
+            "{interaction_indicator}"
             "-hw{hw:06.3f}"
             "-a_cm{a_cm:g}"
-            "-Nmax{Nmax:02d}"
+            "-Nmax{Nmax:02d}-Mj{M:03.1f}"
+            "-lan{max_iterations:d}-tol{tolerance:.1e}"
             )
     else:
         raise mcscript.exception.ScriptError("mode not supported by task descriptor")
 
     truncation_parameters = task["truncation_parameters"]
-    if task.get("use_3b"):
-        me3j_indicator = "ME3JID-{me3j_file_id}-N3max{E3Max}".format(**mcscript.utils.dict_union(task, truncation_parameters))
+    if task.get("interaction") is None:
+        if task.get("use_3b"):
+            interaction_indicator = "-menj-{me2j_file_id}-ME3JID-{me3j_file_id}-N3max{E3Max}".format(**mcscript.utils.dict_union(task, truncation_parameters))
+        else:
+            interaction_indicator = "-menj-{me2j_file_id}".format(**mcscript.utils.dict_union(task, truncation_parameters))
     else:
-        me3j_indicator = ""    
+        interaction_indicator = "-{interaction}".format(**mcscript.utils.dict_union(task, truncation_parameters))
+    # if task.get("use_3b"):
+    #     me3j_indicator = "-ME3JID-{me3j_file_id}-N3max{E3Max}".format(**mcscript.utils.dict_union(task, truncation_parameters))
+    # else:
+    #     me3j_indicator = ""    
     descriptor = template_string.format(
-        me3j_indicator=me3j_indicator,
+        interaction_indicator=interaction_indicator,
         **mcscript.utils.dict_union(task, truncation_parameters)
         )
 
@@ -247,24 +256,34 @@ def task_descriptor_menj_trans(task):
         task["mfdn_variant"] is modes.VariantMode.kMENJ
     ):
         template_string = (
-            "Z{nuclide[0]}-N{nuclide[1]}-{me2j_file_id}"
-            "{me3j_indicator}"
+            "Z{nuclide[0]}-N{nuclide[1]}"
+            "{interaction_indicator}"
             "-hw{hw:06.3f}"
             ##"-a_cm{a_cm:g}"
             "-Nmax{Nmax:02d}"
+            "{M_field}"
             "{subset_field}"
         )
     else:
         raise mcscript.exception.ScriptError("mode not supported by task descriptor")
     truncation_parameters = task["truncation_parameters"]
-    if task.get("use_3b"):
-        me3j_indicator = "ME3JID-{me3j_file_id}-N3max{E3Max}".format(**mcscript.utils.dict_union(task, truncation_parameters))
+    if task.get("interaction") is None:
+        if task.get("use_3b"):
+            interaction_indicator = "-menj-{me2j_file_id}-ME3JID-{me3j_file_id}-N3max{E3Max}".format(**mcscript.utils.dict_union(task, truncation_parameters))
+        else:
+            interaction_indicator = "-menj-{me2j_file_id}".format(**mcscript.utils.dict_union(task, truncation_parameters))
     else:
-        me3j_indicator = ""
+        interaction_indicator = "-{interaction}".format(**mcscript.utils.dict_union(task, truncation_parameters))
+    # if task.get("use_3b"):
+    #     me3j_indicator = "-ME3JID-{me3j_file_id}-N3max{E3Max}".format(**mcscript.utils.dict_union(task, truncation_parameters))
+    # else:
+    #     me3j_indicator = ""
     ##natural_orbital_indicator = mcscript.utils.ifelse(task.get("natural_orbitals"), "-natorb", "")
+    M_field = "-Mj{M:03.1f}".format(**truncation_parameters) if (truncation_parameters.get("M") is not None) else ""
     subset_field = "-subset{subset[0]:03d}".format(**task) if (task.get("subset") is not None) else ""
     descriptor = template_string.format(
-        me3j_indicator=me3j_indicator,
+        interaction_indicator=interaction_indicator,
+        M_field=M_field,
         subset_field=subset_field,
         **mcscript.utils.dict_union(task, truncation_parameters)
     )
