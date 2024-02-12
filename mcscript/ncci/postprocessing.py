@@ -50,6 +50,7 @@ University of Notre Dame
   for bra and ket.
 - 12/16/22 (mac): Provide diagonalization results data to mask functions.
 - 12/22/23 (mac): Add dry_run_postprocessor() for multi-ket run counting diagnostics.
+- 01/16/24 (zz): Add support for runs with unknown lanczos in init_postprocessor_db().
 """
 import collections
 import deprecated
@@ -461,12 +462,18 @@ def init_postprocessor_db(task, postfix=""):
     for run in task["wf_source_run_list"]:
         wf_source_res_dir_list += [library.get_res_directory(run)]
     wf_source_glob_pattern = task.get("wf_source_glob_pattern","*.res")
+    wf_source_res_format = task.get("wf_source_res_format")
     wf_source_mesh_data = mfdnres.input.slurp_res_files(
         wf_source_res_dir_list,
         filename_format="ALL",
         glob_pattern = wf_source_glob_pattern,
+        res_format = wf_source_res_format,
         verbose=True
     )
+    
+    # provide default value for lanczos for sorting
+    for results_data in wf_source_mesh_data:
+        results_data.params["lanczos"] = results_data.params.get("lanczos", 0)
 
     # construct bra and ket info
     bra_selector = task["wf_source_bra_selector"]
