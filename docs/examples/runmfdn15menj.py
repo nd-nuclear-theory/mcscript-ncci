@@ -10,11 +10,17 @@ export NCCI_DATA_DIR_H2=${GROUP_HOME}/data/menj/lenpic-sms
 import os
 
 import mcscript
-import ncci
-import ncci.mfdn_v15
+import mcscript.control
+import mcscript.task
+import mcscript.utils
+
+import mcscript.ncci as ncci
+import mcscript.ncci.mfdn_v15
 
 
-mcscript.init()
+# initialize mcscript
+mcscript.control.init()
+
 ##################################################################
 # environment
 ##################################################################
@@ -32,7 +38,7 @@ ncci.environ.operator_dir_list = [
 ##################################################################
 
 # nuclide
-nuclide_list = [(4,4)]
+nuclide_list = [(3,3)]
 A = sum(nuclide_list[0])  # assumes any nuclei in run are isobars
 
 M = 0
@@ -45,8 +51,8 @@ Nmax_list = mcscript.utils.value_range(*Nmax_range)
 hw_list = [24]
 
 # eigenvector convergence
-eigenvectors = 2
-max_iterations = 200
+eigenvectors = 4
+max_iterations = 600
 tolerance = 1e-6
 alpha_list =[400]
 # Lawson
@@ -138,5 +144,5 @@ mcscript.task.init(
 # termination
 ################################################################
 
-mcscript.termination()
+mcscript.control.termination()
 

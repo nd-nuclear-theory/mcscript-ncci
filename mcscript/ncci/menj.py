@@ -51,7 +51,7 @@ def set_up_menj_files(task, postfix=""):
     if task["use_3b"]:
         source_filenames.append("{:>}_{:>}_hwHO{:03d}.{:>}".format(task["me3j_file_id"],energy_truncation_3b, task["hw"], bin_extension_3b))
     for source in source_filenames:
-        mcscript.call(
+        mcscript.control.call(
             [
                 "cp",
                 "--verbose",
