@@ -5,6 +5,7 @@
     - 08/13/22 (pjf): Add mask_good_J().
     - 11/20/22 (mac): Add mask_by_energy_cutoff().
     - 01/03/23 (mac): Provide "negate_mask" option for mask_allow_near_yrast.
+    - 03/18/24 (mac): Add mask_wishlist().
 """
 
 import math
@@ -63,6 +64,50 @@ def mask_allow_near_yrast(task:dict, mask_params:dict, qn_pair, verbose=False):
             Ji, ni, ni_max, (ni<=ni_max),
         ))
     allow = (ni<=ni_max) and (nf<=nf_max)
+    if negate_mask:
+        allow = not allow
+
+    return allow
+
+
+def mask_wishlist(task:dict, mask_params:dict, qn_pair, verbose=False):
+    """Mask function for transitions in given wishlist.
+
+    Mask parameters:
+
+        "wishlist" (list or set): list of (qnf,qni) for transitions
+
+        "negate_mask" (bool, optional): whether or not to negate mask (useful to
+        eliminate a sub-network which has already been calculated elsewhere),
+        default False
+
+    Arguments:
+
+        task (dict): task dictionary
+
+        mask_params (dict): parameters specific to this mask
+
+        qn_pair (tuple): (qnf,qni) for transition
+
+        verbose (book, optional): verbosity (argument required by handler)
+
+    Returns:
+
+        allow (bool): mask value
+
+    """
+
+    # unpack quantum numbers
+    (qnf,qni) = qn_pair
+    (Ji,gi,ni) = qni
+    (Jf,gf,nf) = qnf
+
+    # get parameters
+    wishlist = mask_params["wishlist"]
+    negate_mask = mask_params.get("negate_mask", False)
+
+    # calculate mask value
+    allow = qn_pair in wishlist
     if negate_mask:
         allow = not allow
 
