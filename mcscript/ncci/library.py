@@ -546,8 +546,8 @@ def generate_smwf_info_in_library(results_prefix):
     # slurp res files
     res_format = "mfdn_v15"  # this function is mfdn_v15 specific
     filename_format="mfdn_format_7_ho"  # probably all legacy runs used this filename format, but might need to override
-    mesh_data = mfdnres.res.slurp_res_files(
-        res_prefix,res_format,filename_format,glob_pattern="*-mfdn15-*.res",verbose=False
+    mesh_data = mfdnres.input.slurp_res_files(
+        res_prefix,res_format=res_format,filename_format=filename_format,glob_pattern="*-mfdn15-*.res",verbose=False
     )
 
     # iterate over tasks
