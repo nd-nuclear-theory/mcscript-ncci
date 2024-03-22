@@ -51,6 +51,7 @@ University of Notre Dame
 - 12/16/22 (mac): Provide diagonalization results data to mask functions.
 - 12/22/23 (mac): Add dry_run_postprocessor() for multi-ket run counting diagnostics.
 - 01/16/24 (zz): Add support for runs with unknown lanczos in init_postprocessor_db().
+- 03/21/24 (mac): Add task option "postprocessor_relax_canonicalization".
 """
 import collections
 import deprecated
@@ -497,7 +498,9 @@ def init_postprocessor_db(task, postfix=""):
     if bra_selector == ket_selector:
         # special case where bra and ket selection is equal:
         # allow canonicalization of transitions, and don't duplicate work
-        canonicalize = True
+        # but permit override of canonicalization (puts onus on mask to choose "direction" of transitions)
+        relax_canonicalization = task.get("postprocessor_relax_canonicalization", False)
+        canonicalize = not relax_canonicalization
         ket_mesh_data = bra_mesh_data[:]
         ket_merged_data = bra_merged_data
     else:

@@ -205,9 +205,23 @@ University of Notre Dame
     build natural orbitals
 
 ----------------------------------------------------------------
+## postprocessor parameters ##
+
+TODO 03/21/24 (mac): postprocessor parameters need to be documented
+
+- `postprocessor_relax_canonicalization`: `bool`, optional
+  - allows postprocessor to attempt transitions in both canonical (qnf<qni) and
+    anticanonical (qnf<qni) sense
+  - this leaves it up to the mask to pick the direction actually calculated (can
+    be useful for manually selecting the sense of transitions to optimize use of
+    the multi-ket capability of the postprocessor)
+
+----------------------------------------------------------------
 ## menj parameters ##
 
-- `mfdn_variant`: `member of class VariantMode` required
+TODO 03/21/24 (mac): menj parameters need to be updated to reflect actual implementation
+
+- `mfdn_variant`: `modes.VariantMode`, optional
   - there are two different VariantMode to choose.
     ncci.modes.VariantMode.kH2 or ncci.modes.VariantMode.kMENJ
   - certain features of MFDn related to two body observables (for H2 runs)
