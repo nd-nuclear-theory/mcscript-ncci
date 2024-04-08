@@ -23,7 +23,7 @@ import mcscript.ncci.mfdn_v15
 import mcscript.ncci.postprocessing
 
 # initialize mcscript
-mcscript.init()
+mcscript.control.init()
 
 ##################################################################
 # environment
@@ -178,4 +178,4 @@ mcscript.task.init(
 # termination
 ################################################################
 
-mcscript.termination()
+mcscript.control.termination()

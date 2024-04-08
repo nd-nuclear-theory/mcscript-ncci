@@ -240,7 +240,7 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         # define single particle orbitals
         if variant_mode is modes.VariantMode.kH2:
             inputlist["orbitalfile"] = environ.orbitals_filename(postfix)
-            mcscript.call([
+            mcscript.control.call([
                 "cp", "--verbose",
                 environ.orbitals_filename(postfix),
                 os.path.join(work_dir, environ.orbitals_filename(postfix))
