@@ -219,7 +219,7 @@ runmfdn13gpu: harmonic oscillator direct run with MFDn v15, for use with postpro
 
 runmfdn14: harmonic oscillator Lanczos decomposition run with MFDn v15
 
-    6Li Nmax02,Nmax04 hw15,hw20 (direct) op L2,S2,Nex
+    6Li Nmax02,Nmax04 hw15,hw20 (direct) op L2,S2,Nex,U3SpSnS
 
     Usage:
 
