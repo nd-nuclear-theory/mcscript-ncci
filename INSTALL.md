@@ -36,10 +36,10 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   Note that the `.` here means to install the Python package defined by the code
-  in the current directory.  If you are actively developing `mcscript.ncci`
-  itself, you may also want to pass the `--editable` flag to `pip`.  (However,
-  if you encounter errors such as `ModuleNotFoundError: No module named
-  'mcscript.ncci'`, try installing without the `--editable` flag.)
+  in the current directory.  Note also that `mcscript` and `mcscript.ncci` are
+  not compatible with the `--editable` flag to `pip` (if you attempt an editable
+  installation, you are likely to encounter errors such as `ModuleNotFoundError:
+  No module named 'mcscript.ncci'`).
 
   This will ***fail*** if you have not already installed `mcscript`. If this
   happens, go back and ensure that `mcscript` has been installed successfully.
@@ -50,9 +50,6 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
   % git pull
   % python3 -m pip install --user .
   ~~~~~~~~~~~~~~~~
-
-  This subsequent `pip install`, when updating the source code, is a precaution
-  in case, e.g., the package dependencies have changed.
 
 # 2. Environment Configuration
 
