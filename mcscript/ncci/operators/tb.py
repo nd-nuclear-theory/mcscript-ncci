@@ -68,6 +68,8 @@ University of Notre Dame
         + Add tb_observable_sets: VC
     - 12/30/22 (zz):
         + Add isoscalar coulomb file name support to get_tbme_sources.
+    - 05/18/24 (pjf):
+        + Add rpp2, rnn2, rpn2, and rNN2.
 """
 import collections
 import math
@@ -378,6 +380,87 @@ def rn2intr(nuclide):
     out = (r2intr(A=sum(nuclide)) - r2ivintr(nuclide=nuclide))/2
     return out
 
+def rNN2(nuclide):
+    """Relative nucleon-nucleon r^2 operator.
+
+    This is r_ij^2, the pair distance summed over all pairs of nucleons.
+
+    Arguments:
+        nuclide (tuple of int): nuclide N and Z
+
+    Returns:
+        CoefficientDict containing coefficients for rNN2 operator.
+    """
+    (Z,N) = nuclide
+    A = Z+N
+    out = (A-1)*Ursqr() - 2*Vr1r2()
+    return out
+
+def rpp2(nuclide):
+    """Relative proton-proton r^2 operator.
+
+    This is r_ij^2, the pair distance summed over all pairs of protons.
+
+    Arguments:
+        nuclide (tuple of int): nuclide N and Z
+
+    Returns:
+        CoefficientDict containing coefficients for rpp2 operator.
+    """
+    (Z,N) = nuclide
+    out = mcscript.utils.CoefficientDict({
+        "U[r.r]": (Z-1)/2,
+        "V[r,r]": -1/2*(-math.sqrt(3)),
+        "U[r.rtz]": +1*(Z-1), # tauz = 2*tz
+        "V[rtz,r]": -1*(-math.sqrt(3)),  # tauz = 2*tz
+        "V[r,rtz]": -1*(-math.sqrt(3)),  # tauz = 2*tz
+        "V[rtz,rtz]": -2*(-math.sqrt(3)), # tauz1*tauz2 = 4*tz1*tz2
+        })
+    return out
+
+def rnn2(nuclide):
+    """Relative neutron-neutron r^2 operator.
+
+    This is r_ij^2, the pair distance summed over all pairs of neutrons.
+
+    Arguments:
+        nuclide (tuple of int): nuclide N and Z
+
+    Returns:
+        CoefficientDict containing coefficients for rnn2 operator.
+    """
+    (Z,N) = nuclide
+    out = mcscript.utils.CoefficientDict({
+        "U[r.r]": (N-1)/2,
+        "V[r,r]": -1/2*(-math.sqrt(3)),
+        "U[r.rtz]": -1*(N-1), # tauz = 2*tz
+        "V[rtz,r]": +1*(-math.sqrt(3)),  # tauz = 2*tz
+        "V[r,rtz]": +1*(-math.sqrt(3)),  # tauz = 2*tz
+        "V[rtz,rtz]": -2*(-math.sqrt(3)), # tauz1*tauz2 = 4*tz1*tz2
+        })
+    return out
+
+def rpn2(nuclide):
+    """Relative proton-neutron r^2 operator.
+
+    This is r_ij^2, the pair distance summed over all proton-neutron pairs.
+
+    Arguments:
+        nuclide (tuple of int): nuclide N and Z
+
+    Returns:
+        CoefficientDict containing coefficients for rNN2 operator.
+    """
+    (Z,N) = nuclide
+    A = Z+N
+    out = mcscript.utils.CoefficientDict({
+        "U[r.r]": A/2,
+        "U[r.rtz]": (N-Z), # tauz = 2*tz
+        "V[r,r]": -1*(-math.sqrt(3)),
+        "V[rtz,rtz]": -4*(-math.sqrt(3)), # tauz1*tauz2 = 4*tz1*tz2
+        })
+    return out
+
 def Lintr(A):
     """Two-body intrinsic L operator.
 
@@ -568,7 +651,7 @@ def J_filter_term(
         mode (modes.JFilterMode, default modes.JFilterMode.kEnabled): selection mode for which M
             runs are subject to J filtering (kEnabled, kDisabled, kM0Only)
 
-        delta_J (int, default 1.0): difference to next higher angular momentum of interest      
+        delta_J (int, default 1.0): difference to next higher angular momentum of interest
 
     Returns:
 
@@ -583,7 +666,7 @@ def J_filter_term(
 
     return term
 
-        
+
 ################################################################
 # tbme target extraction
 ################################################################
