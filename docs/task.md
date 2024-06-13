@@ -45,7 +45,7 @@ University of Notre Dame
 
 - `hamiltonian`: `CoefficientDict`
   - specification of Hamiltonian as a `CoefficientDict` of
-    two-body operators passed as sources to h2mixer (see `mfdn.operators`)
+    two-body operators passed as sources to h2mixer (see `ncci.operators.tb`)
   - If `None`, use standard H = Tintr + VNN + a_cm*N_cm
 
 ----------------------------------------------------------------
