@@ -211,7 +211,7 @@ def generate_moshinsky_targets(task):
         truncation = parameters["truncation"]
         rel_filename = relative_filename_for_source(relative_id, relative_source)
         tbme_filename = environ.tmbe_filename(
-            name, truncation, relative_source['hw'], ext=task["h2_extension"]
+            name, truncation, relative_source['hw'], ext=task.get("h2_extension", "bin")
         )
 
         if ((J0 != relative_source["qn"][0])
