@@ -1,12 +1,21 @@
-""" runmfdn14.py
+"""runmfdn14.py
 
     Example Lanczos decomposition run using L^2 and S^2. Ensure that the output
     of runmfdn13.py is in the current NCCI_LIBRARY_PATH.
 
     See examples/README.md for full description.
 
+    Debugging
+
+        06/13/24 (mac): MFDn fails in task 10 phase 1
+     
+          Z3-N3-Daejeon16-coul1-hw15.000-a_cm50-Nmax02-Mj0.0-lan600-tol1.0e-06-J00.0-g0-n01-Nex-dlan12
+         
+        just before "Eigen energy, error est, residu" phase.  May be related to 0 eigenvalues. 
+
     Patrick J. Fasano
     University of Notre Dame
+
 """
 
 import mcscript
@@ -16,6 +25,7 @@ import mcscript.utils
 
 import mcscript.ncci as ncci
 import mcscript.ncci.mfdn_v15
+import mcscript.ncci.decomposition
 
 # initialize mcscript
 mcscript.control.init()
