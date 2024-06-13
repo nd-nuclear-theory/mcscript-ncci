@@ -11,11 +11,14 @@
 """
 
 import mcscript
-import ncci
-import ncci.mfdn_v15
+import mcscript.control
+import mcscript.task
+
+import mcscript.ncci as ncci
+import mcscript.ncci.mfdn_v15
 
 # initialize mcscript
-mcscript.init()
+mcscript.control.init()
 
 ##################################################################
 # build task list
@@ -120,4 +123,4 @@ mcscript.task.init(
 # termination
 ################################################################
 
-mcscript.termination()
+mcscript.control.termination()

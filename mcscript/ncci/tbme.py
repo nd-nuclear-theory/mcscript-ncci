@@ -54,6 +54,9 @@ import glob
 import os
 import warnings
 
+import mcscript.control
+import mcscript.exception
+import mcscript.task
 import mcscript.utils
 
 from . import (
@@ -319,15 +322,15 @@ def generate_tbme_targets(task, targets, target_qn, postfix=""):
     mcscript.utils.write_input(environ.h2mixer_filename(postfix), input_lines=lines, verbose=False)
 
     # create work directory if it doesn't exist yet (-p)
-    mcscript.call(["mkdir", "-p", "work{:s}".format(postfix)])
+    mcscript.control.call(["mkdir", "-p", "work{:s}".format(postfix)])
 
     # invoke h2mixer
-    mcscript.call(
+    mcscript.control.call(
         [
             environ.shell_filename("h2mixer")
         ],
         input_lines=lines,
-        mode=mcscript.CallMode.kSerial
+        mode=mcscript.control.CallMode.kSerial
     )
 
 

@@ -51,22 +51,28 @@ Some initial pointers on where to look to get started.
 
   - Cloning.  You can clone from either the ISU original repository
 
-      https://github.com/isu-nuclear-theory/mfdn.git
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    % git clone https://github.com/isu-nuclear-theory/mfdn.git
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     or from ND's fork
 
-      https://github.com/nd-nuclear-theory/mfdn.git
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    % git clone https://github.com/nd-nuclear-theory/mfdn.git
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     These are both private repositories, and require read permission to be
     granted by ISU or ND, respectively.
 
-  - Instructions.  See README.md for installation instructions.  Important
+  - Instructions.  See `README.md` for installation instructions.  Important
     topics include:
 
     + Setting up a symlink to the appropriate config file.  (These are local to
       mfdn's repository, not our standard ndconfig config.mk files.)  For example:
 
-        % ln -s config/config_Perlmutter_CPU_gnu.mk config.mk
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+       % ln -s config/config_Perlmutter_CPU_gnu.mk config.mk
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     + Recommendations on modules to load.  For instance, on Cori at one point,
     better performance was obtained by unloading the default cray-libsci module,
@@ -77,15 +83,17 @@ Some initial pointers on where to look to get started.
 
   - Environment.  You can source our usual "env" file from ndconfig, for
     whichever system and compiler you are targeting.  But beware that the
-    recommendations in README.md might augment or supersede these, e.g., "module
-    unload cray-libsci".
+    recommendations in `README.md` might augment or supersede these, e.g., `module
+    unload cray-libsci`.
 
   - Building.  First run 'make' with no arguments to display help.  Note that
-    you will have to specify which TBME file format to use (VAR=...) and which
-    solver to use (SOLVER=...), unless you want the default choices.  A typical
+    you will have to specify which TBME file format to use (`VAR=...`) and which
+    solver to use (`SOLVER=...`), unless you want the default choices.  A typical
     invocation is thus:
 
-      % make mfdn SOLVER=lan
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    % make mfdn SOLVER=lan
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   - Installing executable.  Below, when you start using the scripting in
     `mcscript-ncci`, that scripting will look for the executable in your a
@@ -147,11 +155,15 @@ Some initial pointers on where to look to get started.
 
   - Cloning.  You can clone from either the ND original repository
 
-      https://github.com/nd-nuclear-theory/mfdn-transitions.git
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    % git clone https://github.com/nd-nuclear-theory/mfdn-transitions.git
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     or from ISU's fork (this might now be quite the latest version)
 
-      https://github.com/isu-nuclear-theory/mfdn-transitions.git
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    % git clone https://github.com/isu-nuclear-theory/mfdn-transitions.git
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     These are both private repositories, and require read permission to be
     granted by ND or ISU, respectively.

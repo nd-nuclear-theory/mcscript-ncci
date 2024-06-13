@@ -1,4 +1,10 @@
-""" runmfdn13.py
+"""runmfdn13-gpu.py
+
+    For mfdn GPU run: Disable calculation of one-body observables, and use gpu
+    version of executable.  Additional special instructions may apply to use GPU
+    resources on a specific computing system, e.g., certain environment
+    variables may need to be set, or certain job submission flags may be
+    required.
 
     Example diagonalization run as setup for two-body transitions. Add
     `mcscript-ncci/docs/examples` to NCCI_DATA_DIR_H2 to ensure that this
@@ -8,15 +14,13 @@
 
     Patrick J. Fasano, Mark A. Caprio
     University of Notre Dame
+
 """
 
 import mcscript
-import mcscript.control
-import mcscript.task
-import mcscript.utils
-
 import mcscript.ncci as ncci
 import mcscript.ncci.mfdn_v15
+import mcscript.ncci.postprocessing
 
 # initialize mcscript
 mcscript.control.init()
@@ -114,11 +118,9 @@ tasks = [
         "partition_filename": None,
 
         # obdme parameters
-        ## "hw_for_trans": 20,
-        "obdme_multipolarity": 2,
-        # "obdme_reference_state_list": [(0.0, 0, 1)],
-        "save_obdme": True,
-        "ob_observable_sets": ['M1', 'E2'],
+        "calculate_obdme": False,
+        "obdme_multipolarity": None,  # must set to None for mfdn GPU code (commit db2400a), since max2K in mfdn.input yields error "entity name is not member of group"
+        "save_obdme": False,
 
         # two-body observables
         "tb_observable_sets": ["H-components","am-sqr", "isospin"],
@@ -142,7 +144,7 @@ tasks = [
 
         # version parameters
         "h2_format": 15099,
-        "mfdn_executable": "xmfdn-h2-lan",
+        "mfdn_executable": "xmfdn-h2-lan-gpu",
         "mfdn_driver": ncci.mfdn_v15,
     }
     for M in M_list
@@ -170,8 +172,7 @@ mcscript.task.init(
     task_descriptor=ncci.descriptors.task_descriptor_7,
     task_pool=task_pool,
     phase_handler_list=ncci.handlers.task_handler_mfdn_phases,
-    archive_phase_handler_list=[ncci.handlers.archive_handler_mfdn_hsi],
-)
+    )
 
 ################################################################
 # termination

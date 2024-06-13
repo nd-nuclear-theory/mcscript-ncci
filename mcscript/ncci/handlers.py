@@ -56,21 +56,29 @@ University of Notre Dame
 - 07/06/22 (pjf): Improve relative task handlers.
 - 08/15/22 (pjf): Implement cleanup in task_handler_mfdn_postprocessor_post.
 - 05/31/23 (pjf): Add postprocessor archive handlers.
+- 10/12/23 (slv): Add mfdn_menj_pre handler and a function that runs all three phase sequentially
+- 10/19/23 (slv): Remove the menj_pre handler and use the modes.VariantMode.kMENJ as the 
+                  determining condition to copy the interaction files.
+- 01/16/23 (zz): Generate mfdn_smwf.info for menj runs.
+
 """
 import os
-import glob
-import mcscript
+
 import mcscript.exception
+import mcscript.parameters
+import mcscript.task
 
 from . import (
+    environ,
     library,
+    menj,
+    mfdn_v15,
     modes,
     postprocessing,
     radial,
-    tbme,
     relative,
+    tbme,
     utils,
-    mfdn_v15,
 )
 
 # set default MFDn driver
@@ -143,6 +151,20 @@ def task_handler_mfdn_post(task, postfix="", cleanup=True):
     if mfdn_driver is None:
         mfdn_driver = default_mfdn_driver
 
+    # generate mfdn_smwf.info for menj runs
+    variant_mode = task.get("mfdn_variant", modes.VariantMode.kH2)
+    if variant_mode is modes.VariantMode.kMENJ:
+        descriptor = task["metadata"]["descriptor"]
+        filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+        res_filename = os.path.join("..","results","res","{:s}.res".format(filename_prefix))
+        mfdn_driver.generate_smwf_info(
+            task=task,
+            orbital_filename="orbitals.dat",
+            partitioning_filename="work/mfdn_partitioning.generated",
+            res_filename=res_filename,
+            info_filename="work/mfdn_smwf.info"
+        )
+
     # save OBDME files for next natural orbital iteration
     if task.get("natural_orbitals"):
         mfdn_driver.extract_natural_orbitals(task, postfix)
@@ -177,14 +199,22 @@ def task_handler_mfdn_pre(task, postfix=""):
         postfix (string, optional): identifier to add to generated files
     """
 
-    radial.set_up_interaction_orbitals(task, postfix=postfix)
-    radial.set_up_orbitals(task, postfix=postfix)
-    radial.set_up_xforms_analytic(task, postfix=postfix)
-    radial.set_up_obme_analytic(task, postfix=postfix)
-    tbme.generate_tbme(task, postfix=postfix)
-    if task.get("save_tbme"):
-        tbme.save_tbme(task, postfix=postfix)
-
+    variant_mode = task.get("mfdn_variant", modes.VariantMode.kH2)
+    if variant_mode is modes.VariantMode.kH2:
+        radial.set_up_interaction_orbitals(task, postfix=postfix)
+        radial.set_up_orbitals(task, postfix=postfix)
+        radial.set_up_xforms_analytic(task, postfix=postfix)
+        radial.set_up_obme_analytic(task, postfix=postfix)
+        tbme.generate_tbme(task, postfix=postfix)
+        if task.get("save_tbme"):
+            tbme.save_tbme(task, postfix=postfix)
+    elif variant_mode is modes.VariantMode.kMENJ:
+        radial.set_up_orbitals(task, postfix=postfix) # needed to generate mfdn_smwf.info
+        menj.set_up_menj_files(task, postfix = postfix)
+        
+    else:
+        raise(ValueError("unsupported variant mode"))
+            
 def task_handler_mfdn_run(task, postfix=""):
     """Task handler for MFDn phase of oscillator basis run.
 

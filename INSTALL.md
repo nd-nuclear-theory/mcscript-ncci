@@ -32,11 +32,14 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
   Set up the package in your `PYTHONPATH` by running `pip`:
 
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  % python3 -m pip install --user --editable .
+  % python3 -m pip install --user .
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   Note that the `.` here means to install the Python package defined by the code
-  in the current directory.
+  in the current directory.  Note also that `mcscript` and `mcscript.ncci` are
+  not compatible with the `--editable` flag to `pip` (if you attempt an editable
+  installation, you are likely to encounter errors such as `ModuleNotFoundError:
+  No module named 'mcscript.ncci'`).
 
   This will ***fail*** if you have not already installed `mcscript`. If this
   happens, go back and ensure that `mcscript` has been installed successfully.
@@ -45,11 +48,8 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
 
   ~~~~~~~~~~~~~~~~
   % git pull
-  % python3 -m pip install --user --editable .
+  % python3 -m pip install --user .
   ~~~~~~~~~~~~~~~~
-
-  This subsequent `pip install`, when updating the source code, is a precaution
-  in case, e.g., the package dependencies have changed.
 
 # 2. Environment Configuration
 
@@ -67,7 +67,7 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
   e.g., ```run0164-JISP16-tb-20/JISP16-tb-20-20.bin```.
 
   #### @NDCRC: ####
-  `.cshrc`:
+  `.cshrc` or `.tcshrc`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
   setenv GROUP_HOME "/afs/crc.nd.edu/group/nuclthy"
@@ -82,17 +82,21 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   #### @NERSC: ####
-  `.cshrc`:
+  `.cshrc` or `.tcshrc`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
-  setenv GROUP_HOME "/global/cfs/cdirs/m2032"
+  # Use read-only mount point for /global/cfs/cdirs/m2032.
+  # See https://docs.nersc.gov/performance/io/dvs/.
+  setenv GROUP_HOME "/dvs_ro/cfs/cdirs/m2032"
   setenv NCCI_DATA_DIR_H2 "${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/docs/examples"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   `.bashrc` or `.bash_profile`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
-  export GROUP_HOME="/global/cfs/cdirs/m2032"
+  # Use read-only mount point for /global/cfs/cdirs/m2032.
+  # See https://docs.nersc.gov/performance/io/dvs/.
+  export GROUP_HOME="/dvs_ro/cfs/cdirs/m2032"
   export NCCI_DATA_DIR_H2="${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/docs/examples"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -116,7 +120,7 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
   the example runs are in `${HOME}/code/mcscript-ncci/docs/examples`, you might
   define the following search path:
 
-  `.cshrc`:
+  `.cshrc` or `.tcshrc`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   setenv NCCI_LIBRARY_PATH "${SCRATCH}/runs:${SCRATCH}/library:${HOME}/code/mcscript-ncci/docs/examples"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

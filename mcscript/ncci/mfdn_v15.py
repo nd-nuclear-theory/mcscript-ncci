@@ -59,8 +59,25 @@ University of Notre Dame
 - 05/09/22 (pjf): Split generate_mfdn_input() from run_mfdn().
 - 07/12/22 (pjf): Add sanity check on dimension and numnonzero.
 - 06/05/23 (mac):
-  + Make "eigenvectors" optional, e.g., for decomposition run.
-  + Fix save_mfdn_task_data() to gracefully handle missing overlap files for decomposition run.
+    + Make "eigenvectors" optional, e.g., for decomposition run.
+    + Fix save_mfdn_task_data() to gracefully handle missing overlap files for decomposition run.
+- 08/23/23 (slv): 
+    + Create generate_menj_par().
+    + Add a call to generate_menj_par() from generate_mfdn_input().
+    + Add a menj.par file existence check in run_mfdn().
+- 08/28/23 (slv): 
+    + Use .format for strings inputs in generate_menj_par().
+    + For menj mode, compute lamHcm as a_cm/hw instead of getting it as an input in the task dictionary.
+- 09/28/23 (slv):
+    + Add "variant_mode" key to task dictionary.
+    + In menj mode, omit looking for observable TBME files.
+- 10/07/23 (slv): In menj mode, in save_mfdn_task_data(), do not save h2 related files.
+- 10/30/23 (slv): In menj mode, take value of NShell from task dictionary truncation_parameters["Nmax_orb"].
+- 11/01/23 (slv): Add Hrank to inputlist of mfdn.input.
+- 02/12/24 (zz): 
+    + Remove hamiltonian_rank. 
+    + Add menj.par to archive list.
+
 """
 import errno
 import os
@@ -69,10 +86,19 @@ import collections
 import re
 import warnings
 
-import mcscript
+import mcscript.control
 import mcscript.exception
+import mcscript.parameters
+import mcscript.task
+import mcscript.utils
 
-from . import modes, environ, operators
+from . import (
+    environ,
+    menj,
+    modes,
+    operators,
+    utils,
+)
 
 
 def set_up_Nmax_truncation(task, inputlist):
@@ -82,6 +108,7 @@ def set_up_Nmax_truncation(task, inputlist):
         task(dict): as described in docs/task.md
         inputlist (dict): MFDn v15 inputlist
     """
+
     # sanity check
     if task["sp_truncation_mode"] is not modes.SingleParticleTruncationMode.kNmax:
         raise ValueError("expecting sp_truncation_mode to be {} but found {sp_truncation_mode}".format(modes.SingleParticleTruncationMode.kNmax, **task))
@@ -98,7 +125,6 @@ def set_up_Nmax_truncation(task, inputlist):
     inputlist["Nmax"] = int(truncation_parameters["Nmax"])
     inputlist["deltaN"] = int(truncation_parameters["Nstep"])
     inputlist["TwoMj"] = round(2*truncation_parameters["M"])
-
 
 def set_up_WeightMax_truncation(task, inputlist):
     """Generate weight max truncation inputs for MFDn v15.
@@ -150,7 +176,7 @@ truncation_setup_functions = {
 
 
 def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
-    """Generate input file for MFDn version 15.
+    """Generate input file and menj.par (if needed) for MFDn version 15 
 
     Arguments:
         task (dict): as described in docs/task.md
@@ -160,6 +186,10 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     Raises:
         mcscript.exception.ScriptError: if MFDn output not found
     """
+
+    variant_mode = task.get("mfdn_variant", modes.VariantMode.kH2)
+    truncation_parameters = task["truncation_parameters"]
+    
     # check that diagonalization is enabled
     if (run_mode in (modes.MFDnRunMode.kNormal, modes.MFDnRunMode.kLanczosOnly)) and not task.get("diagonalization"):
         raise mcscript.exception.ScriptError(
@@ -186,17 +216,16 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     # nucleus
     inputlist["Nprotons"], inputlist["Nneutrons"] = task["nuclide"]
 
-    # single-particle orbitals
-    inputlist["orbitalfile"] = environ.orbitals_filename(postfix)
-    mcscript.call([
-        "cp", "--verbose",
-        environ.orbitals_filename(postfix),
-        os.path.join(work_dir, environ.orbitals_filename(postfix))
-    ])
-
+    # particle rank
+    if (task.get("use_3b", False)):
+        inputlist["Hrank"] = 3
+    else:
+        inputlist["Hrank"] = 2
+    
     # truncation mode
     truncation_setup_functions[task["mb_truncation_mode"]](task, inputlist)
 
+   
     if run_mode in [modes.MFDnRunMode.kNormal,modes.MFDnRunMode.kLanczosOnly]:
         if (task["basis_mode"] in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):
             inputlist["hbomeg"] = float(task["hw"])
@@ -208,31 +237,52 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         if task.get("reduce_solver_threads"):
             inputlist["reduce_solver_threads"] = task["reduce_solver_threads"]
 
-        # Hamiltonian input
-        inputlist["TBMEfile"] = "tbme-H"
+        # define single particle orbitals
+        if variant_mode is modes.VariantMode.kH2:
+            inputlist["orbitalfile"] = environ.orbitals_filename(postfix)
+            mcscript.control.call([
+                "cp", "--verbose",
+                environ.orbitals_filename(postfix),
+                os.path.join(work_dir, environ.orbitals_filename(postfix))
+            ])
+        elif variant_mode is modes.VariantMode.kMENJ:
+            # define single-particle orbital cutoff
+            #
+            # Since menj variant is not given an explicit orbital list, we must provide
+            # the Nshell parameter.
+            if truncation_parameters.get("Nmax_orb") is not None:
+                Nmax_orb = truncation_parameters["Nmax_orb"]
+            elif task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kNmax:
+                Nmax_orb = truncation_parameters["Nmax"] + utils.Nv_for_nuclide(task["nuclide"])
+            inputlist["Nshell"] = Nmax_orb + 1
 
-        # tbo: collect tbo names
-        obs_basename_list = [
-            "tbme-{}".format(id_)
-            for id_ in operators.tb.get_tbme_targets(task)[(0,0,0)].keys()
-        ]
+        # provide Hamiltonian and two-body observable TBME file names
+        if variant_mode is modes.VariantMode.kH2:
+            # Hamiltonian input
+            inputlist["TBMEfile"] = "tbme-H"
 
-        # do not evaluate Hamiltonian as observable
-        #  NOTE (pjf): due to possible bug/precision issues in MFDn, evaluate H
-        #    as a consistency check
-        ##obs_basename_list.remove("tbme-H")
+            # tbo: collect tbo names
+            obs_basename_list = [
+                "tbme-{}".format(id_)
+                for id_ in operators.tb.get_tbme_targets(task)[(0,0,0)].keys()
+            ]
 
-        # tbo: log tbo names in separate file to aid future data analysis
-        mcscript.utils.write_input("tbo_names{:s}.dat".format(postfix), input_lines=obs_basename_list)
+            # do not evaluate Hamiltonian as observable
+            #  NOTE (pjf): due to possible bug/precision issues in MFDn, evaluate H
+            #    as a consistency check
+            ##obs_basename_list.remove("tbme-H")
 
-        # tbo: count number of observables
-        num_obs = len(obs_basename_list)
-        if num_obs > 32:
-            raise mcscript.exception.ScriptError("Too many observables for MFDn v15")
+            # tbo: log tbo names in separate file to aid future data analysis
+            mcscript.utils.write_input("tbo_names{:s}.dat".format(postfix), input_lines=obs_basename_list)
 
-        if task.get("calculate_tbo", True):
-            inputlist["numTBops"] = num_obs
-            obslist["TBMEoperators"] = obs_basename_list
+            # tbo: count number of observables
+            num_obs = len(obs_basename_list)
+            if num_obs > 32:
+                raise mcscript.exception.ScriptError("Too many observables for MFDn v15")
+
+            if task.get("calculate_tbo", True):
+                inputlist["numTBops"] = num_obs
+                obslist["TBMEoperators"] = obs_basename_list
 
         # obdme: parameters
         inputlist["obdme"] = task.get("calculate_obdme", True)
@@ -240,6 +290,8 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             obslist["max2K"] = round(2*task["obdme_multipolarity"])
 
         # construct transition observable input if reference states given
+        #
+        # Note: MFDn native transitions are no longer available after v15b00.
         if task.get("obdme_reference_state_list") is not None:
             # obdme: validate reference state list
             #
@@ -277,12 +329,15 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         if not os.path.exists(partition_filename):
             print("Partition filename: {}".format(partition_filename))
             raise mcscript.exception.ScriptError("partition file not found")
-        mcscript.call([
+        mcscript.control.call([
             "cp", "--verbose",
             partition_filename,
             os.path.join(work_dir, "mfdn_partitioning.info")
             ])
 
+    # generate input file for menj input routines
+    if variant_mode is modes.VariantMode.kMENJ:
+        menj.generate_menj_par(task, postfix)
 
 
 def run_mfdn(task, postfix=""):
@@ -307,16 +362,16 @@ def run_mfdn(task, postfix=""):
 
     # remove any stray files from a previous run
     if os.path.exists("mfdn.out"):
-        mcscript.call(["rm", "-v", "mfdn.out"])
+        mcscript.control.call(["rm", "-v", "mfdn.out"])
     if os.path.exists("mfdn.res"):
-        mcscript.call(["rm", "-v", "mfdn.res"])
+        mcscript.control.call(["rm", "-v", "mfdn.res"])
 
     # invoke MFDn
-    mcscript.call(
+    mcscript.control.call(
         [
             environ.mfdn_filename(task["mfdn_executable"])
         ],
-        mode=mcscript.CallMode.kHybrid,
+        mode=mcscript.control.CallMode.kHybrid,
         check_return=True,
         file_watchdog=mcscript.control.FileWatchdog("mfdn.out"),
         file_watchdog_restarts=3,
@@ -393,14 +448,14 @@ def extract_natural_orbitals(task, postfix=""):
         )
 
     print("Saving OBDME files for natural orbital generation...")
-    mcscript.call(
+    mcscript.control.call(
         [
             "cp", "--verbose",
             os.path.join(work_dir, obdme_info_filename),
             environ.natorb_info_filename(postfix)
         ]
     )
-    mcscript.call(
+    mcscript.control.call(
         [
             "cp", "--verbose",
             obdme_filename[0],
@@ -423,33 +478,44 @@ def save_mfdn_task_data(task, postfix=""):
     # save full archive of input, log, and output files
     print("Saving full output files...")
     # logging
-    archive_file_list = [
-        environ.h2mixer_filename(postfix),
-        "tbo_names{:s}.dat".format(postfix)
+
+    archive_file_list = []
+
+    variant_mode = task.get("mfdn_variant", modes.VariantMode.kH2)
+    
+    # save H2 related files if MFDn is run on kH2 mode    
+    if (variant_mode is modes.VariantMode.kH2):
+        archive_file_list = [
+            environ.h2mixer_filename(postfix),
+            "tbo_names{:s}.dat".format(postfix)
         ]
-    # orbital information
-    archive_file_list += [
-        environ.orbitals_int_filename(postfix),
-        environ.orbitals_filename(postfix),
-        ]
-    # transformation information
-    # Use glob to allow for missing files (e.g., in decomposition run).
-    archive_file_list += glob.glob(environ.radial_xform_filename(postfix))
-    archive_file_list += glob.glob(environ.radial_olap_int_filename(postfix))
-    # Coulomb information:
-    if task["use_coulomb"]:
-        archive_file_list += glob.glob(environ.orbitals_coul_filename(postfix))
-        archive_file_list += glob.glob(environ.radial_olap_coul_filename(postfix))
-    # natural orbital information
-    if task.get("natural_orbitals"):
+        # orbital information
         archive_file_list += [
-            environ.natorb_info_filename(postfix),
-            environ.natorb_obdme_filename(postfix),
+            environ.orbitals_int_filename(postfix),
+            environ.orbitals_filename(postfix),
         ]
-        # glob for natural orbital xform
-        archive_file_list += glob.glob(environ.natorb_xform_filename(postfix))
+        # transformation information
+        # Use glob to allow for missing files (e.g., in decomposition run).
+        archive_file_list += glob.glob(environ.radial_xform_filename(postfix))
+        archive_file_list += glob.glob(environ.radial_olap_int_filename(postfix))
+
+
+        # Coulomb information:
+        if task["use_coulomb"]:
+            archive_file_list += glob.glob(environ.orbitals_coul_filename(postfix))
+            archive_file_list += glob.glob(environ.radial_olap_coul_filename(postfix))
+        # natural orbital information
+        if task.get("natural_orbitals"):
+            archive_file_list += [
+                environ.natorb_info_filename(postfix),
+                environ.natorb_obdme_filename(postfix),
+            ]
+            # glob for natural orbital xform
+            archive_file_list += glob.glob(environ.natorb_xform_filename(postfix))
     # MFDn input
     archive_file_list += [os.path.join(work_dir, "mfdn.input")]
+    if os.path.isfile(os.path.join(work_dir, "menj.par")):
+        archive_file_list += [os.path.join(work_dir, "menj.par")]
     if os.path.isfile(os.path.join(work_dir, "mfdn_sp_orbitals.info")):
         archive_file_list += [os.path.join(work_dir, "mfdn_sp_orbitals.info")]
     # partitioning file
@@ -523,7 +589,7 @@ def cleanup_mfdn_workdir(task, postfix=""):
     """
     # cleanup of wave function files
     scratch_file_list = glob.glob("work{:s}/*".format(postfix))
-    mcscript.call(["rm", "-vf"] + scratch_file_list)
+    mcscript.control.call(["rm", "-vf"] + scratch_file_list)
 
 
 def extract_mfdn_task_data(
@@ -562,7 +628,7 @@ def extract_mfdn_task_data(
     archive_path = os.path.join(task_data_dir, task_data_archive_filename)
 
     # extract archive
-    mcscript.call(
+    mcscript.control.call(
         [
             "tar", "zxvf", archive_path,
         ]
@@ -588,14 +654,14 @@ def extract_mfdn_task_data(
     # MFDN obdme
     if (glob.glob(extracted_dir+"/mfdn.*obdme*")):
         file_list += glob.glob(extracted_dir+"/mfdn.*obdme*")
-    mcscript.call(["mv", "-t", work_dir+"/",] + file_list)
+    mcscript.control.call(["mv", "-t", work_dir+"/",] + file_list)
 
     # move remaining files into task directory
     file_list = glob.glob(extracted_dir+"/*")
-    mcscript.call(["mv", "-t", "./",] + file_list)
+    mcscript.control.call(["mv", "-t", "./",] + file_list)
 
     # remove temporary directories
-    mcscript.call(["rm", "-vfd", extracted_dir, run_name])
+    mcscript.control.call(["rm", "-vfd", extracted_dir, run_name])
 
 
 def extract_wavefunctions(
@@ -647,7 +713,7 @@ def extract_wavefunctions(
         archive_path = os.path.join(wavefunctions_dir, wavefunctions_archive_filename)
 
     # extract archive
-    mcscript.call(
+    mcscript.control.call(
         [
             "tar", "xvf", archive_path,
         ]
@@ -658,10 +724,10 @@ def extract_wavefunctions(
 
     # move files into task directory
     file_list = glob.glob(os.path.join(extracted_dir,"*"))
-    mcscript.call(["mv", "-t", target_dir,] + file_list)
+    mcscript.control.call(["mv", "-t", target_dir,] + file_list)
 
     # remove temporary directories
-    mcscript.call(["rm", "-vfd", extracted_dir, run_name])
+    mcscript.control.call(["rm", "-vfd", extracted_dir, run_name])
 
 
 def generate_smwf_info(task, orbital_filename, partitioning_filename, res_filename, info_filename='mfdn_smwf.info'):
@@ -694,14 +760,14 @@ def generate_smwf_info(task, orbital_filename, partitioning_filename, res_filena
     lines.append("")
 
     # convert orbitals to 15200
-    mcscript.call(
+    mcscript.control.call(
         [
             environ.shell_filename("orbital-gen"),
             "--convert",
             "15099", "{:s}".format(orbital_filename),
             "15200", "{:s}".format(orbital_filename+"15200"),
         ],
-        mode=mcscript.CallMode.kSerial
+        mode=mcscript.control.CallMode.kSerial
     )
 
     # append orbitals to info file
@@ -714,7 +780,7 @@ def generate_smwf_info(task, orbital_filename, partitioning_filename, res_filena
             lines.append(line.rstrip())
 
     # remove temporary orbital file
-    mcscript.call(["rm","-v",orbital_filename+"15200"])
+    mcscript.control.call(["rm","-v",orbital_filename+"15200"])
 
     # blank line
     lines.append("")
@@ -730,7 +796,7 @@ def generate_smwf_info(task, orbital_filename, partitioning_filename, res_filena
     lines.append("")
 
     # parse res file
-    res_data = mfdnres.res.read_file(res_filename, "mfdn_v15")[0]
+    res_data = mfdnres.input.read_file(res_filename, res_format="mfdn_v15")[0]
     levels = res_data.levels
 
     # basis information

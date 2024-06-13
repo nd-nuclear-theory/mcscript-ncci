@@ -49,6 +49,9 @@ University of Notre Dame
 - 10/04/22 (pjf): Ensure that "diagonal" transitions always use same wave function
   for bra and ket.
 - 12/16/22 (mac): Provide diagonalization results data to mask functions.
+- 12/22/23 (mac): Add dry_run_postprocessor() for multi-ket run counting diagnostics.
+- 01/16/24 (zz): Add support for runs with unknown lanczos in init_postprocessor_db().
+- 03/21/24 (mac): Add task option "postprocessor_relax_canonicalization".
 """
 import collections
 import deprecated
@@ -61,7 +64,12 @@ import re
 import sqlite3
 import warnings
 
-import mcscript
+import mcscript.control
+import mcscript.exception
+import mcscript.parameters
+import mcscript.task
+import mcscript.utils
+
 import mfdnres
 try:
     import am
@@ -257,12 +265,12 @@ def evaluate_ob_observables(task, postfix=""):
         )
 
     # invoke em-gen
-    mcscript.call(
+    mcscript.control.call(
         [
             environ.shell_filename("obscalc-ob")
         ],
         input_lines=lines,
-        mode=mcscript.CallMode.kSerial
+        mode=mcscript.control.CallMode.kSerial
     )
 
     # copy results out (if in multi-task run)
@@ -406,16 +414,18 @@ def get_run_descriptor_pair(bra_mesh_data, ket_mesh_data, qn_pair, operator_qn):
 def init_postprocessor_db(task, postfix=""):
     """Initialize sqlite3 database for postprocessor runs.
 
-    Sets up database structure and populates it with operators, and (bra,ket)
-    pairs for two-body observables.
+    Sets up database structure, and populates it with operators and (bra,ket)
+    pairs for two-body observables, as well as (bra,ket) pairs one-body
+    densities.
 
     Arguments:
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
+
     """
 
     # remove and rebuild any previously constructed database
-    mcscript.call(["rm", "-vf", "transitions{}.sqlite".format(postfix)])
+    mcscript.control.call(["rm", "-vf", "transitions{}.sqlite".format(postfix)])
     db = sqlite3.connect("transitions{}.sqlite".format(postfix))
     db.row_factory = sqlite3.Row
 
@@ -453,12 +463,18 @@ def init_postprocessor_db(task, postfix=""):
     for run in task["wf_source_run_list"]:
         wf_source_res_dir_list += [library.get_res_directory(run)]
     wf_source_glob_pattern = task.get("wf_source_glob_pattern","*.res")
+    wf_source_res_format = task.get("wf_source_res_format")
     wf_source_mesh_data = mfdnres.input.slurp_res_files(
         wf_source_res_dir_list,
         filename_format="ALL",
         glob_pattern = wf_source_glob_pattern,
+        res_format = wf_source_res_format,
         verbose=True
     )
+    
+    # provide default value for lanczos for sorting
+    for results_data in wf_source_mesh_data:
+        results_data.params["lanczos"] = results_data.params.get("lanczos", 0)
 
     # construct bra and ket info
     bra_selector = task["wf_source_bra_selector"]
@@ -482,7 +498,9 @@ def init_postprocessor_db(task, postfix=""):
     if bra_selector == ket_selector:
         # special case where bra and ket selection is equal:
         # allow canonicalization of transitions, and don't duplicate work
-        canonicalize = True
+        # but permit override of canonicalization (puts onus on mask to choose "direction" of transitions)
+        relax_canonicalization = task.get("postprocessor_relax_canonicalization", False)
+        canonicalize = not relax_canonicalization
         ket_mesh_data = bra_mesh_data[:]
         ket_merged_data = bra_merged_data
     else:
@@ -603,7 +621,7 @@ def init_postprocessor_db(task, postfix=""):
             continue
         if not allowed_by_masks(task, (bra_qn,ket_qn)):
             continue
-        
+
         (bra_run_descriptor_pair, ket_run_descriptor_pair) = get_run_descriptor_pair(
             bra_mesh_data, ket_mesh_data, (bra_qn, ket_qn), operator_qn
             )
@@ -696,7 +714,9 @@ def init_postprocessor_db(task, postfix=""):
     # close (and finalize) database
     db.close()
 
-
+    # provide "dry run" statistics
+    dry_run_postprocessor(postfix, one_body=True)
+    
 def get_postprocessor_db_connection(postfix=""):
     """Connect to sqlite3 database for postprocessor runs.
 
@@ -762,12 +782,16 @@ def parse_transitions_results(in_file, verbose=False):
 def run_postprocessor_two_body(task, postfix="", one_body=False):
     """Evaluate matrix elements of two-body operators using mfdn-transitions.
 
+    May also generate some one-body densities "for free" (for the same bra-ket
+    pairs).
+
     This handler calls initialize_postprocessor_db().
 
     Arguments:
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
         one_body (bool, optional): calculate incidental one-body densities
+
     """
     # convenience variables
     descriptor = task["metadata"]["descriptor"]
@@ -937,10 +961,10 @@ def run_postprocessor_two_body(task, postfix="", one_body=False):
             "transitions.input",
             input_dict={"transition_data": transitions_inputlist}
             )
-        mcscript.call(["rm", "--force", "transitions.out", "transitions.res"])  # remove old output so file watchdog can work
-        mcscript.call(
+        mcscript.control.call(["rm", "--force", "transitions.out", "transitions.res"])  # remove old output so file watchdog can work
+        mcscript.control.call(
             [transitions_executable],
-            mode=mcscript.CallMode.kHybrid,
+            mode=mcscript.control.CallMode.kHybrid,
             file_watchdog=mcscript.control.FileWatchdog("transitions.out"),
             file_watchdog_restarts=3
         )
@@ -994,14 +1018,14 @@ def run_postprocessor_two_body(task, postfix="", one_body=False):
                 mcscript.parameters.run.name, descriptor, postfix, group_hash, "out"
             )
         )
-        mcscript.call(["cp", "--verbose", "transitions.out", out_filename])
+        mcscript.control.call(["cp", "--verbose", "transitions.out", out_filename])
         res_filename = os.path.join(
             transitions_output_dir,
             filename_template.format(
                 mcscript.parameters.run.name, descriptor, postfix, group_hash, "res"
             )
         )
-        mcscript.call(["cp", "--verbose", "transitions.res", res_filename])
+        mcscript.control.call(["cp", "--verbose", "transitions.res", res_filename])
         timer.stop_timer()
 
         # return to task directory
@@ -1059,6 +1083,324 @@ def run_postprocessor_two_body(task, postfix="", one_body=False):
         task, out_file_list, descriptor, "transitions-output", command="cp"
     )
 
+    
+def dry_run_postprocessor(postfix="", one_body=False):
+    """Count number of postprocessor invocations required.
+
+    Does dry run of postprocessor to provide count of remaining two-body and
+    one-body postprocessor invocations, taking into account multi-ket runs.
+
+    Modeled on run_postprocessor_two_body() and run_postprocessor_one_body()
+    control loops.
+
+    Example (using transitions.sqlite from runtransitions00 task 0000):
+
+        >>> import ncci
+
+        >>> ncci.postprocessing.dry_run_postprocessor(one_body=False)
+        ----------------------------------------------------------------
+        Remaining two-body transitions: 102/102
+        Remaining one-body transitions: 8/8
+        Dry run of two-body transitions
+          0: (0.0, 0, 1) <- [(0.0, 0, 1)] (free obdmes 0)
+          1: (1.0, 0, 1) <- [(1.0, 0, 1)] (free obdmes 0)
+          2: (2.0, 0, 1) <- [(2.0, 0, 1)] (free obdmes 0)
+          3: (3.0, 0, 1) <- [(3.0, 0, 1)] (free obdmes 0)
+          4: (0.0, 0, 1) <- [(1.0, 0, 1)] (free obdmes 0)
+          5: (0.0, 0, 1) <- [(1.0, 0, 1)] (free obdmes 0)
+          6: (1.0, 0, 1) <- [(1.0, 0, 1), (2.0, 0, 1)] (free obdmes 0)
+          7: (1.0, 0, 1) <- [(1.0, 0, 1), (2.0, 0, 1)] (free obdmes 0)
+          8: (2.0, 0, 1) <- [(2.0, 0, 1), (3.0, 0, 1)] (free obdmes 0)
+          9: (2.0, 0, 1) <- [(2.0, 0, 1), (3.0, 0, 1)] (free obdmes 0)
+          10: (3.0, 0, 1) <- [(3.0, 0, 1)] (free obdmes 0)
+          11: (3.0, 0, 1) <- [(3.0, 0, 1)] (free obdmes 0)
+          12: (0.0, 0, 1) <- [(2.0, 0, 1)] (free obdmes 0)
+          13: (1.0, 0, 1) <- [(1.0, 0, 1), (2.0, 0, 1), (3.0, 0, 1)] (free obdmes 0)
+          14: (2.0, 0, 1) <- [(2.0, 0, 1), (3.0, 0, 1)] (free obdmes 0)
+          15: (3.0, 0, 1) <- [(3.0, 0, 1)] (free obdmes 0)
+        Postprocessor invocations (two-body): 16
+        Remaining one-body transitions (after two-body): 8/8
+        Dry run of one-body transitions
+          0: (0.0, 0, 1) <- [(1.0, 0, 1), (2.0, 0, 1)]
+          1: (1.0, 0, 1) <- [(1.0, 0, 1), (2.0, 0, 1), (3.0, 0, 1)]
+          2: (2.0, 0, 1) <- [(2.0, 0, 1), (3.0, 0, 1)]
+          3: (3.0, 0, 1) <- [(3.0, 0, 1)]
+        Postprocessor invocations (one-body): 4
+
+        >>> ncci.postprocessing.dry_run_postprocessor(one_body=True)
+        ----------------------------------------------------------------
+        Remaining two-body transitions: 102/102
+        Remaining one-body transitions: 8/8
+        Dry run of two-body transitions
+          0: (0.0, 0, 1) <- [(0.0, 0, 1)] (free obdmes 0)
+          1: (1.0, 0, 1) <- [(1.0, 0, 1)] (free obdmes 1)
+          2: (2.0, 0, 1) <- [(2.0, 0, 1)] (free obdmes 1)
+          3: (3.0, 0, 1) <- [(3.0, 0, 1)] (free obdmes 1)
+          4: (0.0, 0, 1) <- [(1.0, 0, 1)] (free obdmes 1)
+          5: (0.0, 0, 1) <- [(1.0, 0, 1)] (free obdmes 0)
+          6: (1.0, 0, 1) <- [(1.0, 0, 1), (2.0, 0, 1)] (free obdmes 1)
+          7: (1.0, 0, 1) <- [(1.0, 0, 1), (2.0, 0, 1)] (free obdmes 0)
+          8: (2.0, 0, 1) <- [(2.0, 0, 1), (3.0, 0, 1)] (free obdmes 1)
+          9: (2.0, 0, 1) <- [(2.0, 0, 1), (3.0, 0, 1)] (free obdmes 0)
+          10: (3.0, 0, 1) <- [(3.0, 0, 1)] (free obdmes 0)
+          11: (3.0, 0, 1) <- [(3.0, 0, 1)] (free obdmes 0)
+          12: (0.0, 0, 1) <- [(2.0, 0, 1)] (free obdmes 1)
+          13: (1.0, 0, 1) <- [(1.0, 0, 1), (2.0, 0, 1), (3.0, 0, 1)] (free obdmes 1)
+          14: (2.0, 0, 1) <- [(2.0, 0, 1), (3.0, 0, 1)] (free obdmes 0)
+          15: (3.0, 0, 1) <- [(3.0, 0, 1)] (free obdmes 0)
+        Postprocessor invocations (two-body): 16
+        Remaining one-body transitions (after two-body): 0/8
+        Dry run of one-body transitions
+        Postprocessor invocations (one-body): 0
+
+    Arguments:
+        postfix (string, optional): identifier to add to generated files
+        one_body (bool, optional): whether or not two-body runs calculate incidental one-body densities
+
+    """
+
+    # switch to transient copy of database for dry run
+    db = get_postprocessor_db_connection(postfix)
+    ## db_transient = sqlite3.connect(':memory:')
+    ## db_transient.row_factory = sqlite3.Row
+    ## db.backup(db_transient)
+    ## db = db_transient
+    
+    # get two-body counts
+    (total_count,) = db.execute(
+        "SELECT COUNT(*) FROM `tb_transitions`;"
+    ).fetchone()
+    (incomplete_count,) = db.execute(
+        "SELECT COUNT(*) FROM `tb_transitions` WHERE rme is NULL;"
+    ).fetchone()
+    print("-"*64)
+    print("Remaining two-body transitions: {:d}/{:d}".format(incomplete_count, total_count))
+    
+    # get one-body counts
+    (total_count,) = db.execute(
+        "SELECT COUNT(*) FROM `ob_transitions`;"
+    ).fetchone()
+    (incomplete_count,) = db.execute(
+        "SELECT COUNT(*) FROM `ob_transitions` WHERE finished is NULL;"
+    ).fetchone()
+    print("Remaining one-body transitions: {:d}/{:d}".format(incomplete_count, total_count))
+
+    # do two-body dry run
+    run_count = 0
+    print("Dry run of two-body transitions")
+    while db.execute("SELECT * FROM `tb_transitions` WHERE rme is NULL;").fetchone():
+        # get operator quantum numbers
+        operator_qn = db.execute(
+            """SELECT `J0`,`g0`,`Tz0`
+            FROM `tb_operators` INNER JOIN `tb_transitions` USING(`operator_id`)
+            WHERE rme IS NULL
+            ORDER BY J0 ASC, g0 ASC, Tz0 ASC
+            LIMIT 1;
+            """
+        ).fetchone()
+
+        # get bra wavefunction specifier
+        (bra_run, bra_descriptor, bra_level_id, bra_J, bra_g, bra_n) = db.execute(
+            """SELECT bra_run, bra_descriptor, bra_level_id, bra_J, bra_g, bra_n
+            FROM tb_transitions
+                INNER JOIN tb_operators USING(operator_id)
+                INNER JOIN bra_levels USING(bra_level_id)
+            WHERE rme IS NULL AND (J0,g0,Tz0) = (?,?,?)
+            ORDER BY bra_run ASC, bra_descriptor ASC, bra_J ASC, bra_g ASC, bra_n ASC
+            LIMIT 1;
+            """,
+            operator_qn
+        ).fetchone()
+
+        # get operators
+        operator_id_list = [row['operator_id'] for row in db.execute(
+            """SELECT DISTINCT operator_id
+            FROM tb_operators
+                INNER JOIN tb_transitions USING(operator_id)
+            WHERE rme IS NULL AND (J0,g0,Tz0) = (?,?,?)
+                AND (bra_run,bra_descriptor,bra_level_id) = (?,?,?)
+            ORDER BY operator_id ASC
+            LIMIT 8;
+            """,
+            (*operator_qn, bra_run, bra_descriptor, bra_level_id)
+        ).fetchall()]
+
+        # get ket source
+        (ket_run, ket_descriptor) = db.execute(
+            """SELECT ket_run, ket_descriptor
+            FROM tb_transitions
+            WHERE rme IS NULL
+                AND (bra_run,bra_descriptor,bra_level_id) = (?,?,?)
+                AND operator_id IN ({:s})
+            ORDER BY ket_run ASC, ket_descriptor ASC
+            LIMIT 1;
+            """.format(','.join('?'*len(operator_id_list))),
+            (bra_run, bra_descriptor, bra_level_id, *operator_id_list)
+        ).fetchone()
+
+        # get ket quantum numbers
+        ket_qn_id_list = db.execute(
+            """SELECT DISTINCT ket_J, ket_g, ket_n, ket_level_id
+            FROM tb_transitions
+                INNER JOIN ket_levels USING(ket_level_id)
+            WHERE rme IS NULL
+                AND (bra_run,bra_descriptor,bra_level_id) = (?,?,?)
+                AND operator_id IN ({:s})
+                AND (ket_run, ket_descriptor) = (?,?)
+            ORDER BY ket_J ASC, ket_g ASC, ket_n ASC
+            LIMIT 8;
+            """.format(','.join('?'*len(operator_id_list))),
+            (bra_run, bra_descriptor, bra_level_id, *operator_id_list, ket_run, ket_descriptor)
+        ).fetchall()
+        ket_qn_list = [(J,g,n) for (J,g,n,ket_id) in ket_qn_id_list]
+        ket_id_list = [ket_id for (J,g,n,ket_id) in ket_qn_id_list]
+
+        # check if we can pick up some OBDMEs for free
+        if one_body:
+            (num_free_obdmes,) = db.execute(
+                """SELECT COUNT(*) FROM ob_transitions
+                WHERE finished IS NULL
+                    AND (bra_run,bra_descriptor,bra_level_id) = (?,?,?)
+                    AND (ket_run,ket_descriptor) = (?,?)
+                    AND ket_level_id IN ({:s});
+                """.format(','.join('?'*len(ket_id_list))),
+                (bra_run, bra_descriptor, bra_level_id,
+                ket_run, ket_descriptor, *ket_id_list)
+            ).fetchone()
+        else:
+            num_free_obdmes = 0
+
+        # log run
+        bra_qn = (bra_J, bra_g, bra_n)
+        print("  {}: {} <- {} (free obdmes {})".format(run_count, bra_qn, ket_qn_list,num_free_obdmes))
+        run_count += 1
+            
+        ## for (operator_id, transition_dict) in res["two_body_observables"].items():
+        ##     operator_id = operator_id.replace('tbme-','')
+        ##     for ((bra_qn,ket_qn), rme) in transition_dict.items():
+        ##         db.execute(
+        ##             """UPDATE tb_transitions
+        ##             SET rme = ?
+        ##             WHERE (bra_level_id,ket_level_id,operator_id) = (
+        ##                 SELECT bra_level_id,ket_level_id,operator_id
+        ##                 FROM tb_transitions
+        ##                     INNER JOIN bra_levels USING(bra_level_id)
+        ##                     INNER JOIN ket_levels USING(ket_level_id)
+        ##                 WHERE (bra_J, bra_g, bra_n, ket_J, ket_g, ket_n, operator_id) =
+        ##                 (?,?,?,?,?,?,?)
+        ##                 LIMIT 1
+        ##             );
+        ##             """,
+        ##             (rme, *bra_qn, *ket_qn, operator_id)
+        ##         )
+
+        rme = 0.  # dummy value
+        for operator_id in operator_id_list:
+            for ket_qn in ket_qn_list:
+                 db.execute(
+                     """UPDATE tb_transitions
+                     SET rme = ?
+                     WHERE (bra_level_id,ket_level_id,operator_id) = (
+                         SELECT bra_level_id,ket_level_id,operator_id
+                         FROM tb_transitions
+                             INNER JOIN bra_levels USING(bra_level_id)
+                             INNER JOIN ket_levels USING(ket_level_id)
+                         WHERE (bra_J, bra_g, bra_n, ket_J, ket_g, ket_n, operator_id) =
+                         (?,?,?,?,?,?,?)
+                         LIMIT 1
+                     );
+                     """,
+                     (rme, *bra_qn, *ket_qn, operator_id)
+                 )
+                
+        ##db.commit()
+
+        # mark free OBDMEs as finished
+        if one_body:
+            db.executemany("""
+                UPDATE ob_transitions SET finished = 1
+                WHERE (bra_run,bra_descriptor,bra_level_id) = (?,?,?)
+                    AND (ket_run,ket_descriptor,ket_level_id) = (?,?,?)
+                """,
+                [(bra_run,bra_descriptor,bra_level_id,ket_run,ket_descriptor,ket_level_id) for ket_level_id in ket_id_list]
+                )
+            ##db.commit()
+
+    # print final count
+    print("Postprocessor invocations (two-body): {:d}".format(run_count))
+        
+    # get one-body counts (reprise)
+    (total_count,) = db.execute(
+        "SELECT COUNT(*) FROM `ob_transitions`;"
+    ).fetchone()
+    (incomplete_count,) = db.execute(
+        "SELECT COUNT(*) FROM `ob_transitions` WHERE finished is NULL;"
+    ).fetchone()
+    print("Remaining one-body transitions (after two-body): {:d}/{:d}".format(incomplete_count, total_count))
+
+    # do one-body dry run
+    run_count = 0
+    print("Dry run of one-body transitions")
+    while db.execute("SELECT * FROM `ob_transitions` WHERE finished is NULL;").fetchone():
+        # get bra wavefunction specifier
+        (bra_run, bra_descriptor, bra_level_id, bra_J, bra_g, bra_n) = db.execute(
+            """SELECT bra_run, bra_descriptor, bra_level_id, bra_J, bra_g, bra_n
+            FROM ob_transitions
+                INNER JOIN bra_levels USING(bra_level_id)
+            WHERE finished IS NULL
+            ORDER BY bra_run ASC, bra_descriptor ASC, bra_J ASC, bra_g ASC, bra_n ASC
+            LIMIT 1;
+            """).fetchone()
+
+        # get ket source
+        (ket_run, ket_descriptor) = db.execute(
+            """SELECT ket_run, ket_descriptor
+            FROM ob_transitions
+            WHERE finished IS NULL
+                AND (bra_run,bra_descriptor,bra_level_id) = (?,?,?)
+            ORDER BY ket_run ASC, ket_descriptor ASC
+            LIMIT 1;
+            """,
+            (bra_run, bra_descriptor, bra_level_id)
+        ).fetchone()
+
+        # get ket quantum numbers
+        ket_qn_id_list = db.execute(
+            """SELECT DISTINCT ket_J, ket_g, ket_n, ket_level_id
+            FROM ob_transitions
+                INNER JOIN ket_levels USING(ket_level_id)
+            WHERE finished IS NULL
+                AND (bra_run,bra_descriptor,bra_level_id) = (?,?,?)
+                AND (ket_run, ket_descriptor) = (?,?)
+            ORDER BY ket_J ASC, ket_g ASC, ket_n ASC
+            LIMIT 8;
+            """,
+            (bra_run, bra_descriptor, bra_level_id, ket_run, ket_descriptor)
+        ).fetchall()
+        ket_qn_list = [(J,g,n) for (J,g,n,ket_id) in ket_qn_id_list]
+        ket_id_list = [ket_id for (J,g,n,ket_id) in ket_qn_id_list]
+    
+        # log run
+        bra_qn = (bra_J, bra_g, bra_n)
+        print("  {}: {} <- {}".format(run_count, bra_qn, ket_qn_list))
+        run_count += 1
+
+        # mark OBDMEs as finished
+        db.executemany("""
+            UPDATE ob_transitions SET finished = 1
+            WHERE (bra_run,bra_descriptor,bra_level_id) = (?,?,?)
+                AND (ket_run,ket_descriptor,ket_level_id) = (?,?,?)
+            """,
+            [(bra_run,bra_descriptor,bra_level_id,ket_run,ket_descriptor,ket_level_id) for ket_level_id in ket_id_list]
+            )
+        ## db.commit()
+
+    # print final count
+    print("Postprocessor invocations (one-body): {:d}".format(run_count))
+
+    # close database *without* committing
+    db.close()
+    
 def run_postprocessor_one_body(task, postfix=""):
     """Evaluate one-body density matrix elements using the postprocessor.
 
@@ -1177,10 +1519,10 @@ def run_postprocessor_one_body(task, postfix=""):
             "transitions.input",
             input_dict={"transition_data": transitions_inputlist}
             )
-        mcscript.call(["rm", "--force", "transitions.out", "transitions.res"])  # remove old output so file watchdog can work
-        mcscript.call(
+        mcscript.control.call(["rm", "--force", "transitions.out", "transitions.res"])  # remove old output so file watchdog can work
+        mcscript.control.call(
             [transitions_executable],
-            mode=mcscript.CallMode.kHybrid,
+            mode=mcscript.control.CallMode.kHybrid,
             file_watchdog=mcscript.control.FileWatchdog("transitions.out"),
             file_watchdog_restarts=3
         )
@@ -1209,14 +1551,14 @@ def run_postprocessor_one_body(task, postfix=""):
                 mcscript.parameters.run.name, descriptor, postfix, group_hash, "out"
             )
         )
-        mcscript.call(["cp", "--verbose", "transitions.out", out_filename])
+        mcscript.control.call(["cp", "--verbose", "transitions.out", out_filename])
         res_filename = os.path.join(
             transitions_output_dir,
             filename_template.format(
                 mcscript.parameters.run.name, descriptor, postfix, group_hash, "res"
             )
         )
-        mcscript.call(["cp", "--verbose", "transitions.res", res_filename])
+        mcscript.control.call(["cp", "--verbose", "transitions.res", res_filename])
         timer.stop_timer()
 
         # return to task directory
@@ -1253,7 +1595,7 @@ def cleanup_workdir(task, postfix=""):
         postfix (string, optional): identifier to add to generated files
     """
     scratch_file_list = glob.glob("work{:s}/*".format(postfix))
-    mcscript.call(["rm", "-vf"] + scratch_file_list)
+    mcscript.control.call(["rm", "-vf"] + scratch_file_list)
 
 
 @deprecated.deprecated(reason="use handlers.task_handler_mfdn_postprocessor_run instead")

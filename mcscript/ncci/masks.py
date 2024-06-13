@@ -5,11 +5,12 @@
     - 08/13/22 (pjf): Add mask_good_J().
     - 11/20/22 (mac): Add mask_by_energy_cutoff().
     - 01/03/23 (mac): Provide "negate_mask" option for mask_allow_near_yrast.
+    - 03/21/24 (mac): Add mask_transitions().
 """
 
 import math
 
-import mcscript
+import mcscript.utils
 
 from . import constants
 
@@ -46,7 +47,7 @@ def mask_allow_near_yrast(task:dict, mask_params:dict, qn_pair, verbose=False):
     (qnf,qni) = qn_pair
     (Ji,gi,ni) = qni
     (Jf,gf,nf) = qnf
-    
+
     # get parameters
     ni_max = mask_params.get("ni_max", 999)
     if (isinstance(ni_max, dict)):
@@ -65,7 +66,51 @@ def mask_allow_near_yrast(task:dict, mask_params:dict, qn_pair, verbose=False):
     allow = (ni<=ni_max) and (nf<=nf_max)
     if negate_mask:
         allow = not allow
-        
+
+    return allow
+
+
+def mask_transitions(task:dict, mask_params:dict, qn_pair, verbose=False):
+    """Mask function to mask to explicitly specified transitions.
+
+    Mask parameters:
+
+        "transitions" (list or set): list of (qnf,qni) for transitions
+
+        "negate_mask" (bool, optional): whether or not to negate mask (useful to
+        eliminate a sub-network which has already been calculated elsewhere),
+        default False
+
+    Arguments:
+
+        task (dict): task dictionary
+
+        mask_params (dict): parameters specific to this mask
+
+        qn_pair (tuple): (qnf,qni) for transition
+
+        verbose (book, optional): verbosity (argument required by handler)
+
+    Returns:
+
+        allow (bool): mask value
+
+    """
+
+    # unpack quantum numbers
+    (qnf,qni) = qn_pair
+    (Ji,gi,ni) = qni
+    (Jf,gf,nf) = qnf
+
+    # get parameters
+    transitions = mask_params["transitions"]
+    negate_mask = mask_params.get("negate_mask", False)
+
+    # calculate mask value
+    allow = qn_pair in transitions
+    if negate_mask:
+        allow = not allow
+
     return allow
 
 
@@ -172,7 +217,7 @@ def mask_by_energy_cutoff(task:dict, mask_params:dict, qn_pair, verbose=False):
     E_max = mask_params.get("E_max", None)
     Ei_max = mask_params.get("Ei_max", None)
     Ef_max = mask_params.get("Ef_max", None)
-    
+
     # calculate mask value
     ket_results_data = task["metadata"]["ket_results_data"]
     bra_results_data = task["metadata"]["bra_results_data"]

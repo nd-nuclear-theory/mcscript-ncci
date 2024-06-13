@@ -5,6 +5,8 @@ University of Notre Dame
 
 + 01/05/18 (pjf): Created, documentation moved from `__init__.py`.
 + 04/02/18 (pjf): Moved to `input.md`.
++ 11/01/23 (slv): Add descriptions of parameters required for menj mode of MFDn
++ 02/12/24 (zz): For menj, add description for `interaction` and delete `hamiltonian_rank`.
 
 ----------------------------------------------------------------
 ## nuclide parameters ##
@@ -29,6 +31,7 @@ University of Notre Dame
 
 - `interaction`: `str`
   - name for interaction (for use in descriptor and filenames)
+  - interaction descriptor override (for menj)
 
 - `use_coulomb`: `bool`
   - whether or not to include Coulomb
@@ -42,7 +45,7 @@ University of Notre Dame
 
 - `hamiltonian`: `CoefficientDict`
   - specification of Hamiltonian as a `CoefficientDict` of
-    two-body operators passed as sources to h2mixer (see `mfdn.operators`)
+    two-body operators passed as sources to h2mixer (see `ncci.operators.tb`)
   - If `None`, use standard H = Tintr + VNN + a_cm*N_cm
 
 ----------------------------------------------------------------
@@ -200,3 +203,51 @@ University of Notre Dame
 - `natorb_base_state`: `int`
   - MFDn sequence number of state off which to
     build natural orbitals
+
+----------------------------------------------------------------
+## postprocessor parameters ##
+
+TODO 03/21/24 (mac): postprocessor parameters need to be documented
+
+- `postprocessor_relax_canonicalization`: `bool`, optional
+  - allows postprocessor to attempt transitions in both canonical (qnf<qni) and
+    anticanonical (qnf<qni) sense
+  - this leaves it up to the mask to pick the direction actually calculated (can
+    be useful for manually selecting the sense of transitions to optimize use of
+    the multi-ket capability of the postprocessor)
+
+----------------------------------------------------------------
+## menj parameters ##
+
+TODO 03/21/24 (mac): menj parameters need to be updated to reflect actual implementation
+
+- `mfdn_variant`: `modes.VariantMode`, optional
+  - there are two different VariantMode to choose.
+    ncci.modes.VariantMode.kH2 or ncci.modes.VariantMode.kMENJ
+  - certain features of MFDn related to two body observables (for H2 runs)
+    work only if kH2 is selected.
+
+- `EMax` : `int`
+  - max energy quanta for 2 body truncation
+  - this number has to match with the me2j, me3j, trel and rsq interaction
+    files that are to be read.
+
+- `E3Max` : `int`
+  - Max energy quanta for 3 body truncation
+  - this number has to match with the me2j, me3j, trel and rsq interaction
+    files that are to be read.
+
+- `me2j_file_id` : `str`
+  - file ID of the me2j interaction file.(This is part of the me2j
+    interaction filename)
+  - part of this string contains the SRG flow parameter
+
+- `me3j_file_id` : `str`
+  - file ID of the me3j interaction file.(This is part of the me3j
+    interaction filename)
+  - part of this string contains the SRG flow parameter
+
+- `use_3b` : `bool`
+  - if enabled 3 body interactions are also read
+
+

@@ -21,7 +21,7 @@ import os
 
 import numpy as np
 
-import mcscript
+import mcscript.utils
 from . import (
     operators,
     environ,

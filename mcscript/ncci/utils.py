@@ -15,7 +15,7 @@
 
 import math
 
-import mcscript
+import mcscript.exception
 
 from . import constants
 

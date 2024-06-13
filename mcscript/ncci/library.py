@@ -33,7 +33,9 @@ University of Notre Dame
 import glob
 import os
 
-import mcscript
+import mcscript.control
+import mcscript.exception
+import mcscript.utils
 import mfdnres
 
 from . import (
@@ -61,7 +63,7 @@ def recover_from_hsi_legacy(
         date (str): date code (for archive filename)
         library_base (str): path to library directory
         keep_archives (bool, optional): whether or not to save unextracted archives (useful in debugging this scripting)
-        keep_metadata (bool, optional): whether or not to keep flags/batch/output directories (useful for diagnostics, 
+        keep_metadata (bool, optional): whether or not to keep flags/batch/output directories (useful for diagnostics,
             or when retrieving the full archive contents to resave it)
         keep_obdme (bool, optional): whether or not to retrieve/keep obdme results -- IGNORED for legacy archive
 
@@ -83,34 +85,34 @@ def recover_from_hsi_legacy(
             if (not os.path.isfile(archive_filename)):
                 print("Retrieving {}...".format(archive_filename))
                 hsi_command_string = "cd {year}; get {archive_filename}".format(year=year,archive_filename=archive_filename)
-                mcscript.call(["hsi",hsi_command_string],check_return=False)
+                mcscript.control.call(["hsi",hsi_command_string],check_return=False)
             if (os.path.isfile(archive_filename)):
                 print("Extracting {}...".format(archive_filename))
-                mcscript.call(["tar","xvf",archive_filename],check_return=False)
+                mcscript.control.call(["tar","xvf",archive_filename],check_return=False)
                 if (not keep_archives):
-                    mcscript.call(["rm",archive_filename],check_return=False)
+                    mcscript.control.call(["rm",archive_filename],check_return=False)
 
     # eliminate metadata subdirectories if not desired
     if (not keep_metadata):
         for subdirectory in ["batch","flags","output"]:
-            mcscript.call([
+            mcscript.control.call([
                 "rm","-r",os.path.join(target_run_top_prefix,subdirectory)
             ],check_return=False)
 
     # break results files out by subdirectories
     mcscript.utils.mkdir(os.path.join(target_run_results_prefix,"out"),exist_ok=True,parents=True)
     for filename in glob.glob(os.path.join(target_run_results_prefix,"*.out")):
-        mcscript.call([
+        mcscript.control.call([
             "mv","-v",filename,os.path.join(target_run_results_prefix,"out")
         ])
     mcscript.utils.mkdir(os.path.join(target_run_results_prefix,"res"),exist_ok=True,parents=True)
     for filename in glob.glob(os.path.join(target_run_results_prefix,"*.res")):
-        mcscript.call([
+        mcscript.control.call([
             "mv","-v",filename,os.path.join(target_run_results_prefix,"res")
         ])
     mcscript.utils.mkdir(os.path.join(target_run_results_prefix,"task-data"),exist_ok=True,parents=True)
     for filename in glob.glob(os.path.join(target_run_results_prefix,"*.tgz")):
-        mcscript.call([
+        mcscript.control.call([
             "mv","-v",filename,os.path.join(target_run_results_prefix,"task-data")
         ])
 
@@ -118,30 +120,30 @@ def recover_from_hsi_legacy(
     mcscript.utils.mkdir(os.path.join(target_run_results_prefix,"wf"),exist_ok=True,parents=True)
     target_run_old_wavefunctions_prefix = os.path.join(library_base,"run{run}".format(run=run),"wavefunctions")
     for filename in glob.glob(os.path.join(target_run_old_wavefunctions_prefix,"*.tar")):
-        mcscript.call([
+        mcscript.control.call([
             "mv","-v",filename,os.path.join(target_run_results_prefix,"wf")
         ])
-    mcscript.call([
+    mcscript.control.call([
             "rmdir","-v",target_run_old_wavefunctions_prefix
     ])
 
     # extract individual task tarballs (legacy)
     os.chdir(os.path.join(target_run_results_prefix,"task-data"))
     for filename in glob.glob("*.tgz"):
-        mcscript.call([
+        mcscript.control.call([
             "tar","xvf",filename,
             "--strip-components=1",
             "--exclude=mfdn*obdme*",
         ])
-        mcscript.call(["rm","-v",filename])
+        mcscript.control.call(["rm","-v",filename])
     os.chdir(os.path.join(target_run_results_prefix,"wf"))
     for filename in glob.glob("*.tar"):
-        mcscript.call([
+        mcscript.control.call([
             "tar","xvf",filename,
             "--strip-components=1",
             "--totals"
         ])
-        mcscript.call(["rm","-v",filename])
+        mcscript.control.call(["rm","-v",filename])
 
     os.chdir(library_base)
 
@@ -193,7 +195,7 @@ def recover_from_hsi(
         year=year,run=run,date=date,
         archive_types_str=",".join(archive_types)
     )
-    mcscript.call(["hsi",hsi_command_string],check_return=False)
+    mcscript.control.call(["hsi",hsi_command_string],check_return=False)
 
     # expand results subarchives to run directory
     for archive_type in archive_types:
@@ -201,29 +203,29 @@ def recover_from_hsi(
             archive_filename = "run{run}-archive-{date}-{archive_type}.{extension}".format(run=run,date=date,archive_type=archive_type,extension=extension)
             if os.path.isfile(archive_filename):
                 print("Extracting {}...".format(archive_filename))
-                mcscript.call(["tar","xvf",archive_filename],check_return=False)
-                mcscript.call(["rm",archive_filename],check_return=False)
+                mcscript.control.call(["tar","xvf",archive_filename],check_return=False)
+                mcscript.control.call(["rm",archive_filename],check_return=False)
 
     # extract individual task tarballs (legacy)
     target_run_results_prefix = os.path.join(library_base,"run{run}".format(run=run),"results")
     os.chdir(os.path.join(target_run_results_prefix,"task-data"))
     for filename in glob.glob("*.tgz"):
-        mcscript.call([
+        mcscript.control.call([
             "tar","xvf",filename,
             "--strip-components=1",
             "--exclude=mfdn*obdme*",
         ])
         if not keep_archives:
-            mcscript.call(["rm","-v",filename])
+            mcscript.control.call(["rm","-v",filename])
     os.chdir(os.path.join(target_run_results_prefix,"wf"))
     for filename in glob.glob("*.tar"):
-        mcscript.call([
+        mcscript.control.call([
             "tar","xvf",filename,
             "--strip-components=1",
             "--totals"
         ])
         if not keep_archives:
-            mcscript.call(["rm","-v",filename])
+            mcscript.control.call(["rm","-v",filename])
 
     os.chdir(library_base)
 
@@ -290,10 +292,10 @@ def hsi_retrieval_handler(task):
 
     # make retrieved results available to group
     if repo_str is not None:
-        mcscript.call([
+        mcscript.control.call([
             "chown","--recursive",":{}".format(repo_str),target_run_top_prefix
         ])
-        mcscript.call([
+        mcscript.control.call([
             "chmod","--recursive","g+rX",target_run_top_prefix
         ])
 
@@ -467,13 +469,13 @@ def retrieve_natorb_obdme(
         natorb_obdme_path = os.path.join(task_data_dir, natorb_obdme_filename)
         natorb_obdme_info_path = os.path.join(task_data_dir, natorb_obdme_info_filename)
         if os.path.exists(natorb_obdme_path) and os.path.exists(natorb_obdme_info_path):
-            mcscript.call([
+            mcscript.control.call([
                 "cp", "--verbose",
                 natorb_obdme_path,
                 natorb_obdme_filename
             ])
 
-            mcscript.call([
+            mcscript.control.call([
                 "cp", "--verbose",
                 natorb_obdme_info_path,
                 natorb_obdme_info_filename
@@ -489,13 +491,13 @@ def retrieve_natorb_obdme(
         os.path.join(obdme_dir, "mfdn.statrobdme.seq*.2J{:02d}.n{:02d}.2T*".format(round(2*J), n))
         )
     if (len(obdme_filename) == 1) and (len(obdme_info_filename) == 1):
-        mcscript.call([
+        mcscript.control.call([
             "cp", "--verbose",
             obdme_filename[0],
             natorb_obdme_filename
         ])
 
-        mcscript.call([
+        mcscript.control.call([
             "cp", "--verbose",
             obdme_info_filename[0],
             natorb_obdme_info_filename
@@ -544,8 +546,8 @@ def generate_smwf_info_in_library(results_prefix):
     # slurp res files
     res_format = "mfdn_v15"  # this function is mfdn_v15 specific
     filename_format="mfdn_format_7_ho"  # probably all legacy runs used this filename format, but might need to override
-    mesh_data = mfdnres.res.slurp_res_files(
-        res_prefix,res_format,filename_format,glob_pattern="*-mfdn15-*.res",verbose=False
+    mesh_data = mfdnres.input.slurp_res_files(
+        res_prefix,res_format=res_format,filename_format=filename_format,glob_pattern="*-mfdn15-*.res",verbose=False
     )
 
     # iterate over tasks
@@ -591,7 +593,7 @@ def generate_smwf_info_in_library(results_prefix):
             if (not os.path.isfile(generated_partitioning_filename)):
                 print("Missing generated partition file {}".format(generated_partitioning_filename))
                 continue
-            mcscript.call([
+            mcscript.control.call([
                 "cp", "--verbose",
                 generated_partitioning_filename,
                 partitioning_filename
