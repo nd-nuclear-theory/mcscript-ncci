@@ -1,21 +1,33 @@
-ND MFDn workflow quickstart guide
+# ND MFDn workflow quickstart guide #
 
 Some initial pointers on where to look to get started.
 
 04/17/23 (mac): Created (with slv, zz, ...).
 06/16/23 (mac): Add mfdn-transitions installation instructions.
 06/14/24 (mac): Add notes on Ubuntu installation for mfdn/mfdn-transitions.
+06/18/24 (mac): Expand notes on ndconfig.
 
 ----------------
 
 # ndconfig #
 
-  This repository provides "configuration" makefiles which are needed to compile
-  some of our codes under specific compilers and on specific computing systems
-  (e.g., at NERSC).  It also provides "environment" files, which you should
-  "source" into csh or bash, to set environment variables appropriate to a given
-  computing environment (e.g., NERSC).  So this repository should be set up
-  before any of the codes get compiled.
+  The `ndconfig` repository provides "environment" files, which you should
+  "source" into `tcsh` or `bash`.  This is how you load the various module files
+  needed to compile and run our codes in a given computing environment (e.g.,
+  NERSC).  You will need to source the appropriate environment file both before
+  *compiling* the codes (below) and then again before *running* these codes (or
+  submitting jobs using these codes).  Failure to do so may result in compiled
+  code that is inappropriate to run on the given computing system: it might run
+  but be grossly inefficient (since it does not use the appropriate optimized
+  libraries), or it might fail at runtime (due to obvious reasons, such as
+  missing shared libraries, or more subtle reasons leading to, e.g.,
+  segmentation faults)
+  
+  The `ndconfig` repository also provides makefile "configuration" files.  These
+  provide various compiler-specific and system-specific definitions which are
+  needed to compile some of our codes.
+  
+  Thus, this repository needs to be set up before compiling `shell` below.
   
   - Cloning.  Clone the `ndconfig` repository.
 
@@ -24,10 +36,11 @@ Some initial pointers on where to look to get started.
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   - Instructions.  See `INSTALL.md` for instructions.  For now, only consider
-    the instructions in section 0 "Setting up `ndconfig`", which instructs you
-    to set the `NDCONFIG_DIR` environment variable in your shell initialization
-    file.  (The remainder of the instructions cover building codes that use
-    `ndconfig`, such as `shell`, which we will tackle below.)
+    the instructions in Section 0 "Retrieving and installing `ndconfig`", which
+    instructs you to set the `NDCONFIG_DIR` environment variable in your shell
+    initialization file.  (The remainder of the instructions cover building
+    codes that use `ndconfig`, such as `shell`, which we will tackle later,
+    below.)
 
 # shell #
 
