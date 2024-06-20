@@ -5,8 +5,9 @@ University of Notre Dame
 
 + 01/05/18 (pjf): Created, documentation moved from `__init__.py`.
 + 04/02/18 (pjf): Moved to `input.md`.
-+ 11/01/23 (slv): Add descriptions of parameters required for menj mode of MFDn
++ 11/01/23 (slv): Add descriptions of parameters required for menj mode of MFDn.
 + 02/12/24 (zz): For menj, add description for `interaction` and delete `hamiltonian_rank`.
++ 06/20/24 (mac): Add descriptions of decomposition parameters.
 
 ----------------------------------------------------------------
 ## nuclide parameters ##
@@ -139,6 +140,38 @@ University of Notre Dame
   - If `None`, no partition file
   - NOTE: for now absolute path is required, but path search protocol may
     be restored in future.
+
+----------------------------------------------------------------
+## decomposition parameters ##
+
+- `decomposition_type`: str
+   - identifier for decomposition operator
+   - used here just to define the decomposition label in the task descriptor
+   - but typically will be the same identifier used in as an argument to
+     ncci.decomposition.decomposition_operator() to construct the decomposition
+     operator to feed into MFDn as the "hamiltonian"
+
+- `source_wf_qn`: tuple
+  - state (J, g, i) to use as pivot vector for Lanczos decomposition [i.e., ith
+    state of angular momentum J and parity (-)^g, as determined from the source
+    run's res file]
+
+- `wf_source_info`: dict
+  - information used to locate the wave function file for the state to decompose
+  - this information is used to construct the run directory name and then the task descriptor for the specific task
+  - the corresponding res file is then read in and parsed (to obtain the sequence number for the target state)
+  - and the eigenvector for the correponsing sequence number is used as the Lanczos pivot
+  - `run`: str
+    - run directory in which to search for res and wf files
+  - `descriptor`: callable
+    - function used to construct a descriptor from a given task dictionary,
+      e.g., `ncci.descriptors.task_descriptor_7`
+  - the remaining fields are passed through in the "task dictionary" given to
+    the task descriptor function, to construct the wf descriptor
+  - the values of several of these fields (e.g., `nuclide`, `interaction`) will
+    generally duplicate the values appearing in the task dictionary for the
+    present decomposition run, where instead they are used to construct the
+    descriptor for the present decomposition run
 
 ----------------------------------------------------------------
 ## obdme parameters ##
