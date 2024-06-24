@@ -285,6 +285,26 @@ This behavior of MFDn is due to support for block eigensolvers such as LOBPCG.
 # M1 moments only calculated for runs with nonzero M_j
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+- TODO
+
+Alternatively, in the output from the M=1.0 run (`runmfdn13-mfdn15-Z3-N3-Daejeon16-coul1-hw15.000-a_cm50-Nmax02-Mj1.0-lan600-tol1.0e-06.res`), we find
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[M1 moments]
+# for M1 moment conventions, see Suhonen (6.52)
+# Seq    J    n      T        mu       Dl(p)      Dl(n)      Ds(p)      Ds(n)    sum(=J)
+    1   1.0   1   0.000     0.8545     0.0320     0.0357     0.4664     0.4660     1.0000
+    2   3.0   1   0.000     1.8789     1.0023     1.0018     0.4980     0.4979     3.0000
+    3   2.0   1   1.000     1.0368     0.8470     0.8389     0.1479     0.1663     2.0000
+    4   2.0   2   0.001     1.1685     0.8203     0.8368     0.1764     0.1665     2.0000
+    5   1.0   2   0.000     0.3418     0.6857     0.6907    -0.1895    -0.1868     1.0000
+    6   2.0   3   1.000     1.3062     0.6620     0.6522     0.3472     0.3386     2.0000
+    7   1.0   3   1.000     0.6305     0.2632     0.2532     0.2356     0.2480     1.0000
+    8   1.0   4   0.000     0.5532     0.5196     0.5202    -0.0126    -0.0272     1.0000
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- TODO
+
 ## E2 moments ##
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -296,6 +316,8 @@ This behavior of MFDn is due to support for block eigensolvers such as LOBPCG.
     4   2.0   1   1.000    -2.0904    -1.9972
 ...
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- TODO
 
 ## Angular momenta ##
 
@@ -309,6 +331,8 @@ This behavior of MFDn is due to support for block eigensolvers such as LOBPCG.
 ...
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+- TODO
+
 ## Relative radii ##
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -320,6 +344,8 @@ This behavior of MFDn is due to support for block eigensolvers such as LOBPCG.
     4   2.0   1   1.000     2.0651     2.0562     2.0606     0.9502     0.9454     1.5651
 ...
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- TODO
 
 ## Other 2-body observables ##
 
@@ -333,7 +359,12 @@ This behavior of MFDn is due to support for block eigensolvers such as LOBPCG.
 ...
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+- TODO
+
 ## Occupation probabilities ##
+
+This section contains average occupancies (occupation probabilities) for each of the nlj shells,
+in each of the many-body eigenstates.  That is, these are the expectation values <N_(n,l,j,t_z)>.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 [Occupation probabilities]
@@ -352,3 +383,13 @@ This behavior of MFDn is due to support for block eigensolvers such as LOBPCG.
 ...
 # sum of neutron occ.prob.    3.000        3.000        3.000        3.000        3.000        3.000        3.000        3.000    
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Each row contains the occupancies for a given orbital, with (n,l,j,t_z) values as indicated by the
+  species column (unlabeled) and the `n_rad`, `l`, and `2*j` columns.
+
+- Then the numerical columns are for successive many-body eigenstates.
+
+- Summed occupancies, for the proton orbitals and neutron orbtals separately,
+  are provided as comment lines.  These sums should match the total number of
+  protons and neutrons, respectively.
+
