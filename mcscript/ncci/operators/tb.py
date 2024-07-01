@@ -640,7 +640,7 @@ def Hamiltonian(
 def J_filter_term(
         M, energy_shift, mode=modes.JFilterMode.kEnabled, delta_J=1.0
 ):
-    """A standard Hamiltonian for shell-model runs.
+    """Shift term (~J^2) to add to Hamiltonian to filter out higher-J states.
 
     Arguments:
 
