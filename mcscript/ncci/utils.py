@@ -11,9 +11,11 @@
     - 07/08/21 (pjf): Check that J of natorb base state matches nuclide.
     - 04/27/22 (pjf): Add hw_from_oscillator_length().
     - 01/03/23 (mac): Add J_sqr_coefficient_for_energy_shift().
+    - 07/05/24 (mac): Add partition_filename().
 """
 
 import math
+import os
 
 import mcscript.exception
 
@@ -232,3 +234,82 @@ def check_natorb_base_state(task):
         raise mcscript.exception.ScriptError(
             "invalid natorb base state g={}".format(g)
         )
+
+################################################################
+# partition filename generation
+################################################################
+
+def partition_filename(
+        nuclide, Nmax,
+        Nshell=None,
+        Nshell_for_default_partition=set(range(9, 18+1)),
+        Nshell_for_partition_by_A={},
+        partition_file_by_Nshell={},
+        partition_file_dir="/global/cfs/cdirs/m2032/data/partitioning/v15",
+        partition_filename_template_for_default_partition="mfdn_partitioning.info_Nshell{Nshell:02d}",
+        partition_filename_template_for_partition_by_A="by-A/A{A:02d}/mfdn_partitioning.info_Nshell{Nshell:02d}",
+        verbose=False,
+):
+    """Deduce partition file to use for given Nmax.
+
+    Assumes partition file to use might depend generically upon Nshell, upon both
+    Nshell and A, or be given as a custom override.
+
+    Default filename templates reflect the organization of partition files within the
+    ncci-counting repository.
+
+    Arguments:
+
+        nuclide (tuple): (Z,N)
+
+        Nmax (int): Nmax
+
+        Nshell (int, optional): 1-based number of shells for single-particle
+        basis (if None, deduced from Nmax for given nuclide)
+
+        Nshell_for_default_partition (set or list, optional): Nshell values for which
+        generic (nuclide-independent) default partition files are provided
+
+        Nshell_for_partition_by_A (set or list, optional): Nshell values for which
+        A-dependent partition files are provided
+
+        partition_file_by_Nshell (dict, optional): explicit overrides (Nshell -> filename)
+
+        partition_file_dir (str, optional): base directory under which to find partition files
+
+        partition_filename_template_for_default_partition (str, optional):
+            fmt template string for filenames of generic (nuclide-independent)
+            default partition files (can depend upon template parameter Nshell)
+
+        partition_filename_template_for_partition_by_A (str, optional):
+            fmt template string for filenames of A-dependent partition files
+            (can depend upon template parameters A and Nshell)
+
+    """
+    # deduce parameters
+    A = sum(nuclide)
+    Nv = Nv_for_nuclide(nuclide)
+    if Nshell is None:
+        Nshell = Nv+Nmax+1  # 1-based number of shells
+
+    # select partition file
+    if Nshell in partition_file_by_Nshell:
+        partition_filename = "{}".format(partition_file_by_Nshell[Nshell])
+    elif Nshell in Nshell_for_partition_by_A:
+        partition_filename = partition_filename_template_for_partition_by_A.format(A=A,Nshell=Nshell)
+    elif Nshell in Nshell_for_default_partition:  # fallthrough to generic partition file
+        partition_filename = partition_filename_template_for_default_partition.format(Nshell=Nshell)
+    else:
+        partition_filename = None
+
+    # qualify filename with full path
+    if partition_filename is not None:
+        partition_filename = os.path.join(partition_file_dir, partition_filename)
+
+    # diagnostic output
+    if verbose:
+        print("  Nmax {:02d}: Nshell {:02d} -> {}".format(Nmax, Nshell, partition_filename))
+
+    return partition_filename
+
+    
