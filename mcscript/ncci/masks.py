@@ -235,7 +235,7 @@ def mask_by_energy_cutoff(task:dict, mask_params:dict, qn_pair, verbose=False):
     ket_results_data = task["metadata"]["ket_results_data"]
     bra_results_data = task["metadata"]["bra_results_data"]
     Ei = ket_results_data.get_energy(qni)
-    Ef = ket_results_data.get_energy(qnf)
+    Ef = bra_results_data.get_energy(qnf)
     allow = True
     allow &= E_max is None or Ei<=E_max
     allow &= E_max is None or Ef<=E_max
