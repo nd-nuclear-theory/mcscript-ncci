@@ -52,6 +52,7 @@ University of Notre Dame
 - 12/22/23 (mac): Add dry_run_postprocessor() for multi-ket run counting diagnostics.
 - 01/16/24 (zz): Add support for runs with unknown lanczos in init_postprocessor_db().
 - 03/21/24 (mac): Add task option "postprocessor_relax_canonicalization".
+- 08/17/24 (mac): Fix task metadata so that ket_results_data is always exposed.
 """
 import collections
 import deprecated
@@ -494,7 +495,6 @@ def init_postprocessor_db(task, postfix=""):
         )
     assert len(bra_merged_data) == 1
     bra_merged_data = bra_merged_data[0]
-    task["metadata"]["bra_results_data"] = bra_merged_data  # provide access to results data for use by masking functions
     if bra_selector == ket_selector:
         # special case where bra and ket selection is equal:
         # allow canonicalization of transitions, and don't duplicate work
@@ -520,7 +520,10 @@ def init_postprocessor_db(task, postfix=""):
             )
         assert len(ket_merged_data) == 1
         ket_merged_data = ket_merged_data[0]
-        task["metadata"]["ket_results_data"] = ket_merged_data  # provide access to results data for use by masking functions
+        
+    # provide access to results data for use by masking functions
+    task["metadata"]["bra_results_data"] = bra_merged_data
+    task["metadata"]["ket_results_data"] = ket_merged_data
 
     # extract Tz for bra and ket for convenience
     (bra_Z, bra_N) = bra_merged_data.params["nuclide"]
