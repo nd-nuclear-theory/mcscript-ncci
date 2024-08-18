@@ -43,6 +43,7 @@ University of Notre Dame
 - 07/08/21 (pjf): Only generate interaction and Coulomb xforms if needed for
     tbme sources.
 - 01/30/23 (pjf): Rename j0->J0 and tz0->Tz0.
+- 08/17/24 (mac): Search for orbitals file in interaction file search path.
 """
 import math
 import os
@@ -66,6 +67,11 @@ def set_up_interaction_orbitals(task, postfix=""):
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
+
+    # short circuit for shell model
+    if task["basis_mode"] is modes.BasisMode.kShellModel:
+        return
+
     # generate orbitals -- interaction bases
     mcscript.control.call(
         [
@@ -105,7 +111,12 @@ def set_up_orbitals_manual(task, postfix=""):
     else:
         sp_filename = mcscript.utils.expand_path(sp_filename)
         if not os.path.exists(sp_filename):
-            raise FileNotFoundError(sp_filename)
+            # search for orbitals in interaction file locations (for shell model interactions)
+            sp_filename = environ.find_interaction_file(
+                sp_filename,
+                None,
+                None,
+            )
     mcscript.control.call([
         "cp", "--verbose",
         sp_filename,
@@ -238,9 +249,15 @@ def set_up_obme_analytic(task, postfix=""):
         postfix (string, optional): identifier to add to generated files
     """
     # validate basis mode
-    if (task["basis_mode"] not in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):  # no modes.BasisMode.kGeneric yet
+    if (task["basis_mode"] not in {
+            modes.BasisMode.kDirect, modes.BasisMode.kDilated, modes.BasisMode.kShellModel,
+    }):  # no modes.BasisMode.kGeneric yet
         raise ValueError("invalid basis mode {basis_mode}".format(**task))
 
+    # short circuit for shell model
+    if task["basis_mode"] is modes.BasisMode.kShellModel:
+        return
+    
     # basis radial code -- expected by radial_utils codes
     basis_radial_code = "oscillator"  # TODO GENERALIZE: if not oscillator basis
 
@@ -321,14 +338,28 @@ def set_up_xforms_analytic(task, postfix=""):
     """Generate analytic transformation matrix elements (e.g. dilation or Laguerre
     basis transformation).
 
+    For basis mode modes.BasisMode.kDirect, the resulting trivial identity
+    transformations are written to file (for posterity) but not actually
+    applied.
+
+    For basis mode modes.BasisMode.kShellModel, these transformations are
+    strictly irrelevant and are omitted.
+
     Arguments:
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
+
     """
     # validate basis mode
-    if (task["basis_mode"] not in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):  # no modes.BasisMode.kGeneric yet
+    if (task["basis_mode"] not in {
+            modes.BasisMode.kDirect, modes.BasisMode.kDilated, modes.BasisMode.kShellModel,
+    }):  # no modes.BasisMode.kGeneric yet
         raise ValueError("invalid basis mode {basis_mode}".format(**task))
 
+    # short circuit for shell model
+    if task["basis_mode"] is modes.BasisMode.kShellModel:
+        return
+    
     # basis radial code -- expected by radial_utils codes
     basis_radial_code = "oscillator"  # TODO GENERALIZE: if not oscillator basis
 

@@ -18,7 +18,7 @@ University of Notre Dame
 - 10/24/19 (mac): Add MFDnRunMode kLanczosOnly.
 - 06/04/23 (mac): Add JFilterMode.
 - 09/14/23 (slv): Add VariantMode
-
+- 08/15/24 (mac): Add BasisMode kShellModel.
 """
 
 import enum
@@ -54,11 +54,24 @@ class BasisMode(enum.Enum):
       - Coulomb TBMEs may be rescaled (hw_c -> hw_cp) but then need
         transformation (hw_cp HO -> hw generic)
       - MFDn *cannot* use built-in oscillator OBMEs for observables
+
+    kShellModel:
+      - Hamiltonian TBMEs must be calculated as appropriate for mean-field shell model
+      - MFDn *cannot* use built-in oscillator OBMEs for observables
+          - this might be reenabled (cautiously)
+      - r^2 TMBEs are not applicable (without contribution of core)
+          - a dummy zero operator is provided since MFDn required the first TBO to be r^2
+      - orbitals *must* be manually specified
+      - number of protons and neutrons calculated relative to core
+      - "truncation_parameters" (dict) must contain:
+          - "mb_core" (tuple of int): (Z,N) tuple of inert core
+
     """
 
     kDirect = 0
     kDilated = 1
     kGeneric = 2
+    kShellModel = 3
 
 ################################################################
 # J filtering modes
@@ -99,7 +112,8 @@ class SingleParticleTruncationMode(enum.Enum):
         - manually provided orbital file
         - compatible with MFDn v15+
         - "truncation_parameters" (dict) must contain:
-            - "sp_filename" (str): full path to orbital file
+            - "sp_filename" (str): orbital file basename (no extension, to search for in interaction file 
+              search path), or full path to orbital file
             - "sp_weight_max" (float): maximum weight for single-particle orbitals
 
     kNmax:

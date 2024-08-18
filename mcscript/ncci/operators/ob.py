@@ -495,10 +495,11 @@ def get_obme_sources(task, targets):
     obme_sources = {}
 
     # gather pre-defined sources first
-    obme_sources.update(**k_kinematic_operators, **k_am_operators, **k_isospin_operators)
+    if task.get("basis_mode") in {modes.BasisMode.kDirect, modes.BasisMode.kDilated, modes.BasisMode.kGeneric}:
+        obme_sources.update(**k_kinematic_operators, **k_am_operators, **k_isospin_operators)
     if task.get("basis_mode") in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}:
         obme_sources.update(**k_ladder_operators_native)
-    else:
+    elif task.get("basis_mode") is modes.BasisMode.kGeneric:
         obme_sources.update(**ladder_operators_generic(task["hw"]))
 
     # add sources from observable sets

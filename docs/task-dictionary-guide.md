@@ -19,10 +19,13 @@ University of Notre Dame
 ## basis parameters ##
 
 - `basis_mode`: `modes.BasisMode`
-  + enumerated value indicating direct oscillator
-    (`modes.BasisMode.kDirect`), dilated oscillator (`modes.BasisMode.kDilated`),
-    or generic run mode (`modes.BasisMode.kGeneric`), as explained further in
-    `modes.BasisMode`
+  - enumerated value indicating direct oscillator (`modes.BasisMode.kDirect`),
+    dilated oscillator (`modes.BasisMode.kDilated`), generic run mode
+    (`modes.BasisMode.kGeneric`), or shell model mode
+    (`modes.BasisMode.kShellModel`), as explained further in `modes.BasisMode`
+  - see also truncation parameters section for additional parameters
+    (`sp_truncation_mode`, `mb_truncation_mode`, etc.) which serve to define the
+    basis
 
 - `hw`: `float`
   -  hw of basis
@@ -111,9 +114,9 @@ University of Notre Dame
     truncation; see docstring of `ManyBodyTruncationMode` for information.
 
 - `truncation_parameters`: `dict`
-  - truncation parameters, specific to each enumerated truncation type;
-    see docstrings of `SingleParticleTruncationMode` and `ManyBodyTruncationMode`
-    for full documentation
+  - truncation parameters, specific to each enumerated truncation type; see
+    docstrings of `modes.SingleParticleTruncationMode` and
+    `modes.ManyBodyTruncationMode` for full documentation
 
 ----------------------------------------------------------------
 ## diagonalization parameters ##

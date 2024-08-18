@@ -214,7 +214,14 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         inputlist["IFLAG_mode"] = int(run_mode)
 
     # nucleus
-    inputlist["Nprotons"], inputlist["Nneutrons"] = task["nuclide"]
+    if task["basis_mode"] is modes.BasisMode.kShellModel:
+        # calculate number of nucleons relative to core
+        Z, N = task["nuclide"]
+        Z0, N0 = task["truncation_parameters"]["mb_core"]
+        inputlist["Nprotons"] = Z - Z0
+        inputlist["Nneutrons"] = N - N0
+    else:
+        inputlist["Nprotons"], inputlist["Nneutrons"] = task["nuclide"]
 
     # particle rank
     if (task.get("use_3b", False)):
@@ -267,10 +274,11 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
                 for id_ in operators.tb.get_tbme_targets(task)[(0,0,0)].keys()
             ]
 
-            # do not evaluate Hamiltonian as observable
+            # eliminate Hamiltonian as observable (if not wanted)
             #  NOTE (pjf): due to possible bug/precision issues in MFDn, evaluate H
             #    as a consistency check
-            ##obs_basename_list.remove("tbme-H")
+            ## if not task.get("calculate_hamiltonian_tbo", True):
+            ##     obs_basename_list.remove("tbme-H")
 
             # tbo: log tbo names in separate file to aid future data analysis
             mcscript.utils.write_input("tbo_names{:s}.dat".format(postfix), input_lines=obs_basename_list)
@@ -490,10 +498,9 @@ def save_mfdn_task_data(task, postfix=""):
             "tbo_names{:s}.dat".format(postfix)
         ]
         # orbital information
-        archive_file_list += [
-            environ.orbitals_int_filename(postfix),
-            environ.orbitals_filename(postfix),
-        ]
+        archive_file_list += glob.glob(environ.orbitals_int_filename(postfix))
+        archive_file_list += glob.glob(environ.orbitals_filename(postfix))
+
         # transformation information
         # Use glob to allow for missing files (e.g., in decomposition run).
         archive_file_list += glob.glob(environ.radial_xform_filename(postfix))
@@ -501,7 +508,7 @@ def save_mfdn_task_data(task, postfix=""):
 
 
         # Coulomb information:
-        if task["use_coulomb"]:
+        if task.get("use_coulomb"):
             archive_file_list += glob.glob(environ.orbitals_coul_filename(postfix))
             archive_file_list += glob.glob(environ.radial_olap_coul_filename(postfix))
         # natural orbital information

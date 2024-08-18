@@ -598,14 +598,14 @@ def Qnintr(nuclide):
 
 
 ################################################################
-# standard Hamiltonian
+# standard NCCI Hamiltonian
 ################################################################
 
 def Hamiltonian(
         A, hw, a_cm=0., hw_cm=None, use_coulomb=True, hw_coul=None, hw_coul_rescaled=None,
         **kwargs,
 ):
-    """A standard Hamiltonian for shell-model runs.
+    """A standard Hamiltonian for NCCI runs.
 
     Arguments:
         A (int): mass number
@@ -631,6 +631,35 @@ def Hamiltonian(
     else:
         coulomb_interaction = mcscript.utils.CoefficientDict()
     return (kinetic_energy + interaction + coulomb_interaction + lawson_term)
+
+
+################################################################
+# standard mean-field shell model Hamiltonian
+################################################################
+
+def ShellModelHamiltonian(
+        scaling=None,
+        **kwargs,
+):
+    """A standard Hamiltonian for mean-field shell model runs.
+
+   
+    Arguments:
+
+        WIP
+
+    Returns:
+        CoefficientDict containing coefficients for Hamiltonian.
+    """
+    # WIP
+    Vmf = mcscript.utils.CoefficientDict(Vmf=1.0)
+    if scaling is None:
+        scale_factor = 1.
+    else:
+        core_nucleons, A, power = scaling
+        scale_factor = ((core_nucleons+2)/A)**power
+    Vres = mcscript.utils.CoefficientDict(Vres_unscaled=scale_factor)
+    return (Vmf + Vres)
 
 
 ################################################################
@@ -706,38 +735,70 @@ def get_tbme_targets(task):
     # targets for diagonalization
     if task.get("diagonalization"):
         # target: radius squared (must be first, for built-in MFDn radii)
-        targets[(0,0,0)]["rrel2"] = rrel2(A=A)
+        if (task["basis_mode"] in {
+                    modes.BasisMode.kDirect, modes.BasisMode.kDilated, modes.BasisMode.kGeneric,
+            }):
+            targets[(0,0,0)]["rrel2"] = rrel2(A=A)
+        elif task["basis_mode"] is modes.BasisMode.kShellModel:
+            # provide zero operator as a "dummy operator (to keep MFDn happy and
+            # still allow subsequent TBOs to be calculated)
+            targets[(0,0,0)]["rrel2"] = mcscript.utils.CoefficientDict()
 
-    # targets for diagonalization or part of Hamiltonian components set
-    if task.get("diagonalization") or ("H-components" in tb_observable_sets):
+    # Hamiltonian
+    if task.get("diagonalization"):
         # target: Hamiltonian
         if isinstance(task.get("hamiltonian"), collections.abc.MutableMapping):
             targets[(0,0,0)]["H"] = task["hamiltonian"]
         else:
+            if (task["basis_mode"] not in {
+                    modes.BasisMode.kDirect, modes.BasisMode.kDilated, modes.BasisMode.kGeneric,
+            }):
+                raise ValueError("invalid basis mode {basis_mode} for automatic Hamiltonian generation (please specify Hamiltonian explicitly)".format(**task))
             targets[(0,0,0)]["H"] = Hamiltonian(
                 A=A, hw=hw, a_cm=a_cm, hw_cm=hw_cm,
                 use_coulomb=task["use_coulomb"], hw_coul=hw_coul,
                 hw_coul_rescaled=hw_coul_rescaled
             )
-        # target: Ncm
-        targets[(0,0,0)]["Ncm"] = Ncm(A=A, hw=hw_cm)
+
+    # Ncm
+    #
+    # - used as diagnostic for all NCCI diagonalization runs, as part of
+    # Hamiltonian for NCCI diagonalization runs with Lawson term, and in
+    # Hamiltonian components observable set
+    #
+    # - but not well-defined for shell model run
+    if task.get("diagonalization"):
+        if task["basis_mode"] in {
+                modes.BasisMode.kDirect, modes.BasisMode.kDilated, modes.BasisMode.kGeneric,
+        }:
+            targets[(0,0,0)]["Ncm"] = Ncm(A=A, hw=hw_cm)
 
     # optional observable sets
     # Hamiltonian components
     if "H-components" in tb_observable_sets:
-        # target: Trel (diagnostic)
-        targets[(0,0,0)]["Tintr"] = Tintr(A=A)
-        # target: Tcm (diagnostic)
-        targets[(0,0,0)]["Tcm"] = Tcm(A=A)
-        # target: VNN (diagnostic)
-        if "VNN" in targets[(0,0,0)]["H"]:
-            targets[(0,0,0)]["VNN"] = VNN()
-        # target: VC (diagnostic)
-        if "VC_unscaled" in targets[(0,0,0)]["H"]:
-            targets[(0,0,0)]["VC"] = VC(hw_basis=hw_coul_rescaled, hw_coul=hw_coul)
+        if task["basis_mode"] in {
+                modes.BasisMode.kDirect, modes.BasisMode.kDilated, modes.BasisMode.kGeneric,
+        }:
+            # target: Trel (diagnostic)
+            targets[(0,0,0)]["Tintr"] = Tintr(A=A)
+            # target: Tcm (diagnostic)
+            targets[(0,0,0)]["Tcm"] = Tcm(A=A)
+            # target: Ncm
+            targets[(0,0,0)]["Ncm"] = Ncm(A=A, hw=hw_cm)
+            # target: VNN (diagnostic)
+            if "VNN" in targets[(0,0,0)]["H"]:
+                targets[(0,0,0)]["VNN"] = VNN()
+            # target: VC (diagnostic)
+            if "VC_unscaled" in targets[(0,0,0)]["H"]:
+                targets[(0,0,0)]["VC"] = VC(hw_basis=hw_coul_rescaled, hw_coul=hw_coul)
+    else:
+        # Hamiltonian components for kShellModel run not yet implemented
+        pass
+                
     # coulomb component
     if "VC" in tb_observable_sets:
         targets[(0,0,0)]["VC"] = VC(hw_basis=hw_coul_rescaled, hw_coul=hw_coul)
+            
     # squared angular momenta
     if "am-sqr" in tb_observable_sets:
         targets[(0,0,0)]["L2"] = L2()
@@ -747,6 +808,7 @@ def get_tbme_targets(task):
         targets[(0,0,0)]["J2"] = J2()
     if "isospin" in tb_observable_sets:
         targets[(0,0,0)]["T2"] = T2(A=A)
+        
     # intrinsic electromagnetic operators
     if "intrinsic-E0" in tb_observable_sets:
         targets[(0,0,0)]["E0p"] = rp2intr(nuclide=nuclide)
@@ -807,6 +869,20 @@ def get_tbme_sources(task, targets, postfix):
                 xform_truncation=xform_truncation_int
             )
 
+    # tbme sources: shell model
+    # WIP
+    if "Vmf_unscaled" in required_tbme_sources:
+        Vmf_filename = ""
+    if "Vres_unscaled" in required_tbme_sources:
+        Vres_filename = task.get("Vres_file")
+        if Vres_filename is None:
+            Vres_filename = environ.find_interaction_file(
+                "{}_tbme".format(task["interaction"]),
+                None,
+                None,
+            )
+        tbme_sources["Vres_unscaled"] = dict(filename=Vres_filename)
+        
     # tbme sources: Coulomb
     #
     # Note: This is the "unscaled" Coulomb, still awaiting the scaling

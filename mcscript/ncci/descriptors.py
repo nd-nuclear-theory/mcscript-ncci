@@ -284,9 +284,9 @@ def task_descriptor_10(task):
     """
     # Note: May later want to add truncation parameters for weight-based shell model truncations.
     if (
-        task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kNmax
+        task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kManual
         and
-        task["basis_mode"] is modes.BasisMode.kDirect
+        task["basis_mode"] is modes.BasisMode.kShellModel
     ):
         template_string = (
             "Z{nuclide[0]}-N{nuclide[1]}-{interaction}"

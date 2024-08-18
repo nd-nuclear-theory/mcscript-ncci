@@ -413,6 +413,7 @@ def get_task_data_prefix(run, descriptor, library_base=None, verbose=True):
     task_data_prefix = mcscript.utils.search_in_subdirectories(
         mcscript.utils.expand_path(library_base),
         "run{run:s}".format(run=run), "results", "task-data", descriptor,
+        fail_on_not_found=False,
         verbose=verbose
     )
     return task_data_prefix
