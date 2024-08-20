@@ -70,6 +70,9 @@ University of Notre Dame
         + Add isoscalar coulomb file name support to get_tbme_sources.
     - 05/18/24 (pjf):
         + Add rpp2, rnn2, rpn2, and rNN2.
+    - 08/20/24 (mac):
+        + Add ShellModelHamiltonian() for standard mf+res shell model Hamiltonian.
+        + Provide "H-components" observable set (with Vmf) for shell-model Hamiltonian.
 """
 import collections
 import math
@@ -638,7 +641,7 @@ def Hamiltonian(
 ################################################################
 
 def ShellModelHamiltonian(
-        scaling=None,
+        core_nucleons, A, power,
         **kwargs,
 ):
     """A standard Hamiltonian for mean-field shell model runs.
@@ -646,18 +649,21 @@ def ShellModelHamiltonian(
    
     Arguments:
 
-        WIP
+        core_nucleons (int): number of nucleons in core
+
+        A (int): total number of nucleons
+
+        power (float): exponent for scaling of TBMEs, as
+        ((core_nucleons+2)/A)**power
 
     Returns:
         CoefficientDict containing coefficients for Hamiltonian.
+
     """
-    # WIP
-    Vmf = mcscript.utils.CoefficientDict(Vmf=1.0)
-    if scaling is None:
-        scale_factor = 1.
-    else:
-        core_nucleons, A, power = scaling
-        scale_factor = ((core_nucleons+2)/A)**power
+
+    valence_nucleons = A - core_nucleons
+    Vmf = mcscript.utils.CoefficientDict(Vmf_unscaled=1/(valence_nucleons-1))
+    scale_factor = ((core_nucleons+2)/A)**power
     Vres = mcscript.utils.CoefficientDict(Vres_unscaled=scale_factor)
     return (Vmf + Vres)
 
@@ -750,15 +756,22 @@ def get_tbme_targets(task):
         if isinstance(task.get("hamiltonian"), collections.abc.MutableMapping):
             targets[(0,0,0)]["H"] = task["hamiltonian"]
         else:
-            if (task["basis_mode"] not in {
+            if (task["basis_mode"] in {
                     modes.BasisMode.kDirect, modes.BasisMode.kDilated, modes.BasisMode.kGeneric,
             }):
+                targets[(0,0,0)]["H"] = Hamiltonian(
+                    A=A, hw=hw, a_cm=a_cm, hw_cm=hw_cm,
+                    use_coulomb=task["use_coulomb"], hw_coul=hw_coul,
+                    hw_coul_rescaled=hw_coul_rescaled
+                )
+            elif task["basis_mode"] is modes.BasisMode.kShellModel:
+                core_nucleons = sum(task["truncation_parameters"]["mb_core"])
+                tbme_scaling_power = task["tbme_scaling_power"]
+                targets[(0,0,0)]["H"] = ShellModelHamiltonian(
+                    core_nucleons, A, tbme_scaling_power,
+                )
+            else:
                 raise ValueError("invalid basis mode {basis_mode} for automatic Hamiltonian generation (please specify Hamiltonian explicitly)".format(**task))
-            targets[(0,0,0)]["H"] = Hamiltonian(
-                A=A, hw=hw, a_cm=a_cm, hw_cm=hw_cm,
-                use_coulomb=task["use_coulomb"], hw_coul=hw_coul,
-                hw_coul_rescaled=hw_coul_rescaled
-            )
 
     # Ncm
     #
@@ -791,10 +804,10 @@ def get_tbme_targets(task):
             # target: VC (diagnostic)
             if "VC_unscaled" in targets[(0,0,0)]["H"]:
                 targets[(0,0,0)]["VC"] = VC(hw_basis=hw_coul_rescaled, hw_coul=hw_coul)
-    else:
-        # Hamiltonian components for kShellModel run not yet implemented
-        pass
-                
+        elif task["basis_mode"] is modes.BasisMode.kShellModel:
+            valence_nucleons = A - sum(task["truncation_parameters"]["mb_core"])
+            targets[(0,0,0)]["Vmf"] = mcscript.utils.CoefficientDict(Vmf_unscaled=1/(valence_nucleons-1))
+        
     # coulomb component
     if "VC" in tb_observable_sets:
         targets[(0,0,0)]["VC"] = VC(hw_basis=hw_coul_rescaled, hw_coul=hw_coul)
@@ -870,14 +883,20 @@ def get_tbme_sources(task, targets, postfix):
             )
 
     # tbme sources: shell model
-    # WIP
     if "Vmf_unscaled" in required_tbme_sources:
-        Vmf_filename = ""
+        Vmf_filename = task.get("Vmf_file")
+        if Vmf_filename is None:
+            Vmf_filename = environ.find_interaction_file(
+                "{}-U".format(task["interaction"]),
+                None,
+                None,
+            )
+        tbme_sources["Vmf_unscaled"] = dict(filename=Vmf_filename)
     if "Vres_unscaled" in required_tbme_sources:
         Vres_filename = task.get("Vres_file")
         if Vres_filename is None:
             Vres_filename = environ.find_interaction_file(
-                "{}_tbme".format(task["interaction"]),
+                "{}-V".format(task["interaction"]),
                 None,
                 None,
             )
