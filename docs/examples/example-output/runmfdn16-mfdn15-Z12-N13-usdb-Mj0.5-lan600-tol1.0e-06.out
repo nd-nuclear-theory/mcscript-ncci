@@ -1,0 +1,265 @@
+
+   Output from MFDn in M-scheme basis Version 15
+
+
+          References for using this code        
+
+ P. Maris, M. Sosonkina, J.P. Vary, E.G. Ng and C. Yang,
+ Scaling of ab-initio nuclear physics calculations on multicore computer architectures,
+ in Procedia Computer Science 1, pp. 97-106 (May 2010, ICCS 2010)
+ DOI: 10.1016/j.procs.2010.04.012
+ Url: http://www.sciencedirect.com/science/article/pii/S187705091000013X
+
+ H.M. Aktulga, C. Yang, E.G. Ng, P. Maris and J.P. Vary,
+ Improving the Scalability of a Symmetric Iterative Eigensolver for Multi-core Platforms,
+ Concurrency Computat.: Pract. Exper. 26, pp. 2631-2651 (2014)
+ DOI: 10.1002/cpe.3129
+ Url: http://onlinelibrary.wiley.com/doi/10.1002/cpe.3129/abstract;jsessionid=0DE779AA1FC785FA0065CA2A1392E8A4.f03t02
+
+
+ M. Shao, H.M. Aktulga, C. Yang, E.G. Ng, P. Maris and J.P. Vary,
+ Accelerating Nuclear Configuration Interaction Calculations through a Preconditioned Block Iterative Eigensolver,
+ Comput.~Phys.~Commun. 222, 1 (2018)
+ DOI: 10.1016/j.cpc.2017.09.004
+ Url: 
+
+          See also NCSM review article          
+
+ B.R. Barrett, P. Navratil, and J. P. Vary
+ Ab initio no core shell model,
+ Prog. Part. Nucl. Phys. 69, pp. 131-181 (2013) 
+
+
+  Normal run of MFDn
+
+   Number of MPI processors             1
+   Number of diagonals                  1
+   Number of threads per proc           8
+   Timer started 
+
+  Read input from mfdn.input
+
+  Number of protons            4
+  Number of neutrons           5
+  Total number of particles            9
+
+   Read SP basis from file 
+  Total number of S.P. orbitals           6
+  Total number of S.P. states            24
+
+  M_j constraint:  M_j =  0.500000000    
+  parity (0 means both + and/or -)            1
+
+  WTzero (minimal many-body weight)   0.00000000    
+  WTmax (many-body weights cutoff )   0.00000000    
+
+  Two-body interaction 
+
+  Number of eigenstates              8
+  Max number of iterations         600
+  Starting at iter. number           0
+  Selection pivot vector             3
+  Requested tolerance        9.9999999999999995E-007
+
+  Finished reading relevant parameters on all procs
+  Finished generating SP basis on all procs 
+  Time reading input/setup SP basis   6.0184900000000000E-004
+
+  Number of CSB groups          12
+  Distribution of CSB groups:
+    min. number of CSB groups           12
+    max. number of CSB groups           12
+
+  Number of groupIDs           168
+  Distribution of groupIDs:  
+    min. number of groupIDs is         168
+    max. number of groupIDs is         168
+
+  Dimension of M-basis                 44133
+    number of M-scheme states with exactly N quanta;  with up to N quanta
+   Ntot          17   dimensions                44133                44133
+
+  Distribution of M-basis states:
+    min. number of M-states is       44133
+    max. number of M-states is       44133
+
+  Details on root:
+    max. number of M-scheme states per groupid        2323  at         105
+    min, avg, max groupsize           1   262.696442            2323
+
+  More details on root:
+    number of blkgroups = nblks          12
+    blkgroup size limit        4000
+    min, avg, max blocksize        2617   3677.66675            3981
+
+
+  Finished generating (or reading) MB basis info
+
+    max. weight for single particle is   0.00000000    
+    max. weight for           2  particles   0.00000000    
+
+    max. j2 value for single particle is           5
+    max. j2 value for           2  particles          10
+
+
+  Finished distributing MB basis 
+
+  Number of groupids           168
+  Dimension of M-basis                44133
+
+  Time generate/read/distr MB basis   3.0220427000000001E-002
+
+  Structure of many-body H-matrix 
+
+  Number of nonzero tiles (excl. diagonal tiles)                 2680
+  Distribution of nonzero tiles:
+    min. number of nonzero tiles        2680
+    max. number of nonzero tiles        2680
+
+  min time counting tiles     5.1884699999999589E-004
+  avg time counting tiles     5.1884699999999589E-004
+  max time counting tiles     5.1884699999999589E-004
+
+  min time construct tiles    4.9740300000000043E-004
+  avg time construct tiles    4.9740300000000043E-004
+  max time construct tiles    4.9740300000000043E-004
+
+  Details on root: 
+    Number of diag. tiles          168  ( = number of groups)
+    number of tiles            0  differ by            0
+    number of tiles          658  differ by            1
+    number of tiles         2022  differ by            2
+
+  Number of nonzero m.e. on diag tiles               732661
+  Distribution of nonzero m.e. on diag tiles:
+    min. number of nonzero m.e. dtiles      732661
+    max. number of nonzero m.e. dtiles      732661
+  (distributed over all MPI processors)
+
+  NNZ on diagonals (excl. diag. tiles)              4384599
+  Distribution of nonzero m.e. on diags:
+    min. number of nonzero m.e. diags               4384599
+    max. number of nonzero m.e. diags               4384599
+
+  min time counting nonzeros   1.1258351910000002     
+  avg time counting nonzeros   1.1258351910000002     
+  max time counting nonzeros   1.1258351910000002     
+
+  Finished determining sparsity structure
+
+   Total number of nonzero matrix elements               5117260
+
+   Number of nonzero m.e. on diagonal tiles               732661
+  Total number of diagonal tiles(=ngroupids)         168
+
+   Number of nonzero m.e. excl. diag. tiles              4384599
+  Number of nonzero tiles excl. diag. tiles                 2680
+  Total number of nonzero CSB_coo blks                        78
+
+  matrix element sparsity    5.2544920361581333E-003
+  tile (group) sparsity     0.18878557340095803     
+  CSB_coo block sparsity     1.0000000000000000     
+
+  Time tile sparsity/count nonzeros   1.1269812410000000     
+
+  Reading 2-body Hamiltonian H2full
+
+ opening new binary TBME file   tbme-H.bin
+
+  Finished reading and distributing 2-body m.e.
+
+  Finished reading and distributing V
+
+  Time reading and distributing V     1.5693799999993985E-004
+
+  Number of nonzero matrix elements              5117260
+  Distribution of nonzero matrix elements:
+    min. number of nonzero m.e. is               5117260
+    max. number of nonzero m.e. is               5117260
+
+  min time construct mat.el.   2.9828831349999998     
+  avg time construct mat.el.   2.9828831349999998     
+  max time construct mat.el.   2.9828831349999998     
+
+  Time constructing Many-Body m.e.    2.9829131269999998     
+
+  Preparation time for Lanczos iterations   5.3988669999993633E-003
+
+  Starting Lanczos iterations
+  It #, Average time, Ei for i = 1 through  4, error est
+   20  Avg  0.483E-01   Ei    -93.8317    -92.2517    -89.0674    -85.2941    Err 0.87E-01
+   40  Avg  0.523E-01   Ei    -94.3998    -93.6674    -93.2002    -92.2912    Err 0.28E-01
+   60  Avg  0.562E-01   Ei    -94.4013    -93.7959    -93.3040    -92.6725    Err 0.13E-01
+   80  Avg  0.593E-01   Ei    -94.4013    -93.7959    -93.3040    -92.6807    Err 0.51E-02
+  100  Avg  0.630E-01   Ei    -94.4013    -93.7959    -93.3040    -92.6807    Err 0.60E-03
+  120  Avg  0.669E-01   Ei    -94.4013    -93.7959    -93.3040    -92.6807    Err 0.34E-05
+  140  Avg  0.704E-01   Ei    -94.4013    -93.7959    -93.3040    -92.6807    Err 0.34E-08
+
+  Lanczos iteration time   8.3284346910000000      for         140 its
+  Average time per iteration   5.9488819221428568E-002
+  Running with           8  OMP threads
+  Average time per iteration   5.9488819221428568E-002
+    max SpMV time incl rowcom   6.4706987730000014     
+    max ortho time incl com     1.8486571170000001     
+    max Col AllGatherV         0.27789680199998923     
+    max Col ReduceScatter       8.9038059999992925E-003
+    max comm time ortho         3.6689399998923733E-004
+
+  Postprocessing
+   Number of SpMV in Lanczos its         140
+   Lanczos vectors converted  to wavefunctions
+   smwf written to file for           8 states
+   evaluated abs. error for           8 states
+  Lanczos to smwf to file time  0.44808232100000112     
+
+  Eigen energy, error est, residu ||H psi - E psi||
+           1  -94.4012756       1.18923864E-21   9.68415134E-06
+           2  -93.7958679       6.91062769E-19   1.06185262E-05
+           3  -93.3040390       2.50806969E-17   1.00794514E-05
+           4  -92.6807022       2.42791322E-14   9.76820502E-06
+           5  -92.4058304       1.79304515E-13   1.03085622E-05
+           6  -91.8182068       3.48939017E-10   1.03025341E-05
+           7  -91.5900650       3.38296924E-09   1.01957185E-05
+           8  -91.4999771       1.42329704E-09   1.06245634E-05
+
+  Time solving lowest eigenstates     8.7838333239999997     
+  including error estimates and writing eigenvectors to file
+
+ INPUT: read in TBME files for observables
+ opening new binary TBME file   tbme-rrel2.bin
+ opening new binary TBME file   tbme-H.bin
+
+    prep time observables    1.1893090000008044E-003
+  Starting calculating observables
+
+  Seq     E_eigen         J (real)    n_J       T (real)
+   1        -94.4013          2.5000     1          0.5000
+   2        -93.7959          0.5000     1          0.5000
+   3        -93.3040          1.5000     1          0.5000
+   4        -92.6807          3.5000     1          0.5000
+   5        -92.4058          2.5000     2          0.5000
+   6        -91.8182          0.5000     2          0.5000
+   7        -91.5901          1.5000     2          0.5000
+   8        -91.5000          3.5000     2          0.5000
+
+    time JTLS observables    1.4592436140000000     
+    time TBME observables    3.7679866169999983     
+    time reduced OBDMEs      1.3804000001726990E-005
+    Max. multipolarity reduced OBDMEs           2
+    time writing results     2.4615099999891754E-004
+
+  Finished observables
+
+  Time 1- and 2-body observables      5.2291758970000011     
+  Normal completion for MFDn_Mscheme Version 15 
+
+  Dimension of matrix                 44133
+  Total number of nonzero matrix elements              5117260
+
+  Max. value of nnonzero                5117260
+
+  Sparseness of Hamiltonian 
+  Fraction of nonzero matrix elements   5.2544920361581333E-003
+
+ Time total run    18.154050291000001     
+
