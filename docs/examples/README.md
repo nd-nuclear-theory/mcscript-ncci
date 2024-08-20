@@ -7,6 +7,8 @@ invocations.
 
 09/30/23 (mac): Add perlmutter-gpu parallel environment example.
 
+08/20/24 (mac): Add runmfdn16 sd-shell example.
+
 ----------------------------------------------------------------
 
 Setup:
@@ -216,35 +218,23 @@ runmfdn13gpu: harmonic oscillator direct run with MFDn v15, for use with postpro
     qsubm mfdn13gpu xfer 30 --phase=2 --pool="Nmax02" --mail-type=END,FAIL
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+runmfdn15menj: diagonalization run with MFDn v15 menj 3-body variant
 
-runmfdn14: harmonic oscillator Lanczos decomposition run with MFDn v15
+    (input interaction files not provided)
 
-    6Li Nmax02,Nmax04 hw15,hw20 (direct) op L2,S2,Nex,U3SpSnS
+runmfdn16: shell model diagonalization runs in sd shell, with MFDn v15
 
+    18O/20O/18F/19F/20N/25Mg, Wildenthal USD and Brown-Richter USDB interactions
+
+    Interaction: example-data
+    
     Usage:
 
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        qsubm --pool=ALL --phase=0 mfdn14
-        qsubm --pool=ALL --phase=1 mfdn14
-        qsubm --pool=ALL --phase=2 mfdn14
+        qsubm --pool=ALL --phase=0 mfdn16
+        qsubm --pool=ALL --phase=1 mfdn16
+        qsubm --pool=ALL --phase=2 mfdn16
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    or, for a quick test with just Nmax=2 runs, select
-
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        qsubm --pool=Nmax02 --phase=0 mfdn14
-        qsubm --pool=Nmax02 --phase=1 mfdn14
-        qsubm --pool=Nmax02 --phase=2 mfdn14
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    Uses wave functions created by runmfdn13.  Make sure to set
-    NCCI_LIBRARY_PATH to include `mcscript-ncci/docs/examples` (see
-    `mcscript-ncci/INSTALL.md`).  For this example, you also need to set
-    NCCI_DATA_DIR_DECOMPOSITION to include `mcscript-ncci/docs/examples`.
-
-    The resulting Lanczos alpha-beta coefficients will be found in
-    `results/lanczos`.
-
 
 runtransitions00: mfdn-transitions postprocessor run
 
