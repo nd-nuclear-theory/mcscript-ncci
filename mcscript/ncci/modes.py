@@ -57,10 +57,12 @@ class BasisMode(enum.Enum):
 
     kShellModel:
       - Hamiltonian TBMEs must be calculated as appropriate for mean-field shell model
-      - MFDn *cannot* use built-in oscillator OBMEs for observables
-          - this might be reenabled (cautiously)
+      - currently: MFDn *cannot* use built-in oscillator-basis OBMEs for observables
+          - however, this might be reenabled (cautiously)
       - r^2 TMBEs are not applicable (without contribution of core)
           - a dummy zero operator is provided since MFDn required the first TBO to be r^2
+          - however, this might be reenabled (cautiously), if the observable is considered
+            to be meaningful
       - orbitals *must* be manually specified
       - number of protons and neutrons calculated relative to core
       - "truncation_parameters" (dict) must contain:

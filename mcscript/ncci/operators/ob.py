@@ -495,8 +495,10 @@ def get_obme_sources(task, targets):
     obme_sources = {}
 
     # gather pre-defined sources first
+    if task.get("basis_mode") in {modes.BasisMode.kDirect, modes.BasisMode.kDilated, modes.BasisMode.kGeneric, modes.BasisMode.kShellModel}:
+        obme_sources.update(**k_am_operators, **k_isospin_operators)
     if task.get("basis_mode") in {modes.BasisMode.kDirect, modes.BasisMode.kDilated, modes.BasisMode.kGeneric}:
-        obme_sources.update(**k_kinematic_operators, **k_am_operators, **k_isospin_operators)
+        obme_sources.update(**k_kinematic_operators)
     if task.get("basis_mode") in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}:
         obme_sources.update(**k_ladder_operators_native)
     elif task.get("basis_mode") is modes.BasisMode.kGeneric:

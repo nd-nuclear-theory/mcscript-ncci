@@ -111,6 +111,10 @@ tasks = [
         "calculate_obdme": False,
         "save_obdme": False,
 
+        # two-body observables (for expectation values)
+        ## "tb_observable_sets": ["Hmf", "isospin"],
+        "tb_observable_sets": ["Hmf"],
+
         # wavefunction storage
         "save_wavefunctions": False,
 

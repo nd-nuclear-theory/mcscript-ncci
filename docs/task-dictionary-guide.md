@@ -47,10 +47,16 @@ University of Notre Dame
   - hw of N_cm for Lawson term
   - If `None`, use hw of basis
 
+- `tbme_scaling_power`: `float`
+  - exponent for phenomenological scaling of shell model Hamiltonian TBMEs, typically `0.3`
+  - used only with shell model
+
 - `hamiltonian`: `CoefficientDict`
   - specification of Hamiltonian as a `CoefficientDict` of
     two-body operators passed as sources to h2mixer (see `ncci.operators.tb`)
-  - If `None`, use standard H = Tintr + VNN + a_cm*N_cm
+  - If `None`, use standard H = Tintr + VNN + a_cm*N_cm for NCCI (see
+    `ncci.operators.tb.Hamiltonian`) or H = Hmf + Vres for shell model (see
+    `ncci.operators.tb.ShellModelHamiltonian`)
 
 ----------------------------------------------------------------
 ## input TBME parameters ##

@@ -255,6 +255,7 @@ def set_up_obme_analytic(task, postfix=""):
         raise ValueError("invalid basis mode {basis_mode}".format(**task))
 
     # short circuit for shell model
+    # TODO (mac): accommodate case of "hw" undefined, for analytic matrix elements for shell model
     if task["basis_mode"] is modes.BasisMode.kShellModel:
         return
     
