@@ -251,12 +251,16 @@ University of Notre Dame
 
 TODO 03/21/24 (mac): postprocessor parameters need to be documented
 
+- `postprocessor_reverse_canonicalization`: `bool`, optional
+  - apply canonicalization constraint on transitions in the anticanonical
+    (qnf>qni) sense, rather than the default canonical (qnf<qni) sense
+
 - `postprocessor_relax_canonicalization`: `bool`, optional
   - allows postprocessor to attempt transitions in both canonical (qnf<qni) and
-    anticanonical (qnf<qni) sense
+    anticanonical (qnf>qni) sense
   - this leaves it up to the mask to pick the direction actually calculated (can
-    be useful for manually selecting the sense of transitions to optimize use of
-    the multi-ket capability of the postprocessor)
+    be useful, e.g., for manually selecting the sense of transitions to optimize
+    use of the multi-ket capability of the postprocessor)
 
 ----------------------------------------------------------------
 ## menj parameters ##
