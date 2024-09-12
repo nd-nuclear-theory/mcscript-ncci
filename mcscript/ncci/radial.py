@@ -408,10 +408,12 @@ def set_up_xforms_analytic(task, postfix=""):
             output_filename=environ.radial_olap_int_filename(postfix)
         ))
     if task.get("use_coulomb", False) and ("VC_unscaled" in tbme_sources):
-        if task.get("hw_coul_rescaled") is None:
+        hw_coul_rescaled = task.get("hw_coul_rescaled")
+        if hw_coul_rescaled is None:
             b_ratio = 1
         else:
-            b_ratio = math.sqrt(task["hw_coul_rescaled"]/task["hw"])
+            hw = task["hw"]
+            b_ratio = math.sqrt(hw_coul_rescaled/hw)
         lines.append(xform_target_command.format(
             scale_factor=b_ratio, bra_basis_type="oscillator",
             bra_orbital_file=environ.orbitals_coul_filename(postfix),

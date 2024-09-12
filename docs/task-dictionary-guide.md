@@ -97,7 +97,7 @@ University of Notre Dame
   - transform cutoff for Coulomb, as tuple `("ob"|"tb",N)`
   - If `None`, no truncation before h2mixer transformation
 
-- `hw_coul_rescaled`: `float`
+- `hw_coul_rescaled`: `float`, optional
   - hw to which to rescale Coulomb TBMEs before two-body transformation
   - If `None`, use hw of basis
   - Suggested values:
@@ -108,7 +108,7 @@ University of Notre Dame
       transformation error in the Coulomb interaction)
     - generic run: naturally same as hw_int for uniformity in the two-body transformation
 
-- `target_truncation`: weight max tuple
+- `target_truncation`, optional: weight max tuple
   - truncation of target TBMEs, as weight_max tuple
   - If `None`, deduce automatically from single-particle and many-body truncation information
 

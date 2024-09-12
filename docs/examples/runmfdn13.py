@@ -92,12 +92,6 @@ tasks = [
         "basis_mode": ncci.modes.BasisMode.kDirect,
         "hw": hw,
 
-        # transformation parameters
-        "xform_truncation_int": None,
-        "xform_truncation_coul": None,
-        "hw_coul_rescaled": None,
-        "target_truncation": None,
-
         # traditional oscillator many-body truncation
         "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
         "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
