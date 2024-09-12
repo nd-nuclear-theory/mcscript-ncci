@@ -8,6 +8,7 @@ University of Notre Dame
 + 11/01/23 (slv): Add descriptions of parameters required for menj mode of MFDn.
 + 02/12/24 (zz): For menj, add description for `interaction` and delete `hamiltonian_rank`.
 + 06/20/24 (mac): Add descriptions of decomposition parameters.
++ 09/12/24 (mac): Update descriptions of menj parameters.
 
 ----------------------------------------------------------------
 ## nuclide parameters ##
@@ -67,6 +68,8 @@ University of Notre Dame
 
 - `truncation_int`: truncation tuple
   - input interaction TBME cutoff, as tuple `("ob"|"tb", N)`
+  - used in constructing h2 filename for interaction
+  - also determines orbitals used for representing interaction
 
 - `hw_int`: `float`
   - hw of basis for source interaction TBMEs
@@ -77,6 +80,8 @@ University of Notre Dame
 
 - `truncation_coul`: truncation tuple
   - input Coulomb TBME cutoff, as tuple `("ob"|"tb",N)`
+  - used in constructing h2 filename for Coulomb interaction
+  - also determines orbitals used for representing Coulomb interaction
 
 - `hw_coul`: `float`
   - hw of basis for source Coulomb TBMEs
@@ -265,35 +270,37 @@ TODO 03/21/24 (mac): postprocessor parameters need to be documented
 ----------------------------------------------------------------
 ## menj parameters ##
 
-TODO 03/21/24 (mac): menj parameters need to be updated to reflect actual implementation
-
 - `mfdn_variant`: `modes.VariantMode`, optional
-  - there are two different VariantMode to choose.
-    ncci.modes.VariantMode.kH2 or ncci.modes.VariantMode.kMENJ
-  - certain features of MFDn related to two body observables (for H2 runs)
-    work only if kH2 is selected.
+  - there are two different VariantMode to choose
+    ncci.modes.VariantMode.kH2 (default) or ncci.modes.VariantMode.kMENJ
+  - certain features of MFDn related to two-body observables (for H2 runs)
+    work only if kH2 is selected
 
 - `EMax` : `int`
-  - max energy quanta for 2 body truncation
-  - this number has to match with the me2j, me3j, trel and rsq interaction
-    files that are to be read.
+  - maximum oscillator quanta for 2 body truncation (a.k.a. N2max)
+  - it is assumed that the me2j files are in triangular truncation, so that
+    eMax=EMax (i.e., N1max=N2max) (see call to ME2J_Init in menj.c)
+  - this number is used to construct the "eMax{:d}_EMax{:d}" portion of the filename for
+    the me2j interaction, trel, and rsq files to be read  (e.g., E3ax=12 give "eMax12_EMax12")
 
 - `E3Max` : `int`
-  - Max energy quanta for 3 body truncation
-  - this number has to match with the me2j, me3j, trel and rsq interaction
-    files that are to be read.
+  - maximum oscillator quanta for 3-body truncation
+  - it is assumed that the me3j files are in triangular truncation, so that
+    eMax=E3Max (i.e., N1max=N3max) (see call to ME3J_Init in menj.c)
+  - this number is used to construct the "eMax{:d}_EMax{:d}" portion of the filename for
+    the me3j interaction file to be read (e.g., E3Max=12 give "eMax12_EMax12")
 
 - `me2j_file_id` : `str`
-  - file ID of the me2j interaction file.(This is part of the me2j
-    interaction filename)
-  - part of this string contains the SRG flow parameter
+  - base part of the filename for the me2j interaction file
+  - this part typically identifies the interaction and SRG flow parameter
+  - it does not contain the truncation or hw parameters
 
 - `me3j_file_id` : `str`
-  - file ID of the me3j interaction file.(This is part of the me3j
-    interaction filename)
-  - part of this string contains the SRG flow parameter
+  - base part of the filename for the me3j interaction file
+  - this part typically identifies the interaction and SRG flow parameter
+  - it does not contain the truncation or hw parameters
 
 - `use_3b` : `bool`
-  - if enabled 3 body interactions are also read
+  - whether or not 3-body interactions are to be read and included in the Hamiltonian
 
 
