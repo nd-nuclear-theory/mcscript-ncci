@@ -607,7 +607,7 @@ def Qnintr(nuclide):
 ################################################################
 
 def Hamiltonian(
-        A, hw, a_cm=0., hw_cm=None, use_coulomb=True, hw_coul=None, hw_coul_rescaled=None,
+        A, hw, a_cm=0., hw_cm=None, use_coulomb=True, include_ke = True, hw_coul=None, hw_coul_rescaled=None,
         **kwargs,
 ):
     """A standard Hamiltonian for NCCI runs.
@@ -628,13 +628,17 @@ def Hamiltonian(
         hw_cm = hw
     if hw_coul_rescaled is None:
         hw_coul_rescaled = hw
-    kinetic_energy = Tintr(A=A)
+    
     lawson_term = a_cm * Ncm(A=A, hw=hw_cm)
     interaction = VNN()
     if use_coulomb:
         coulomb_interaction = VC(hw_basis=hw_coul_rescaled, hw_coul=hw_coul)
     else:
         coulomb_interaction = mcscript.utils.CoefficientDict()
+    if include_ke:
+        kinetic_energy = Tintr(A=A)
+    else:
+        kinetic_energy = mcscript.utils.CoefficientDict()
     return (kinetic_energy + interaction + coulomb_interaction + lawson_term)
 
 

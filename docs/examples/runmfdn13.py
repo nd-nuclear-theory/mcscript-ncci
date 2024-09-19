@@ -79,6 +79,7 @@ tasks = [
         # Hamiltonian parameters
         "interaction": interaction,
         "use_coulomb": coulomb,
+        "include_ke" : False,
         "a_cm": a_cm,
         "hw_cm": None,
 

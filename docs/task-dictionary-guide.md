@@ -59,6 +59,10 @@ University of Notre Dame
     `ncci.operators.tb.Hamiltonian`) or H = Hmf + Vres for shell model (see
     `ncci.operators.tb.ShellModelHamiltonian`)
 
+- `include_ke`: `bool`
+  - the default value is True. (see `ncci.operators.tb.Hamiltonian`)
+  - if the interaction TBMEs already include Kinetic energy (Tintr) set this parameter to False
+  
 ----------------------------------------------------------------
 ## input TBME parameters ##
 
