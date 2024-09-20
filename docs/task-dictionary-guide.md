@@ -60,8 +60,9 @@ University of Notre Dame
     `ncci.operators.tb.ShellModelHamiltonian`)
 
 - `include_ke`: `bool`
-  - the default value is True. (see `ncci.operators.tb.Hamiltonian`)
-  - if the interaction TBMEs already include Kinetic energy (Tintr) set this parameter to False
+  - whether or not to add kinetic energy term (Tintr) to the Hamiltonian separately
+  - the default is True. (see `ncci.operators.tb.Hamiltonian`)
+  - if False, use H = VNN + a_cm*N_cm + coulomb term (if `use_coulomb` is True)
   
 ----------------------------------------------------------------
 ## input TBME parameters ##
