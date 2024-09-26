@@ -9,6 +9,7 @@ University of Notre Dame
 + 02/12/24 (zz): For menj, add description for `interaction` and delete `hamiltonian_rank`.
 + 06/20/24 (mac): Add descriptions of decomposition parameters.
 + 09/12/24 (mac): Update descriptions of menj parameters.
++ 09/26/24 (mac): Update descriptions of Hamiltonian parameters.
 
 ----------------------------------------------------------------
 ## nuclide parameters ##
@@ -60,8 +61,8 @@ University of Notre Dame
   - If `None`, use hw of basis
 
 - `include_ke`: `bool`, optional
-  - whether or not to include explicit intrinsic kinetic energy term (Tintr) in
-    Hamiltonian (see `ncci.operators.tb.Hamiltonian`)
+  - whether or not to include the usual (intrinsic) kinetic energy term (Tintr)
+    in constructing the Hamiltonian (see `ncci.operators.tb.Hamiltonian`)
   - defaults to `True`
   - provides the ability to "turn off" the explicit kinetic energy if the
     provided "interaction" TBME file already actually contains a complete
@@ -79,8 +80,7 @@ University of Notre Dame
     generic shell model Hamiltonian H = Hmf + Vres (see
     `ncci.operators.tb.ShellModelHamiltonian`), depending on `basis_mode`
 
- 
-----------------------------------------------------------------
+
 ## input TBME parameters ##
 
 - `interaction_file`: `str`
