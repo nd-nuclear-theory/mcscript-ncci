@@ -35,34 +35,51 @@ University of Notre Dame
 ## Hamiltonian parameters ##
 
 - `interaction`: `str`
-  - name for interaction (for use in descriptor and filenames)
-  - interaction descriptor override (for menj)
+  - name for interaction
+    + used in generating task descriptor
+    + used in constructing interaction filename, assuming it is of the
+      "standard" form `<interaction>-<truncation>-<hw>.{dat,bin}`, e.g.,
+      `JISP16-tb-6-20.0.bin`
+  - for menj (optional): override interaction name to be used in descriptor,
+    which otherwise defaults to an interaction name automatically constructed by
+    combining `me2j_file_id` and `me3j_file_id`
 
 - `use_coulomb`: `bool`
-  - whether or not to include Coulomb
+  - whether or not to add an explicit point-proton Coulomb potential to the
+    given internucleon interaction
 
 - `a_cm`: `float`
-  - coefficient of N_cm for Lawson term
+  - coefficient of N_cm operator for Lawson term (a_cm*N_cm)
+  - related to traditional (dimensionful) lambda parameter, at any given hw, by
+    a factor of hw
+  - for illustrations of its effect, see, e.g., Figs. 8-9 of PRC 86, 034312
+    (2012) [http://dx.doi.org/10.1103/PhysRevC.86.034312]
 
 - `hw_cm`: `float`, optional
   - hw of N_cm for Lawson term
   - If `None`, use hw of basis
 
-- `tbme_scaling_power`: `float`
+- `include_ke`: `bool`, optional
+  - whether or not to include explicit intrinsic kinetic energy term (Tintr) in
+    Hamiltonian (see `ncci.operators.tb.Hamiltonian`)
+  - defaults to `True`
+  - provides the ability to "turn off" the explicit kinetic energy if the
+    provided "interaction" TBME file already actually contains a complete
+    A-specific two-body Hamiltonian (e.g., from IM-SRG)
+
+- `tbme_scaling_power`: `float`, optional
   - exponent for phenomenological scaling of shell model Hamiltonian TBMEs, typically `0.3`
-  - used only with shell model
+  - used only with phenomenological shell model Hamiltonian
 
-- `hamiltonian`: `CoefficientDict`
+- `hamiltonian`: `CoefficientDict`, optional
   - specification of Hamiltonian as a `CoefficientDict` of
-    two-body operators passed as sources to h2mixer (see `ncci.operators.tb`)
-  - If `None`, use standard H = Tintr + VNN + a_cm*N_cm for NCCI (see
-    `ncci.operators.tb.Hamiltonian`) or H = Hmf + Vres for shell model (see
-    `ncci.operators.tb.ShellModelHamiltonian`)
+    two-body operators,  passed as sources to h2mixer (see `ncci.operators.tb`)
+  - if `None`, the Hamiltonian defaults either to the generic NCCI Hamiltonian H
+    = Tintr + VNN + a_cm*N_cm (see `ncci.operators.tb.Hamiltonian`) or the
+    generic shell model Hamiltonian H = Hmf + Vres (see
+    `ncci.operators.tb.ShellModelHamiltonian`), depending on `basis_mode`
 
-- `include_ke`: `bool`
-  - the default value is True. (see `ncci.operators.tb.Hamiltonian`)
-  - if the interaction TBMEs already include Kinetic energy (Tintr) set this parameter to False
-  
+ 
 ----------------------------------------------------------------
 ## input TBME parameters ##
 
@@ -105,12 +122,12 @@ University of Notre Dame
   - hw to which to rescale Coulomb TBMEs before two-body transformation
   - If `None`, use hw of basis
   - Suggested values:
-    - direct oscillator run: naturally same as hw to avoid any two-body transformation
-    - dilated oscillator run: naturally same as hw to avoid any two-body
-      transformation, but one could also prefer hw_int for uniformity in the
+    - direct oscillator run: naturally same as `hw` to avoid any two-body transformation
+    - dilated oscillator run: naturally same as `hw` to avoid any two-body
+      transformation, but one could also prefer `hw_int` for uniformity in the
       two-body transformation (at the expense of introducing some
       transformation error in the Coulomb interaction)
-    - generic run: naturally same as hw_int for uniformity in the two-body transformation
+    - generic run: naturally same as `hw_int` for uniformity in the two-body transformation
 
 - `target_truncation`, optional: weight max tuple
   - truncation of target TBMEs, as weight_max tuple
@@ -291,8 +308,9 @@ TODO 03/21/24 (mac): postprocessor parameters need to be documented
   - maximum oscillator quanta for 3-body truncation
   - it is assumed that the me3j files are in triangular truncation, so that
     eMax=E3Max (i.e., N1max=N3max) (see call to ME3J_Init in menj.c)
-  - this number is used to construct the "eMax{:d}_EMax{:d}" portion of the filename for
-    the me3j interaction file to be read (e.g., E3Max=12 give "eMax12_EMax12")
+  - this number is used to construct the `eMax{:d}_EMax{:d}` portion of the
+    filename for the me3j interaction file to be read (e.g., for E3Max=12 give
+    `eMax12_EMax12`)
 
 - `me2j_file_id` : `str`
   - base part of the filename for the me2j interaction file

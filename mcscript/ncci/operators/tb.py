@@ -767,8 +767,9 @@ def get_tbme_targets(task):
             }):
                 targets[(0,0,0)]["H"] = Hamiltonian(
                     A=A, hw=hw, a_cm=a_cm, hw_cm=hw_cm,
+                    include_ke=task.get("include_ke", True),
                     use_coulomb=task["use_coulomb"], hw_coul=hw_coul,
-                    hw_coul_rescaled=hw_coul_rescaled
+                    hw_coul_rescaled=hw_coul_rescaled,
                 )
             elif task["basis_mode"] is modes.BasisMode.kShellModel:
                 core_nucleons = sum(task["truncation_parameters"]["mb_core"])
