@@ -51,7 +51,7 @@ def task_handler_mfdn_postprocessor_salvage_mfdn_levels(task):
     # go to work directory
     os.chdir(work_dir)
 
-    # generate mfdn_smwf.info with dummy tail
+    # generate dummy levels section for mfdn_smwf.info
     dummy_J=task["truncation_parameters"]["M"]
     num_eigenvectors = task["eigenvectors"]
     if not os.path.isfile("mfdn_smwf.info_stub"):
@@ -85,7 +85,6 @@ def task_handler_mfdn_postprocessor_salvage_mfdn_levels(task):
     operator_id_list = ["H", "J2", "T2"]
     for operator_id in operator_id_list:
         mcscript.control.call(["h2conv", "15200", "tbme-{}.bin".format(operator_id), "tbme-{}-v15200.bin".format(operator_id)])
-        
     
     # for each state: run postprocessor and harvest observables
     dummy_J=task["truncation_parameters"]["M"]
@@ -162,7 +161,7 @@ def task_handler_mfdn_postprocessor_salvage_mfdn_levels(task):
         state_info["T"] = T
     print("Extracted state data: {}".format(state_info_list))
     
-    # generate mfdn_smwf.info with dummy tail
+    # generate state listing section for mfdn_smwf.info
     dummy_J=task["truncation_parameters"]["M"]
     num_eigenvectors = task["eigenvectors"]
     if not os.path.isfile("mfdn_smwf.info_stub"):
