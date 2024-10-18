@@ -33,6 +33,58 @@ def task_handler_mfdn_postprocessor_salvage_mfdn_levels(task):
 
               "tb_observable_sets": ["am-sqr", "isospin"],
 
+    Instructions:
+
+        Presumably your initial phases were:
+
+            phase_handler_list= [
+                ncci.handlers.task_handler_mfdn_pre,
+                ncci.handlers.task_handler_mfdn_run,
+                ncci.handlers.task_handler_mfdn_post,
+            ]
+
+        For the failed tasks, you have successfully run phase 0 (mfdn_pre), and
+        have a "failed" phase 1 (mfdn_run).
+
+        Let us also assume that you do *not* yet have TBME files for the J^2 and
+        T^2 operators in your working directory.  (If you do, you can in
+        principle skip the rerun of the mfdn_pre phase below.)
+
+        First complete all processing for any successfully run tasks.  Since now
+        we are going to have to tinker with the phase handler list and
+        (possibly) the set of two-body observables.  Then you may wish to set
+        your task_mask so that you only run the tasks where salvaging is needed.
+
+        Then proceed as follows:
+
+          - Update your phases to:
+
+            phase_handler_list= [
+                ncci.handlers.task_handler_mfdn_pre,
+                ncci.handlers.task_handler_mfdn_run,
+                # ncci.handlers.task_handler_mfdn_post,        
+                ncci.handlers.task_handler_mfdn_pre,
+                mcscript.ncci.postprocessing_salvage.task_handler_mfdn_postprocessor_salvage_mfdn_levels,
+                ncci.handlers.task_handler_mfdn_post,        
+             ],
+        
+          - Add J^2 and T^2 as two-body observables, in your task dictionary, so
+            that the mfdn_pre phase will generate TBMEs for them:
+  
+              "tb_observable_sets": ["am-sqr", "isospin"],
+
+          - For each task you wish to salvage:
+
+              + Manually rename the "task-xxxx-1.fail" file in the flags
+              directory to "task-xxxx-1.done", so that the scripting will be
+              willing to go on to subsequent phases.
+
+              + Run phases 2-4.  The compute-intensive phase is the salvage
+              phase (phase 3), which invokes the postprocessor mfdn-transitions.
+              Make sure the parallel run parameters (nodes, ranks, etc.) are
+              chosen as you usually would for a two-body postprocessing run on
+              the given wave functions.
+
     Arguments:
         task (dict): as described in module docstring
 
