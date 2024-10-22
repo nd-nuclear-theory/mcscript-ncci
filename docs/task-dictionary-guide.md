@@ -10,6 +10,7 @@ University of Notre Dame
 + 06/20/24 (mac): Add descriptions of decomposition parameters.
 + 09/12/24 (mac): Update descriptions of menj parameters.
 + 09/26/24 (mac): Update descriptions of Hamiltonian parameters.
++ 10/22/24 (mac): Update descriptions of version parameters.
 
 ----------------------------------------------------------------
 ## nuclide parameters ##
@@ -254,13 +255,22 @@ University of Notre Dame
 ## version parameters ##
 
 - `h2_format`: `int`
-  - h2 file format to use (values include: 0, 15099)
+  - h2 file format to use for TBME output files from h2mixer (to serve as input to mfdn or mfdn-transitions)
+  - must be an h2 format accepted by that code
+  - values include: 0, 15099, 15200
+
+- `h2_extension`: `str`
+  - h2 file extension to use for TBME output files from h2mixer (to serve as input to mfdn or mfdn-transitions)
+  - values: `"dat"`, `"bin"`
+
+- `mfdn_driver`: module
+  - mfdn driver module
 
 - `mfdn_executable`: `str`,
   - mfdn executable name
 
-- `mfdn_driver`: module
-  - mfdn driver module
+- `mfdn-transitions_executable`: `str`
+  - mfdn-transitions executable name
 
 ----------------------------------------------------------------
 ## natural orbital parameters ##
