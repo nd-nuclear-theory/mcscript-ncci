@@ -23,12 +23,16 @@ mcscript.control.init()
 # build task list
 ##################################################################
 
+# TBME paths
 ncci.environ.interaction_dir_list = [
-    "example-data"
+    # paths to TBME files for interactions
+    "daejeon16-tb-6",
+    "jisp16-tb-6",
+    "coulomb-tb-6",
 ]
-
 ncci.environ.operator_dir_list = [
-    "example-data"
+    # paths to TBME files for observables
+    "casimir-tb-6",
 ]
 
 task = {

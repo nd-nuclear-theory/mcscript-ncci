@@ -55,77 +55,86 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
 
   The environment variable `NCCI_DATA_DIR_H2` is used to tell `mcscript-ncci`
   where to find interaction TBME files.  The scripting will search for TBME
-  files in the directory given by `NCCI_DATA_DIR_H2`.  This may be given as a
-  colon-separated list of directories to search.  That is, TBME files are
-  expected to live in subdirectories of this directory, following this naming
+  files in the directory (or a series of directories) given by
+  `NCCI_DATA_DIR_H2`.  This may be given as a colon-separated list of
+  directories to search, e.g., there might be one set of interaction files in a
+  shared group project "data" directory, and another in your own private "data"
+  directory.
+  
+  Then, TBME files are expected to live in subdirectories of this directory,
+  e.g., typically all the interaction files for the same interaction (but at
+  different hw, with different regulator or SRG parameter, etc.) might lie in
+  the same subdirectory.  The files themselves are expected by the scripting
+  (though this can be overriden if needed) to follow a standard naming
   convention:
 
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  <subdirectory_name>/<interaction_name>-<ob|tb>-<N1bmax|N2bmax>-<hw>.bin
+  <interaction_name>-<ob|tb>-<N1bmax|N2bmax>-<hw>.bin
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  e.g., ```run0164-JISP16-tb-20/JISP16-tb-20-20.bin```.
+  Thus, e.g., the group's library of interaction files may be in a shared
+  directory ```/project/data/h2```.  This is where the environment variable
+  `NCCI_DATA_DIR_H2` should point.  Then there might be subdirectories
+  `daejeon16`, `jisp16`, etc., for different interactions.  These will be
+  specified in your run script.  Then individual files might have names like
+  ```run0164-JISP16-tb-20/JISP16-tb-20-20.bin```.
 
-  #### @NDCRC: ####
-  `.cshrc` or `.tcshrc`:
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # mcscript-ncci
-  setenv GROUP_HOME "/afs/crc.nd.edu/group/nuclthy"
-  setenv NCCI_DATA_DIR_H2 "${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/docs/examples"
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  There are in fact several such environment variables indicating directories in
+  which the scripting should search for various types of data file:
 
-  `.bashrc` or `.bash_profile`:
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # mcscript-ncci
-  export GROUP_HOME="/afs/crc.nd.edu/group/nuclthy"
-  export NCCI_DATA_DIR_H2="${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/docs/examples"
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    * `NCCI_DATA_DIR_H2` for two-body matrix element files
 
-  #### @NERSC: ####
-  `.cshrc` or `.tcshrc`:
+    * `NCCI_DATA_DIR_REL` for relative matrix element files
+
+    * `NCCI_DATA_DIR_DECOMPOSITION` for decomposition operators coefficient files
+
+  However, only `NCCI_DATA_DIR_H2` need be set for ordinary MFDn diagonalization runs.
+
+  E.g., for running under project m2032 at NERSC:
+
+  For `.cshrc` or `.tcshrc`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
   # Use read-only mount point for /global/cfs/cdirs/m2032.
   # See https://docs.nersc.gov/performance/io/dvs/.
   setenv GROUP_HOME "/dvs_ro/cfs/cdirs/m2032"
-  setenv NCCI_DATA_DIR_H2 "${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/docs/examples"
+  setenv NCCI_DATA_DIR_H2 "${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/docs/examples/example-data"
+  setenv NCCI_DATA_DIR_DECOMPOSITION "${GROUP_HOME}/data/u3-subspaces/decomposition:${HOME}/code/mcscript-ncci/docs/examples/example-data"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  `.bashrc` or `.bash_profile`:
+  For `.bashrc` or `.bash_profile`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
   # Use read-only mount point for /global/cfs/cdirs/m2032.
   # See https://docs.nersc.gov/performance/io/dvs/.
   export GROUP_HOME="/dvs_ro/cfs/cdirs/m2032"
-  export NCCI_DATA_DIR_H2="${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/docs/examples"
+  export NCCI_DATA_DIR_H2="${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/docs/examples/example-data"
+  export NCCI_DATA_DIR_DECOMPOSITION="${GROUP_HOME}/data/u3-subspaces/decomposition:${HOME}/code/mcscript-ncci/docs/examples/example-data"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  There are in fact several such environment variables indicating directories in
-  which the scripting should search for various types of data file:
-
-  * `NCCI_DATA_DIR_H2` for two-body matrix element files
-
-  * `NCCI_DATA_DIR_REL` for relative matrix element files
-
-  * `NCCI_DATA_DIR_DECOMPOSITION` for decomposition operators coefficient files
-
-  But only `NCCI_DATA_DIR_H2` need be set for ordinary MFDn diagonalization runs.
-
+  Or, at the ND CRC, one would set `GROUP_HOME="/afs/crc.nd.edu/group/nuclthy"`
+  and then proceed identically.  On your own laptop or workstation, you might
+  substitute `GROUP_HOME=${HOME}`.
+  
   If you use `mcscript-ncci` to postprocess wave functions, you will also need
-  to set the environment variable `NCCI_LIBRARY_PATH`, to tell `mcscript-ncci`
-  where to find the results of prior runs (that is, the results, wave function,
-  and task data files).  This may be given as a colon-separated list of
-  directories to search.  For example, if your current runs are in
-  `${SCRATCH}/runs`, runs retrieved from tape are in `${SCRATCH}/library`, and
-  the example runs are in `${HOME}/code/mcscript-ncci/docs/examples`, you might
-  define the following search path:
+  to set one more environment variable:
+  
+    * `NCCI_LIBRARY_PATH` for run directories containing wave functions
+    
+  This will tell `mcscript-ncci` where to find the results of prior runs (that
+  is, the numerical results files, wave function files, and task data files).
+  This may be given as a colon-separated list of directories to search.  For
+  example, if your current runs are in `${SCRATCH}/runs`, runs retrieved from
+  tape are in `${SCRATCH}/library`, and the example runs are in
+  `${HOME}/code/mcscript-ncci/docs/examples`, you might define the following
+  search path:
 
-  `.cshrc` or `.tcshrc`:
+  For `.cshrc` or `.tcshrc`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   setenv NCCI_LIBRARY_PATH "${SCRATCH}/runs:${SCRATCH}/library:${HOME}/code/mcscript-ncci/docs/examples"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  `.bashrc` or `.bash_profile`:
+  For `.bashrc` or `.bash_profile`:
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   export NCCI_LIBRARY_PATH="${SCRATCH}/runs:${SCRATCH}/library:${HOME}/code/mcscript-ncci/docs/examples"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

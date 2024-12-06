@@ -32,12 +32,12 @@ mcscript.control.init()
 
 # TBME paths (for operators used in decompositions)
 ncci.environ.operator_dir_list = [
-    "example-data",
+    "casimir-tb-6",
 ]
 
 # decomposition coefficient paths
 ncci.environ.decomposition_dir_list = [
-    "example-data",
+    "decomposition-Z03-N03",
 ]
 
 ##################################################################
