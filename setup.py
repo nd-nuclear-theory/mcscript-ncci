@@ -2,7 +2,7 @@ from setuptools import setup, find_namespace_packages
 
 setup(
     name="mcscript-ncci",
-    version="2.0.0",
+    version="2.1.0",
     author="Mark A. Caprio, Patrick J. Fasano, University of Notre Dame",
     description=("Scripting for NCCI runs"),
     license="MIT",
