@@ -210,7 +210,7 @@ def generate_moshinsky_targets(task):
         relative_source = rel_sources[relative_id]
         truncation = parameters["truncation"]
         rel_filename = relative_filename_for_source(relative_id, relative_source)
-        tbme_filename = environ.tmbe_filename(
+        tbme_filename = environ.tbme_filename(
             name, truncation, relative_source['hw'], ext=task.get("h2_extension", "bin")
         )
 
@@ -277,7 +277,7 @@ def save_moshinsky(task):
     for (basename, _, parameters) in task.get("moshinsky_targets", []):
         source_id = parameters["id"]
         source = rel_sources[source_id]
-        filename = environ.tmbe_filename(
+        filename = environ.tbme_filename(
             basename, parameters["truncation"], source['hw'], task.get("h2_extension", "bin")
         )
         mcscript.task.save_results_single(

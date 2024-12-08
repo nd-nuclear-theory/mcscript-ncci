@@ -69,7 +69,7 @@ and using 64 of the KNL processor's physical cores (to leave a couple in reserve
 for system tasks), there are 256 logical cores available per KNL node.  So,
 splitting those over 4 ranks, she ran with 64 threads per rank.  Alice was using
 the `mcscript` job submission tool `qsubm`, so her submission parameters were
-`--ranks=66 --nods=17 --threads=64` (and `--serialthreads=256` for the "serial",
+`--ranks=66 --nodes=17 --threads=64` (and `--serialthreads=256` for the "serial",
 i.e., OpenMP-parallelized, setup codes from `shell`, which are run before either
 `mfdn` or `mfdn-transitions` to generate the OBME/TBME files).
 

@@ -133,10 +133,7 @@ def generate_h2mixer_tbme_source_lines(identifier, parameters, postfix):
     if filename is not None:
         tbme_filename = mcscript.utils.expand_path(filename)
         if not os.path.isfile(tbme_filename):
-            tbme_filename = mcscript.utils.search_in_subdirectories(
-                environ.data_dir_h2_list, environ.operator_dir_list,
-                filename, fail_on_not_found=True
-                )
+            tbme_filename = environ.find_operator_file(tbme_filename)
 
         if identifier in operators.tb.k_h2mixer_builtin:
             warnings.warn(
@@ -185,10 +182,12 @@ def generate_tbme(task, postfix=""):
         postfix (string, optional): identifier added to input filenames
     """
     # extract parameters for convenience
-    hw = task["hw"]
+    hw = task.get("hw")
     hw_int = task.get("hw_int", hw)
 
     # sanity check on hw
+    if (task["basis_mode"] is not modes.BasisMode.kShellModel) and (hw is None):
+        raise ValueError("invalid basis mode {basis_mode} for hw=None (please specify hw explicitly)".format(**task))
     if (task["basis_mode"] is modes.BasisMode.kDirect) and (hw != hw_int):
         raise mcscript.exception.ScriptError(
             "Using basis mode {basis_mode} but hw = {hw} and hw_int = {hw_int}".format(**task)
@@ -277,7 +276,12 @@ def generate_tbme_targets(task, targets, target_qn, postfix=""):
     ))
     lines.append("set-target-multipolarity {:d} {:d} {:d}".format(*target_qn))
     lines.append("set-output-format {h2_format}".format(**task))
-    lines.append("set-mass {A}".format(A=A))
+    if task["basis_mode"] is modes.BasisMode.kShellModel:
+        mb_core = task["truncation_parameters"]["mb_core"]
+        num_nucleons = A - sum(mb_core)
+    else:
+        num_nucleons = A
+    lines.append("set-mass {num_nucleons}".format(num_nucleons=num_nucleons))
     lines.append("")
 
     # xform sources: collect unique filenames

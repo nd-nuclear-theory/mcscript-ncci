@@ -27,10 +27,14 @@ mcscript.control.init()
 
 # TBME paths
 ncci.environ.interaction_dir_list = [
-    "example-data",
+    # paths to TBME files for interactions
+    "daejeon16-tb-6",
+    "jisp16-tb-6",
+    "coulomb-tb-6",
 ]
 ncci.environ.operator_dir_list = [
-    "example-data"
+    # paths to TBME files for observables
+    "casimir-tb-6",
 ]
 
 ##################################################################
@@ -90,12 +94,6 @@ tasks = [
         "basis_mode": ncci.modes.BasisMode.kDirect,
         "hw": hw,
 
-        # transformation parameters
-        "xform_truncation_int": None,
-        "xform_truncation_coul": None,
-        "hw_coul_rescaled": None,
-        "target_truncation": None,
-
         # traditional oscillator many-body truncation
         "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
         "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
@@ -114,27 +112,24 @@ tasks = [
         "partition_filename": None,
 
         # obdme parameters
-        ## "hw_for_trans": 20,
         "obdme_multipolarity": 2,
-        # "obdme_reference_state_list": [(0.0, 0, 1)],
         "save_obdme": True,
         "ob_observable_sets": ['M1', 'E2'],
 
-        # two-body observables
-        "tb_observable_sets": ["H-components","am-sqr", "isospin"],
-        # "tb_observable_sets": ["H-components"],
+        # two-body observables (for expectation values)
+        "tb_observable_sets": ["H-components", "isospin"],
         "tb_observables": [
-            ("CSU3",  (0,0,0), {"CSU3-U": 1/(A-1), "CSU3-V": 1.0}),
-            ("CSp3R", (0,0,0), {"CSp3R-U": 1/(A-1), "CSp3R-V": 1.0}),
-            ],
+            ## ("CSU3",  (0,0,0), {"CSU3-U": 1/(A-1), "CSU3-V": 1.0}),
+            ## ("CSp3R", (0,0,0), {"CSp3R-U": 1/(A-1), "CSp3R-V": 1.0}),
+        ],
 
-        # sources
+        # sources (for observable construction)
         "obme_sources": [],
         "tbme_sources": [
-            ("CSU3-U", {"filename": "CSU3-U-tb-6.bin", "qn": (0,0,0)}),
-            ("CSU3-V", {"filename": "CSU3-V-tb-6.bin", "qn": (0,0,0)}),
-            ("CSp3R-U", {"filename": "CSp3R-U-tb-6.bin", "qn": (0,0,0)}),
-            ("CSp3R-V", {"filename": "CSp3R-V-tb-6.bin", "qn": (0,0,0)}),
+            ## ("CSU3-U", {"filename": "CSU3-U-tb-6.bin", "qn": (0,0,0)}),
+            ## ("CSU3-V", {"filename": "CSU3-V-tb-6.bin", "qn": (0,0,0)}),
+            ## ("CSp3R-U", {"filename": "CSp3R-U-tb-6.bin", "qn": (0,0,0)}),
+            ## ("CSp3R-V", {"filename": "CSp3R-V-tb-6.bin", "qn": (0,0,0)}),
         ],
 
         # wavefunction storage

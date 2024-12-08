@@ -1,11 +1,24 @@
 """masks.py -- masks for state-pair selection in postprocessor runs
 
+   Note: Mask functions have access to the bra and ket "merged" results data objects through
+
+       task["metadata"]["bra_results_data"]
+       task["metadata"]["ket_results_data"]
+
+   This allows finer masking to be done based on calculated properties of the
+   bra and ket states, e.g., energy or isospin.
+
+   However, the masks (as the API is presently implemented) have no knowledge of
+   the operator.  All operators are masked the same.
+ 
+
     - 05/11/22 (mac): Created, extracted from run scripts (runmac0633),
         originally task_handler_postprocessor.py.
     - 08/13/22 (pjf): Add mask_good_J().
     - 11/20/22 (mac): Add mask_by_energy_cutoff().
     - 01/03/23 (mac): Provide "negate_mask" option for mask_allow_near_yrast.
     - 03/21/24 (mac): Add mask_transitions().
+
 """
 
 import math
@@ -222,7 +235,7 @@ def mask_by_energy_cutoff(task:dict, mask_params:dict, qn_pair, verbose=False):
     ket_results_data = task["metadata"]["ket_results_data"]
     bra_results_data = task["metadata"]["bra_results_data"]
     Ei = ket_results_data.get_energy(qni)
-    Ef = ket_results_data.get_energy(qnf)
+    Ef = bra_results_data.get_energy(qnf)
     allow = True
     allow &= E_max is None or Ei<=E_max
     allow &= E_max is None or Ef<=E_max

@@ -1,20 +1,33 @@
-ND MFDn workflow quickstart guide
+# ND MFDn workflow quickstart guide #
 
 Some initial pointers on where to look to get started.
 
 04/17/23 (mac): Created (with slv, zz, ...).
-06/16/23 (mac): Add mfdn-postprocessor installation instructions.
+06/16/23 (mac): Add mfdn-transitions installation instructions.
+06/14/24 (mac): Add notes on Ubuntu installation for mfdn/mfdn-transitions.
+06/18/24 (mac): Expand notes on ndconfig.
 
 ----------------
 
 # ndconfig #
 
-  This repository provides "configuration" makefiles which are needed to compile
-  some of our codes under specific compilers and on specific computing systems
-  (e.g., at NERSC).  It also provides "environment" files, which you should
-  "source" into csh or bash, to set environment variables appropriate to a given
-  computing environment (e.g., NERSC).  So this repository should be set up
-  before any of the codes get compiled.
+  The `ndconfig` repository provides "environment" files, which you should
+  "source" into `tcsh` or `bash`.  This is how you load the various module files
+  needed to compile and run our codes in a given computing environment (e.g.,
+  NERSC).  You will need to source the appropriate environment file both before
+  *compiling* the codes (below) and then again before *running* these codes (or
+  submitting jobs using these codes).  Failure to do so may result in compiled
+  code that is inappropriate to run on the given computing system: it might run
+  but be grossly inefficient (since it does not use the appropriate optimized
+  libraries), or it might fail at runtime (due to obvious reasons, such as
+  missing shared libraries, or more subtle reasons leading to, e.g.,
+  segmentation faults)
+  
+  The `ndconfig` repository also provides makefile "configuration" files.  These
+  provide various compiler-specific and system-specific definitions which are
+  needed to compile some of our codes.
+  
+  Thus, this repository needs to be set up before compiling `shell` below.
   
   - Cloning.  Clone the `ndconfig` repository.
 
@@ -23,10 +36,11 @@ Some initial pointers on where to look to get started.
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   - Instructions.  See `INSTALL.md` for instructions.  For now, only consider
-    the instructions in section 0 "Setting up `ndconfig`", which instructs you
-    to set the `NDCONFIG_DIR` environment variable in your shell initialization
-    file.  (The remainder of the instructions cover building codes that use
-    `ndconfig`, such as `shell`, which we will tackle below.)
+    the instructions in Section 0 "Retrieving and installing `ndconfig`", which
+    instructs you to set the `NDCONFIG_DIR` environment variable in your shell
+    initialization file.  (The remainder of the instructions cover building
+    codes that use `ndconfig`, such as `shell`, which we will tackle later,
+    below.)
 
 # shell #
 
@@ -61,18 +75,23 @@ Some initial pointers on where to look to get started.
     % git clone https://github.com/nd-nuclear-theory/mfdn.git
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    These are both private repositories, and require read permission to be
-    granted by ISU or ND, respectively.
+    These are both private repositories.  In order to access these repositories,
+    you will need to submit your github userid to your contact person on that
+    repository and request read permission.
 
+  - Branch.  The CPU version of the code is on the `master` branch, or the
+    `develop` branch for the latest updates.  The GPU version of the code is on
+    the `port_GPU_ACC` branch.  Check out whichever branch you wish to use.
+  
   - Instructions.  See `README.md` for installation instructions.  Important
     topics include:
 
     + Setting up a symlink to the appropriate config file.  (These are local to
       mfdn's repository, not our standard ndconfig config.mk files.)  For example:
 
-      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-       % ln -s config/config_Perlmutter_CPU_gnu.mk config.mk
-      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     % ln -s config/config_Perlmutter_CPU_gnu.mk config.mk
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     + Recommendations on modules to load.  For instance, on Cori at one point,
     better performance was obtained by unloading the default cray-libsci module,
@@ -80,6 +99,20 @@ Some initial pointers on where to look to get started.
 
     + Different compilation modes to select for (a) the interaction file format
       and (b) the eigensolver.
+
+  - If you are installing locally on a Linux (Ubuntu) system, instead use this
+    config file (as of June 2024, only available on the develop branch):
+ 
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+       % ln -s config/config_ubuntu_gnu.mk config.mk
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 
+    You will also need to have the correct software environment installed:
+
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      % sudo apt install build-essential gfortran
+      % sudo apt install intel-mkl
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   - Environment.  You can source our usual "env" file from ndconfig, for
     whichever system and compiler you are targeting.  But beware that the
@@ -165,11 +198,14 @@ Some initial pointers on where to look to get started.
     % git clone https://github.com/isu-nuclear-theory/mfdn-transitions.git
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    These are both private repositories, and require read permission to be
-    granted by ND or ISU, respectively.
+    These are both private repositories.  In order to access these repositories,
+    you will need to submit your github userid to your contact person on that
+    repository and request read permission.
 
   - Environment.  You can source our usual "env" file from ndconfig, for
-    whichever system and compiler you are targeting.
+    whichever system and compiler you are targeting.  Or see notes under `mfdn`
+    for software you may need to have installed to build locally on a Linux
+    (Ubuntu) system.
 
   - Building.  This code is built using CMake.  See instructions in `INSTALL.md`.
   

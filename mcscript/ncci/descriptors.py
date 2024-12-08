@@ -24,6 +24,7 @@ University of Notre Dame
 - 09/14/23 (slv): Add task_descriptor_menj.
 - 01/16/24 (zz): Revise task_descriptor_menj and add task_descriptor_menj_trans. 
 - 02/12/24 (zz): Revise task_descriptor_menj and task_descriptor_menj_trans.
+- 07/27/24 (mac): Add task_descriptor_10 for shell model runs.
 
 """
 import mcscript.exception
@@ -31,11 +32,10 @@ import mcscript.utils
 
 from . import modes
 
-
 _parity_map = {+1: "g0", -1: "g1", 0: "gx"}
 
 ################################################################
-# task descriptor for h2mixer + mfdn run
+# task descriptors for h2mixer + mfdn runs (and postprocessing)
 ################################################################
 
 def task_descriptor_7(task):
@@ -94,6 +94,7 @@ def task_descriptor_7(task):
 
     return descriptor
 
+
 def task_descriptor_7b(task):
     """Task descriptor format 7b
 
@@ -118,7 +119,7 @@ def task_descriptor_7b(task):
         raise mcscript.exception.ScriptError("mode not supported by task descriptor")
 
     truncation_parameters = task["truncation_parameters"]
-    truncation_int = mcscript.utils.ifelse(task.get("xform_truncation_int"), task["xform_truncation_int"], task["truncation_int"])
+    truncation_int = mcscript.utils.ifelse(task.get("xform_truncation_int"), task.get("xform_truncation_int"), task["truncation_int"])
     Ncut = "{:s}{:02d}".format(*truncation_int)
     if task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kFCI:
         fci_indicator = "-fci"
@@ -138,6 +139,7 @@ def task_descriptor_7b(task):
         )
 
     return descriptor
+
 
 def task_descriptor_7_trans(task):
     """Task descriptor format 7_trans
@@ -179,112 +181,6 @@ def task_descriptor_7_trans(task):
         M_field=M_field,
         subset_field=subset_field,
         natural_orbital_indicator=natural_orbital_indicator,
-        **mcscript.utils.dict_union(task, truncation_parameters)
-    )
-
-    return descriptor
-
-################################################################
-# task descriptor for menj runs
-################################################################
-
-def task_descriptor_menj(task):
-    """Task descriptor format 7 for menj runs 
-
-        TO DO (slv) : Create appropriate doc string
-
-        Overhaul for new h2utils scripting:
-        - Strip back down to basic form for oscillator-like runs only.
-        - Adjust some field labels.
-        - Add tolerance.
-        - Provide default Nstep=2 for convenience when used in transitions run.
-    """
-    if (
-        task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kNmax
-        and
-        task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated)
-        and
-        task["mfdn_variant"] is modes.VariantMode.kMENJ
-    ):
-        # traditional oscillator run
-        template_string = (
-            "Z{nuclide[0]}-N{nuclide[1]}"
-            "{interaction_indicator}"
-            "-hw{hw:06.3f}"
-            "-a_cm{a_cm:g}"
-            "-Nmax{Nmax:02d}-Mj{M:03.1f}"
-            "-lan{max_iterations:d}-tol{tolerance:.1e}"
-            )
-    else:
-        raise mcscript.exception.ScriptError("mode not supported by task descriptor")
-
-    truncation_parameters = task["truncation_parameters"]
-    if task.get("interaction") is None:
-        if task.get("use_3b"):
-            interaction_indicator = "-menj-{me2j_file_id}-ME3JID-{me3j_file_id}-N3max{E3Max}".format(**mcscript.utils.dict_union(task, truncation_parameters))
-        else:
-            interaction_indicator = "-menj-{me2j_file_id}".format(**mcscript.utils.dict_union(task, truncation_parameters))
-    else:
-        interaction_indicator = "-{interaction}".format(**mcscript.utils.dict_union(task, truncation_parameters))
-    # if task.get("use_3b"):
-    #     me3j_indicator = "-ME3JID-{me3j_file_id}-N3max{E3Max}".format(**mcscript.utils.dict_union(task, truncation_parameters))
-    # else:
-    #     me3j_indicator = ""    
-    descriptor = template_string.format(
-        interaction_indicator=interaction_indicator,
-        **mcscript.utils.dict_union(task, truncation_parameters)
-        )
-
-    return descriptor
-
-def task_descriptor_menj_trans(task):
-    """Task descriptor format menj_trans
-
-        Set up for use with transitions:
-        - Remove dependence on basis modes (assumed Nmax mode).
-        - Remove max_iterations, and tolerance dependence.
-        - Make M dependence optional.
-        - Strip mixed parity and fci indicators.
-        - Remove a_cm field (may need to restore later).
-        - Provide subsetting index.
-    """
-    if (
-        task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kNmax
-        and
-        task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated)
-        and
-        task["mfdn_variant"] is modes.VariantMode.kMENJ
-    ):
-        template_string = (
-            "Z{nuclide[0]}-N{nuclide[1]}"
-            "{interaction_indicator}"
-            "-hw{hw:06.3f}"
-            ##"-a_cm{a_cm:g}"
-            "-Nmax{Nmax:02d}"
-            "{M_field}"
-            "{subset_field}"
-        )
-    else:
-        raise mcscript.exception.ScriptError("mode not supported by task descriptor")
-    truncation_parameters = task["truncation_parameters"]
-    if task.get("interaction") is None:
-        if task.get("use_3b"):
-            interaction_indicator = "-menj-{me2j_file_id}-ME3JID-{me3j_file_id}-N3max{E3Max}".format(**mcscript.utils.dict_union(task, truncation_parameters))
-        else:
-            interaction_indicator = "-menj-{me2j_file_id}".format(**mcscript.utils.dict_union(task, truncation_parameters))
-    else:
-        interaction_indicator = "-{interaction}".format(**mcscript.utils.dict_union(task, truncation_parameters))
-    # if task.get("use_3b"):
-    #     me3j_indicator = "-ME3JID-{me3j_file_id}-N3max{E3Max}".format(**mcscript.utils.dict_union(task, truncation_parameters))
-    # else:
-    #     me3j_indicator = ""
-    ##natural_orbital_indicator = mcscript.utils.ifelse(task.get("natural_orbitals"), "-natorb", "")
-    M_field = "-Mj{M:03.1f}".format(**truncation_parameters) if (truncation_parameters.get("M") is not None) else ""
-    subset_field = "-subset{subset[0]:03d}".format(**task) if (task.get("subset") is not None) else ""
-    descriptor = template_string.format(
-        interaction_indicator=interaction_indicator,
-        M_field=M_field,
-        subset_field=subset_field,
         **mcscript.utils.dict_union(task, truncation_parameters)
     )
 
@@ -380,6 +276,35 @@ def task_descriptor_9(task):
     return descriptor
 
 
+def task_descriptor_10(task):
+    """Task descriptor format 10.
+
+       Stripped-down descriptor for traditional shell model runs.
+
+    """
+    # Note: May later want to add truncation parameters for weight-based shell model truncations.
+    if (
+        task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kManual
+        and
+        task["basis_mode"] is modes.BasisMode.kShellModel
+    ):
+        template_string = (
+            "Z{nuclide[0]}-N{nuclide[1]}-{interaction}"
+            "-Mj{M:03.1f}"
+            "-lan{max_iterations:d}-tol{tolerance:.1e}"
+            )
+    else:
+        raise mcscript.exception.ScriptError("mode not supported by task descriptor")
+
+    truncation_parameters = task["truncation_parameters"]
+
+    descriptor = template_string.format(
+        **mcscript.utils.dict_union(task, truncation_parameters)
+        )
+
+    return descriptor
+
+
 def task_descriptor_decomposition_1(task):
     """Task descriptor for decomposition.
 
@@ -424,6 +349,118 @@ def task_descriptor_decomposition_2(task):
     return descriptor
 
 
+################################################################
+# task descriptor for mfdn menj runs (and postprocessing)
+################################################################
+
+def task_descriptor_menj(task):
+    """Task descriptor format 7 for menj runs 
+
+        TO DO (slv) : Create appropriate doc string
+
+        Overhaul for new h2utils scripting:
+        - Strip back down to basic form for oscillator-like runs only.
+        - Adjust some field labels.
+        - Add tolerance.
+        - Provide default Nstep=2 for convenience when used in transitions run.
+    """
+    if (
+        task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kNmax
+        and
+        task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated)
+        and
+        task["mfdn_variant"] is modes.VariantMode.kMENJ
+    ):
+        # traditional oscillator run
+        template_string = (
+            "Z{nuclide[0]}-N{nuclide[1]}"
+            "{interaction_indicator}"
+            "-hw{hw:06.3f}"
+            "-a_cm{a_cm:g}"
+            "-Nmax{Nmax:02d}-Mj{M:03.1f}"
+            "-lan{max_iterations:d}-tol{tolerance:.1e}"
+            )
+    else:
+        raise mcscript.exception.ScriptError("mode not supported by task descriptor")
+
+    truncation_parameters = task["truncation_parameters"]
+    if task.get("interaction") is None:
+        if task.get("use_3b"):
+            interaction_indicator = "-menj-{me2j_file_id}-ME3JID-{me3j_file_id}-N3max{E3Max}".format(**mcscript.utils.dict_union(task, truncation_parameters))
+        else:
+            interaction_indicator = "-menj-{me2j_file_id}".format(**mcscript.utils.dict_union(task, truncation_parameters))
+    else:
+        interaction_indicator = "-{interaction}".format(**mcscript.utils.dict_union(task, truncation_parameters))
+    # if task.get("use_3b"):
+    #     me3j_indicator = "-ME3JID-{me3j_file_id}-N3max{E3Max}".format(**mcscript.utils.dict_union(task, truncation_parameters))
+    # else:
+    #     me3j_indicator = ""    
+    descriptor = template_string.format(
+        interaction_indicator=interaction_indicator,
+        **mcscript.utils.dict_union(task, truncation_parameters)
+        )
+
+    return descriptor
+
+
+def task_descriptor_menj_trans(task):
+    """Task descriptor format menj_trans
+
+        Set up for use with transitions:
+        - Remove dependence on basis modes (assumed Nmax mode).
+        - Remove max_iterations, and tolerance dependence.
+        - Make M dependence optional.
+        - Strip mixed parity and fci indicators.
+        - Remove a_cm field (may need to restore later).
+        - Provide subsetting index.
+    """
+    if (
+        task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kNmax
+        and
+        task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated)
+        and
+        task["mfdn_variant"] is modes.VariantMode.kMENJ
+    ):
+        template_string = (
+            "Z{nuclide[0]}-N{nuclide[1]}"
+            "{interaction_indicator}"
+            "-hw{hw:06.3f}"
+            ##"-a_cm{a_cm:g}"
+            "-Nmax{Nmax:02d}"
+            "{M_field}"
+            "{subset_field}"
+        )
+    else:
+        raise mcscript.exception.ScriptError("mode not supported by task descriptor")
+    truncation_parameters = task["truncation_parameters"]
+    if task.get("interaction") is None:
+        if task.get("use_3b"):
+            interaction_indicator = "-menj-{me2j_file_id}-ME3JID-{me3j_file_id}-N3max{E3Max}".format(**mcscript.utils.dict_union(task, truncation_parameters))
+        else:
+            interaction_indicator = "-menj-{me2j_file_id}".format(**mcscript.utils.dict_union(task, truncation_parameters))
+    else:
+        interaction_indicator = "-{interaction}".format(**mcscript.utils.dict_union(task, truncation_parameters))
+    # if task.get("use_3b"):
+    #     me3j_indicator = "-ME3JID-{me3j_file_id}-N3max{E3Max}".format(**mcscript.utils.dict_union(task, truncation_parameters))
+    # else:
+    #     me3j_indicator = ""
+    ##natural_orbital_indicator = mcscript.utils.ifelse(task.get("natural_orbitals"), "-natorb", "")
+    M_field = "-Mj{M:03.1f}".format(**truncation_parameters) if (truncation_parameters.get("M") is not None) else ""
+    subset_field = "-subset{subset[0]:03d}".format(**task) if (task.get("subset") is not None) else ""
+    descriptor = template_string.format(
+        interaction_indicator=interaction_indicator,
+        M_field=M_field,
+        subset_field=subset_field,
+        **mcscript.utils.dict_union(task, truncation_parameters)
+    )
+
+    return descriptor
+
+
+################################################################
+# task descriptors for mfdn counting-only runs
+################################################################
+
 def task_descriptor_c1(task):
     """Task descriptor format c1
 
@@ -460,3 +497,5 @@ def task_descriptor_c1(task):
         )
 
     return descriptor
+
+

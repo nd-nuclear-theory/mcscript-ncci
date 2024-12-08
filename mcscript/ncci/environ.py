@@ -27,6 +27,11 @@ University of Notre Dame
     + Use multi-file mode of mcscript.utils.search_in_subdirectories().
     + Add filename functions for rel and tbme files.
 - 06/16/23 (mac): Change default location of mfdn and mfdn-transitions executables to bin subdirectory.
+- 08/17/24 (mac):
+    + Allow truncation argument of None in find_interaction_file().
+    + Add find_operator_file().
+    + Rename tmbe_filename() to tbme_filename().
+
 """
 
 from __future__ import annotations
@@ -98,13 +103,13 @@ def mfdn_postprocessor_filename(name):
     return os.path.join(mcscript.parameters.run.install_dir, "mfdn-transitions", "bin", name)
 
 def find_interaction_file(
-    interaction:str, truncation:tuple[str,int], hw:Optional[float]
+    interaction:str, truncation:Optional[tuple[str,int]], hw:Optional[float]
 ):
     """Construct filename for interaction h2 file.
 
     Arguments:
         interaction (str): interaction name
-        truncation (tuple): truncation tuple, e.g. ("tb", 10)
+        truncation (tuple): truncation tuple, e.g. ("tb", 10) (or None)
         hw (float): hw of interaction (or None)
 
     Returns:
@@ -113,27 +118,58 @@ def find_interaction_file(
     Raises:
         mcscript.exception.ScriptError: if no suitable match is found
     """
-    truncation_str = mcscript.utils.dashify(truncation)
-    if (hw is None):
-        # for special operator files
+    if truncation is None:
+        # for shell model interaction files
         interaction_filename_candidates = [
-            f"{interaction}_{truncation_str}.bin"
-            f"{interaction}-{truncation_str}.bin"  # DEPRECATED
-            f"{interaction}_{truncation_str}.dat"
-            f"{interaction}-{truncation_str}.dat"  # DEPRECATED
+            f"{interaction}.bin",
+            f"{interaction}.dat",
         ]
     else:
-        interaction_filename_candidates = [
-            f"{interaction}_{truncation_str}_{hw:04.1f}.bin",
-            f"{interaction}-{truncation_str}-{hw:04.1f}.bin",  # DEPRECATED
-            f"{interaction}-{truncation_str}-{hw:g}.bin",  # DEPRECATED
-            f"{interaction}_{truncation_str}_{hw:04.1f}.dat",
-            f"{interaction}-{truncation_str}-{hw:04.1f}.dat",  # DEPRECATED
-            f"{interaction}-{truncation_str}-{hw:g}.dat",  # DEPRECATED
-        ]
+        truncation_str = mcscript.utils.dashify(truncation)
+        if hw is None:
+            # for special operator files
+            interaction_filename_candidates = [
+                f"{interaction}_{truncation_str}.bin",
+                f"{interaction}-{truncation_str}.bin",  # DEPRECATED
+                f"{interaction}_{truncation_str}.dat",
+                f"{interaction}-{truncation_str}.dat",  # DEPRECATED
+            ]
+        else:
+            interaction_filename_candidates = [
+                f"{interaction}_{truncation_str}_{hw:04.1f}.bin",
+                f"{interaction}-{truncation_str}-{hw:04.1f}.bin",  # DEPRECATED
+                f"{interaction}-{truncation_str}-{hw:g}.bin",  # DEPRECATED
+                f"{interaction}_{truncation_str}_{hw:04.1f}.dat",
+                f"{interaction}-{truncation_str}-{hw:04.1f}.dat",  # DEPRECATED
+                f"{interaction}-{truncation_str}-{hw:g}.dat",  # DEPRECATED
+            ]
     full_interaction_dir_list = interaction_run_list + interaction_dir_list  # interaction_run_list is DEPRECATED
     return mcscript.utils.search_in_subdirectories(
         data_dir_h2_list, full_interaction_dir_list, interaction_filename_candidates,
+        fail_on_not_found=True
+    )
+
+def find_operator_file(
+    operator:str,
+):
+    """Construct filename for operator h2 file.
+
+    Arguments:
+        operator (str): operator name
+
+    Returns:
+        (str): fully qualified path of opertor file
+
+    Raises:
+        mcscript.exception.ScriptError: if no suitable match is found
+    """
+    operator_filename_candidates = [
+        f"{operator}.bin",
+        f"{operator}.dat",
+        f"{operator}",  # DEPRECATED -- explicit filename with extension
+    ]
+    return mcscript.utils.search_in_subdirectories(
+        data_dir_h2_list, operator_dir_list, operator_filename_candidates,
         fail_on_not_found=True
     )
 
@@ -245,7 +281,7 @@ _natorb_obdme_filename_template = "natorb-obdme{:s}.dat"
 # filename template for natural orbital xform from previous basis
 _natorb_xform_filename_template = "natorb-xform{:s}.dat"
 
-def tmbe_filename(name:str, truncation:tuple[str,int], hw:Optional[float], ext:str="bin") -> str:
+def tbme_filename(name:str, truncation:tuple[str,int], hw:Optional[float], ext:str="bin") -> str:
     """Construct filename for tbme file.
 
     Arguments:

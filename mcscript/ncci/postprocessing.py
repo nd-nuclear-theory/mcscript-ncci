@@ -52,6 +52,8 @@ University of Notre Dame
 - 12/22/23 (mac): Add dry_run_postprocessor() for multi-ket run counting diagnostics.
 - 01/16/24 (zz): Add support for runs with unknown lanczos in init_postprocessor_db().
 - 03/21/24 (mac): Add task option "postprocessor_relax_canonicalization".
+- 08/17/24 (mac): Fix task metadata so that ket_results_data is always exposed.
+- 09/02/24 (mac): Add task option "postprocessor_reverse_canonicalization".
 """
 import collections
 import deprecated
@@ -494,12 +496,12 @@ def init_postprocessor_db(task, postfix=""):
         )
     assert len(bra_merged_data) == 1
     bra_merged_data = bra_merged_data[0]
-    task["metadata"]["bra_results_data"] = bra_merged_data  # provide access to results data for use by masking functions
     if bra_selector == ket_selector:
         # special case where bra and ket selection is equal:
         # allow canonicalization of transitions, and don't duplicate work
         # but permit override of canonicalization (puts onus on mask to choose "direction" of transitions)
         relax_canonicalization = task.get("postprocessor_relax_canonicalization", False)
+        reverse_canonicalization = task.get("postprocessor_reverse_canonicalization", False)
         canonicalize = not relax_canonicalization
         ket_mesh_data = bra_mesh_data[:]
         ket_merged_data = bra_merged_data
@@ -520,7 +522,10 @@ def init_postprocessor_db(task, postfix=""):
             )
         assert len(ket_merged_data) == 1
         ket_merged_data = ket_merged_data[0]
-        task["metadata"]["ket_results_data"] = ket_merged_data  # provide access to results data for use by masking functions
+        
+    # provide access to results data for use by masking functions
+    task["metadata"]["bra_results_data"] = bra_merged_data
+    task["metadata"]["ket_results_data"] = ket_merged_data
 
     # extract Tz for bra and ket for convenience
     (bra_Z, bra_N) = bra_merged_data.params["nuclide"]
@@ -613,7 +618,9 @@ def init_postprocessor_db(task, postfix=""):
         )
     for (bra_qn, ket_qn, operator_qn) in bra_ket_tbo_product:
         # check canonical order
-        if canonicalize and not (bra_qn <= ket_qn):
+        if canonicalize and (
+                (not reverse_canonicalization and not (bra_qn <= ket_qn)) or (reverse_canonicalization and not (bra_qn >= ket_qn))
+        ):
             continue
 
         # apply masks
@@ -674,7 +681,9 @@ def init_postprocessor_db(task, postfix=""):
     )
     for (bra_qn, ket_qn, operator_qn) in bra_ket_ob_qn_product:
         # check canonical order
-        if canonicalize and not (bra_qn <= ket_qn):
+        if canonicalize and (
+                (not reverse_canonicalization and not (bra_qn <= ket_qn)) or (reverse_canonicalization and not (bra_qn >= ket_qn))
+        ):
             continue
 
         # apply masks

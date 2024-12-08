@@ -5,13 +5,8 @@
 
     See examples/README.md for full description.
 
-    Debugging
-
-        06/13/24 (mac): MFDn fails in task 10 phase 1
-     
-          Z3-N3-Daejeon16-coul1-hw15.000-a_cm50-Nmax02-Mj0.0-lan600-tol1.0e-06-J00.0-g0-n01-Nex-dlan12
-         
-        just before "Eigen energy, error est, residu" phase.  May be related to 0 eigenvalues. 
+    Debugging: Some tasks may intermittently fail.  This appears to be related
+    to numerical issues in the presence of highly-degenerate 0 eigenvalues.
 
     Patrick J. Fasano
     University of Notre Dame
@@ -35,17 +30,14 @@ mcscript.control.init()
 # environment
 ##################################################################
 
-# TBME paths
-ncci.environ.interaction_dir_list = [
-    "example-data",
-]
+# TBME paths (for operators used in decompositions)
 ncci.environ.operator_dir_list = [
-    "example-data"
+    "casimir-tb-6",
 ]
 
 # decomposition coefficient paths
 ncci.environ.decomposition_dir_list = [
-    "example-data"
+    "decomposition-Z03-N03",
 ]
 
 ##################################################################
@@ -67,13 +59,13 @@ hw_coul = 20.
 Nmax_range = (2, 4, 2)
 Nmax_list = mcscript.utils.value_range(*Nmax_range)
 
-# eigenvector convergence -- for source wave functions
-max_iterations = 600
-tolerance = 1e-6
-
 # hw
 hw_range = (15, 20, 5)
 hw_list = mcscript.utils.value_range(*hw_range)
+
+# eigenvector convergence -- for source wave functions
+max_iterations = 600
+tolerance = 1e-6
 
 # Lawson
 a_cm = 50.
@@ -81,6 +73,7 @@ a_cm = 50.
 # decomposition
 wf_run_dir = "mfdn13"
 qn_list_by_Nmax={
+    # quantum numbers (J,g,n) for states to decompose at each Nmax
     Nmax: [
         (1.0,0,1),
         (3.0,0,1),
@@ -89,8 +82,15 @@ qn_list_by_Nmax={
     for Nmax in Nmax_list
 }
 def wf_source_M(qn):
+    """ M value for source wave function to use (for given state).
+    """
     J, g, n = qn
-    M= 0.0 if J==0.0 else 1.0
+    if int(2*J)%2:
+        # odd half-integer
+        M = 1/2
+    else:
+        # even half-integer
+        M = (0.0 if J==0.0 else 1.0)
     return M
 decomposition_type_list = ["L", "S", "Nex", "U3SpSnS"]
 decomposition_max_iterations = 1200
@@ -127,11 +127,11 @@ tasks = [
             "a_cm": a_cm,
             "max_iterations": max_iterations,
             "tolerance": tolerance,
+            "descriptor": ncci.descriptors.task_descriptor_7,
             # required modes to keep task descriptor function happy
+            "basis_mode": ncci.modes.BasisMode.kDirect,
             "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
             "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
-            "basis_mode": ncci.modes.BasisMode.kDirect,
-            "descriptor": ncci.descriptors.task_descriptor_7
         },
 
         ## # input TBME parameters
@@ -148,12 +148,6 @@ tasks = [
         # basis parameters
         "basis_mode": ncci.modes.BasisMode.kDirect,
         "hw": hw,
-
-        # transformation parameters
-        "xform_truncation_int": None,
-        "xform_truncation_coul": None,
-        "hw_coul_rescaled": None,
-        "target_truncation": None,
 
         # one-body and many-body truncation
         "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
