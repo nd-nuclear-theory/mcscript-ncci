@@ -6,6 +6,7 @@ Some initial pointers on where to look to get started.
 06/16/23 (mac): Add mfdn-transitions installation instructions.
 06/14/24 (mac): Add notes on Ubuntu installation for mfdn/mfdn-transitions.
 06/18/24 (mac): Expand notes on ndconfig.
+12/20/24 (mac): Update notes on mfdn.
 
 ----------------
 
@@ -63,20 +64,21 @@ Some initial pointers on where to look to get started.
 
 # mfdn #
 
-  - Cloning.  You can clone from either the ISU original repository
+  - Cloning.  You can clone from either the ISU original repository (if you have
+    been granted read permission)
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     % git clone https://github.com/isu-nuclear-theory/mfdn.git
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    or from ND's fork
+    or from ND's fork (if you have been granted read permission)
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     % git clone https://github.com/nd-nuclear-theory/mfdn.git
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     These are both private repositories.  In order to access these repositories,
-    you will need to submit your github userid to your contact person on that
+    you will need to submit your github userid to the administrator of that
     repository and request read permission.
 
   - Branch.  The CPU version of the code is on the `master` branch, or the
@@ -100,14 +102,16 @@ Some initial pointers on where to look to get started.
     + Different compilation modes to select for (a) the interaction file format
       and (b) the eigensolver.
 
-  - If you are installing locally on a Linux (Ubuntu) system, instead use this
-    config file (as of June 2024, only available on the develop branch):
+  - If you are installing locally on a an Ubuntu system, rather than on a
+    cluster:
+  
+    + Use this config file:
  
       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
        % ln -s config/config_ubuntu_gnu.mk config.mk
       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  
-    You will also need to have the correct software environment installed:
+    + You will also need to have the correct compiler and libraries installed:
 
       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       % sudo apt install build-essential gfortran
