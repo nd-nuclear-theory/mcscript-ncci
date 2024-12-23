@@ -1,6 +1,8 @@
 # mcscript-ncci installation #
 Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
 
+----------------------------------------------------------------
+
 # 1. Retrieving source
 
   Change to the directory where you want the repository to be installed,
@@ -51,6 +53,7 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
   % python3 -m pip install --user .
   ~~~~~~~~~~~~~~~~
 
+
 # 2. Environment Configuration
 
   The environment variable `NCCI_DATA_DIR_H2` is used to tell `mcscript-ncci`
@@ -90,9 +93,9 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
 
   However, only `NCCI_DATA_DIR_H2` need be set for ordinary MFDn diagonalization runs.
 
-  E.g., for running under project m2032 at NERSC:
+  E.g., for running under project m2032 at NERSC...
 
-  For `.cshrc` or `.tcshrc`:
+  For `tcsh` shell users (`.cshrc` or `.tcshrc`):
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
   # Use read-only mount point for /global/cfs/cdirs/m2032.
@@ -102,7 +105,7 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
   setenv NCCI_DATA_DIR_DECOMPOSITION "${GROUP_HOME}/data/u3-subspaces/decomposition:${HOME}/code/mcscript-ncci/docs/examples/example-data"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  For `.bashrc` or `.bash_profile`:
+  For `bash` shell users (`.bashrc` or `.bash_profile`):
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
   # Use read-only mount point for /global/cfs/cdirs/m2032.
@@ -129,12 +132,12 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
   `${HOME}/code/mcscript-ncci/docs/examples`, you might define the following
   search path:
 
-  For `.cshrc` or `.tcshrc`:
+  For `tcsh` shell users (`.cshrc` or `.tcshrc`):
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   setenv NCCI_LIBRARY_PATH "${SCRATCH}/runs:${SCRATCH}/library:${HOME}/code/mcscript-ncci/docs/examples"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  For `.bashrc` or `.bash_profile`:
+  For `bash` shell users (`.bashrc` or `.bash_profile`):
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   export NCCI_LIBRARY_PATH="${SCRATCH}/runs:${SCRATCH}/library:${HOME}/code/mcscript-ncci/docs/examples"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
