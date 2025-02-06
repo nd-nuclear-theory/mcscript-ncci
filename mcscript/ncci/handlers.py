@@ -60,6 +60,7 @@ University of Notre Dame
 - 10/19/23 (slv): Remove the menj_pre handler and use the modes.VariantMode.kMENJ as the 
                   determining condition to copy the interaction files.
 - 01/16/23 (zz): Generate mfdn_smwf.info for menj runs.
+- 02/05/24 (mac): Add -tbme archive to archive_handler_mfdn.
 
 """
 import os
@@ -531,6 +532,7 @@ def archive_handler_mfdn():
             {"postfix" : "-lanczos", "paths" : ["results/lanczos"], "compress" : True},
             {"postfix" : "-task-data", "paths" : ["results/task-data"], "compress" : True},
             {"postfix" : "-obdme", "paths" : ["results/obdme"], "compress" : True},
+            {"postfix" : "-tbme", "paths" : ["results/tbme"], "compress" : False},
             {"postfix" : "-wf", "paths" : ["results/wf"]},
         ]
     )
