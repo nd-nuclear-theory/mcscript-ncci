@@ -109,7 +109,7 @@ University of Notre Dame
   - hw of basis for source Coulomb TBMEs
 
 ----------------------------------------------------------------
-## transformation parameters ##
+## TBME transformation and output parameters ##
 
 - `xform_truncation_int`: truncation tuple, optional
   - transform cutoff for interaction, as tuple `("ob"|"tb",N)`
@@ -130,12 +130,13 @@ University of Notre Dame
       transformation error in the Coulomb interaction)
     - generic run: naturally same as `hw_int` for uniformity in the two-body transformation
 
-- `target_truncation`, optional: weight max tuple
-  - truncation of target TBMEs, as weight_max tuple
+- `target_truncation`, optional: weight_max tuple
+  - truncation of target TBMEs, as tuple `("ob"|"tb",N)`, or other weight_max
+    tuple; see docstring of `utils.weight_max_string` for information
   - If `None`, deduce automatically from single-particle and many-body truncation information
 
 ----------------------------------------------------------------
-## truncation parameters ##
+## basis truncation parameters (single-particle and many-body) ##
 
 - `sp_truncation_mode`: `modes.SingleParticleTruncationMode`
   - enumerated value indicating
