@@ -40,13 +40,13 @@ def nuclide_string(nuclide, **kwargs):
 
 
 def weight_max_string(truncation):
-    """Convert (rank,cutoff) to "wp wn wpp wnn wpn" string.
+    """Convert (rank,cutoff), or other weight truncation specifier, to "wp wn wpp wnn wpn" string.
 
     Valid truncations:
         ("ob",w1b)
         ("tb",w2b)
         (w1b,w2b)
-        (wp,wn,wpp,wnn,wpn) -- TODO
+        (wp,wn,wpp,wnn,wpn)
 
     >>> weight_max_string(("ob",4))
         "4 4 8 8 8"
