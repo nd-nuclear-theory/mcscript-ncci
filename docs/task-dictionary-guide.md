@@ -288,6 +288,11 @@ University of Notre Dame
 
 TODO 03/21/24 (mac): postprocessor parameters need to be documented
 
+- `postprocessor_mask`: `list[tuple]`
+  - set of masks to apply, each given as a tuple of a mask function and a
+    parameter dictionary to provide to that function
+  - see docstrings for individual mask functions in `masks.py`
+
 - `postprocessor_reverse_canonicalization`: `bool`, optional
   - apply canonicalization constraint on transitions in the anticanonical
     (qnf>qni) sense, rather than the default canonical (qnf<qni) sense
