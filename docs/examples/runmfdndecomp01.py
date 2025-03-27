@@ -1,15 +1,21 @@
-"""runmfdn14.py
+"""runmfdndecomp01.py
 
-    Example Lanczos decomposition run using L^2 and S^2. Ensure that the output
-    of runmfdn13.py is in the current NCCI_LIBRARY_PATH.
+    "Bare bones" example Lanczos decomposition, not using predefined
+    "decomposition types", for Ntot operator (and Nex operator for comparison),
+    with MFDn.
+
+    Ensure that the wave function and task data results of runmfdn13.py are in
+    the current NCCI_LIBRARY_PATH.
 
     See examples/README.md for full description.
 
     Debugging: Some tasks may intermittently fail.  This appears to be related
     to numerical issues in the presence of highly-degenerate 0 eigenvalues.
 
-    Patrick J. Fasano
+    Mark A. Caprio
     University of Notre Dame
+
+    03/27/25 (mac): Created from runmfdn14.
 
 """
 
@@ -32,12 +38,10 @@ mcscript.control.init()
 
 # TBME paths (for operators used in decompositions)
 ncci.environ.operator_dir_list = [
-    "casimir-tb-6",
 ]
 
 # decomposition coefficient paths
 ncci.environ.decomposition_dir_list = [
-    "decomposition-Z03-N03",
 ]
 
 ##################################################################
@@ -45,54 +49,36 @@ ncci.environ.decomposition_dir_list = [
 ##################################################################
 
 # nuclide
-nuclide_list = [(3,3)]
-A = sum(nuclide_list[0])  # assumes any nuclei in run are isobars
+nuclide = (3,3)
+A = sum(nuclide)
 
 # interaction
 interaction_coulomb_truncation_list = [
     ("Daejeon16", True, ("tb",6)),
-    ## ("JISP16",    True, ("tb",6)),
 ]
 hw_coul = 20.
 
 # truncation parameters
-Nmax_range = (2, 4, 2)
+Nmax_range = (4, 4, 2)
 Nmax_list = mcscript.utils.value_range(*Nmax_range)
 
 # hw
-hw_range = (15, 20, 5)
+hw_range = (15, 15, 5)
 hw_list = mcscript.utils.value_range(*hw_range)
 
 # eigenvector convergence -- for source wave functions
 max_iterations = 600
 tolerance = 1e-6
 
-# Lawson
+# Lawson -- for source wave functions
 a_cm = 50.
 
 # decomposition
 wf_run_dir = "mfdn13"
-qn_list_by_Nmax={
-    # quantum numbers (J,g,n) for states to decompose at each Nmax
-    Nmax: [
-        (1.0,0,1),
-        (3.0,0,1),
-        (0.0,0,1),
-    ]
-    for Nmax in Nmax_list
-}
-def wf_source_M(qn):
-    """ M value for source wave function to use (for given state).
-    """
-    J, g, n = qn
-    if int(2*J)%2:
-        # odd half-integer
-        M = 1/2
-    else:
-        # even half-integer
-        M = (0.0 if J==0.0 else 1.0)
-    return M
-decomposition_type_list = ["L", "S", "Nex", "U3SpSnS"]
+qn = (1.0,0,1)
+M = 1.0
+## decomposition_type = "Ntot"
+decomposition_type_list = ["Ntot", "Nex"]
 decomposition_max_iterations = 1200
 
 ##################################################################
@@ -111,7 +97,12 @@ tasks = [
         "hw_cm": None,
 
         # decomposition
-        "hamiltonian": ncci.decomposition.decomposition_operator(nuclide,Nmax,hw,decomposition_type,verbose=False),
+        ## "hamiltonian": ncci.operators.tb.Ntotal(A, hw),
+        "hamiltonian": (
+            ncci.operators.tb.Ntotal(A, hw)  # Ntot
+            if decomposition_type=="Ntot" else
+            ncci.operators.tb.Nex(nuclide, hw)  # Nex
+        ),
         "decomposition_type": decomposition_type,
         "source_wf_qn": qn,
         "wf_source_info": {
@@ -121,7 +112,7 @@ tasks = [
             "use_coulomb": coulomb,
             "hw": hw,
             "truncation_parameters": {
-                "M": wf_source_M(qn),
+                "M": M,
                 "Nmax": Nmax
             },
             "a_cm": a_cm,
@@ -153,7 +144,7 @@ tasks = [
         "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
         "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
         "truncation_parameters": {
-            "M": wf_source_M(qn),
+            "M": M,
             "Nmax": Nmax,
             "Nstep": 2
         },
@@ -167,26 +158,20 @@ tasks = [
         # obdme parameters
         "calculate_obdme": False,
 
-        # sources
-        "tbme_sources": [
-            ("CSU3-U", {"filename": "CSU3-U-tb-6.bin", "qn": (0,0,0)}),
-            ("CSU3-V", {"filename": "CSU3-V-tb-6.bin", "qn": (0,0,0)}),
-            ("CSp3R-U", {"filename": "CSp3R-U-tb-6.bin", "qn": (0,0,0)}),
-            ("CSp3R-V", {"filename": "CSp3R-V-tb-6.bin", "qn": (0,0,0)}),
-        ],
-
         # version parameters
         "h2_format": 15099,
         "mfdn_executable": "xmfdn-h2-lan",
         "mfdn_driver": ncci.mfdn_v15,
     }
-    for nuclide in nuclide_list
+    ## for nuclide in nuclide_list
     for Nmax in Nmax_list
     for (interaction,coulomb,truncation_int) in interaction_coulomb_truncation_list
     for hw in hw_list
-    for qn in qn_list_by_Nmax[Nmax]
+    ## for qn in qn_list
     for decomposition_type in decomposition_type_list
 ]
+
+## print(tasks)
 
 ##################################################################
 # task dictionary postprocessing functions

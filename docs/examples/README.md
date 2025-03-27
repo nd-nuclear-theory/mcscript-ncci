@@ -54,9 +54,6 @@ Recommended basic examples for getting started with standard MFDn NCCI runs:
   - runmfdn13: This runs mfdn, to set up the wave functions you will need for the next two
     examples.
 
-  - runmfdn14: This is an example of doing Lanczos decompositions with mfdn
-    (only try this example if such decompositions are of interest to you).
-
   - runtransitions00: This runs mfdn-transitions, to calculate transitions for
     the wave functions from runmfdn13.
 
