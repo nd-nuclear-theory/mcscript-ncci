@@ -2,6 +2,10 @@
 
 03/26/25-03/27/25 (mac): Write as live tutorial (with pg, hh, slv).
 
+04/07/25 (mac): Add note on number of iterations.
+
+----------------------------------------------------------------
+
 ## 1. Background
 
 Our purpose here is to illustrate how to decompose a wave function with respect
@@ -495,6 +499,10 @@ at least three iterations to cover three eigenvalues!
 
 But 3 iterations seems to do it.
 
+In fact, convergence is to be expected, when the number of iterations is equal
+to the number of distinct eigenvalues.  See Sec. 5.2.1 "Decomposition" of
+Ref. [johnson2018:bigstick].
+
 Incidentally, if we try the same thing using Nex itself as the decomposition
 operator, the raw eigenvalues are shifted, but the end result is the same:
 
@@ -528,14 +536,21 @@ See `runmfdndecomp02.py`.
 
 ## References
 
-[caprio2022:10be-shape-sdanca21] http://dx.doi.org/10.55318/bgjp.2022.49.1.057
+[caprio2022:10be-shape-sdanca21] "Symmetry and shape coexistence in
+10Be". http://dx.doi.org/10.55318/bgjp.2022.49.1.057
 
 [caprio2020:intrinsic] "Intrinsic operators for the translationally-invariant many-body
 problem", JPG 47, 122001 (2020). http://dx.doi.org/10.1088/1361-6471/ab9d38
 
-[gueorguiev2000:fp-su3-breaking] http://dx.doi.org/10.1103/PhysRevC.63.014318
+[gueorguiev2000:fp-su3-breaking] "SU(3) symmetry breaking in lower fp-shell
+nuclei". http://dx.doi.org/10.1103/PhysRevC.63.014318
 
 [johnson2015:spin-orbit] "Spin-orbit decomposition of \textit{ab initio} nuclear wave
 functions", PRC 91, 034313 (2015). http://dx.doi.org/10.1103/PhysRevC.91.034313
- 
-[zbikowski2021:beyond-elliott] http://dx.doi.org/10.1088/1361-6471/abdd8e
+
+[johnson2018:bigstick] "BIGSTICK: A flexible configuration-interaction
+shell-model code". https://arxiv.org/abs/1801.08432
+  
+[zbikowski2021:beyond-elliott] "Rotational bands beyond the {E}lliott
+model". http://dx.doi.org/10.1088/1361-6471/abdd8e
+
