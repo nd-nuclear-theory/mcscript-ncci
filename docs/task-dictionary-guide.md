@@ -222,6 +222,12 @@ University of Notre Dame
   
 - `obdme_multipolarity`: `int`
   - maximum multipolarity for calculation of densities
+  - for `mfdn` runs, this must be large enough to support any one-body operators
+    desired to be calculated by `mfdn`, e.g., for M1 or E2 moments
+  - for postprocessor runs, this paremeter is optional, but can be used to
+    request tabulation of obdmes for extra, higher multipolarities than those
+    implied by the operators for the various requested one-body observables (or
+    by the operator quantum numbers specified in `obdme_qn_list`)
 
 - `obdme_reference_state_list`: list of tuples
   - list of reference states (J, g, i) for density calculation
@@ -299,8 +305,18 @@ University of Notre Dame
 - Several keys descrived above in the context of the observable calculation
   phase of MFDn are applicable to postprocessor runs as well, e.g.,
   `ob_observables`, `ob_observable_sets`, `tb_observables`,
-  `tb_observable_sets`, `hw`, `save_obdme`.
-  
+  `tb_observable_sets`, `hw`, `obdme_multipolarity`, `save_obdme`.
+
+- `obdme_qn_list`: `list[tuple]`
+  - list of tuples (J0,g0,Tz0) specifying operator selection rules between
+    initial and final states for which densities should be calculated
+  - the resulting state pairs *augment* those for which densities are already to
+    be calculated due to operators for any one-body observables being calculated
+    (specified via `ob_observables` or `ob_observable_sets`)
+  - these are basically the quantum numbers of "phantom" one-body operators, for
+    which we want the corresponding densities, even if no such one-body operator
+    has been specified
+
 - `wf_source_run_list`: `list[str]`
   - list of runs to search for wave functions (omit initial `run` stem from run
     names)

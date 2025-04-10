@@ -54,6 +54,8 @@ University of Notre Dame
 - 03/21/24 (mac): Add task option "postprocessor_relax_canonicalization".
 - 08/17/24 (mac): Fix task metadata so that ket_results_data is always exposed.
 - 09/02/24 (mac): Add task option "postprocessor_reverse_canonicalization".
+- 04/09/25 (mac): Provide for evaluation of obdmes beyond those required for observables 
+  (add task options "obdme_qn_list" and "obdme_multipolarity").
 """
 import collections
 import deprecated
@@ -266,7 +268,7 @@ def evaluate_ob_observables(task, postfix=""):
         verbose=False
         )
 
-    # invoke em-gen
+    # invoke obscalc-ob
     mcscript.control.call(
         [
             environ.shell_filename("obscalc-ob")
@@ -675,9 +677,12 @@ def init_postprocessor_db(task, postfix=""):
     # construct list of (bra,ket,ob_qn) tuples
     ob_observables = operators.ob.generate_ob_observable_sets(task)[0]
     ob_observables += task.get("ob_observables", [])
+    operator_qn_set = {operator_qn for (_,operator_qn,_) in ob_observables}
+    obdme_qn_list = task.get("obdme_qn_list", [])
+    operator_qn_set.update(obdme_qn_list)
     bra_ket_ob_qn_product = itertools.product(
         bra_id_dict.keys(), ket_id_dict.keys(),
-        {operator_qn for (_,operator_qn,_) in ob_observables}
+        operator_qn_set
     )
     for (bra_qn, ket_qn, operator_qn) in bra_ket_ob_qn_product:
         # check canonical order
@@ -1505,7 +1510,12 @@ def run_postprocessor_one_body(task, postfix=""):
         max_ket_J = max([ket_J for (ket_J,_,_) in ket_qn_list])
         min_ket_J = min([ket_J for (ket_J,_,_) in ket_qn_list])
         max_deltaJ = max(abs(max_ket_J-bra_J), max_ket_J+bra_J, abs(min_ket_J-bra_J), min_ket_J+bra_J)
-        max_J0 = max([J0 for _,(J0,_,_),_ in ob_observables])
+        operator_qn_set = {operator_qn for (_,operator_qn,_) in ob_observables}
+        obdme_qn_list = task.get("obdme_qn_list", [])
+        operator_qn_set.update(obdme_qn_list)
+        max_J0 = max([J0 for (J0,_,_) in operator_qn_set])
+        obdme_multipolarity = task.get("obdme_multipolarity", 0)  # higher requested max multipolarity for obdme for existing state pairs
+        max_J0 = max(max_J0, obdme_multipolarity)
         max2K = 2*int(min(max_deltaJ, max_J0))
         transitions_inputlist = {
             "basisfilename_bra": "{:s}/mfdn_MBgroups".format(bra_wf_prefix),
