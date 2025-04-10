@@ -11,6 +11,9 @@ University of Notre Dame
 + 09/12/24 (mac): Update descriptions of menj parameters.
 + 09/26/24 (mac): Update descriptions of Hamiltonian parameters.
 + 10/22/24 (mac): Update descriptions of version parameters.
++ 04/04/25 (mac): Add descriptions for parameters `calculate_obdme`,
+    `calculate_tbo`, and `mfdn_inputlist`.
++ 04/09/25 (mac): Add descriptions of postprocessing parameters.
 
 ----------------------------------------------------------------
 ## nuclide parameters ##
@@ -213,6 +216,10 @@ University of Notre Dame
 ----------------------------------------------------------------
 ## obdme parameters ##
 
+- `calculate_obdme`: `bool`
+  - whether or not to enable calculation of OBDMEs in MFDn
+  - also thus controls calculation of any native MFDn one-body observables
+  
 - `obdme_multipolarity`: `int`
   - maximum multipolarity for calculation of densities
 
@@ -220,11 +227,14 @@ University of Notre Dame
   - list of reference states (J, g, i) for density calculation
 
 - `ob_observables`: list of operators
-  - list of operators (type, order) to calculate, e.g. `[('E',2),('M',1)]`
+  - list of operators (type, order) to calculate, e.g., `[('E',2),('M',1)]`
 
 ----------------------------------------------------------------
 ## two-body observables ##
 
+- `calculate_tbo`: `bool`
+  - whether or not to enable calculation of two-body observables in MFDn
+  
 - `tb_observables`: list of `("basename", CoefficientDict)` tuples
   - additional observable definitions (see `ncci.operators`)
 
@@ -286,8 +296,42 @@ University of Notre Dame
 ----------------------------------------------------------------
 ## postprocessor parameters ##
 
-TODO 03/21/24 (mac): postprocessor parameters need to be documented
+- Several keys descrived above in the context of the observable calculation
+  phase of MFDn are applicable to postprocessor runs as well, e.g.,
+  `ob_observables`, `ob_observable_sets`, `tb_observables`,
+  `tb_observable_sets`, `hw`, `save_obdme`.
+  
+- `wf_source_run_list`: `list[str]`
+  - list of runs to search for wave functions (omit initial `run` stem from run
+    names)
 
+- `wf_source_bra_selector`: `dict`
+  - parameters to select results data providing the bra wf file
+  - these are parameters used to distinguish a specific "mesh point" in the set
+    of diagonaliztion calculation, but not specific states within that mesh
+    point
+  - typical keys include `nuclide`, `interaction`, `hw`, and `Nmax`
+  
+- `wf_source_ket_selector`: `dict`
+  - parameters to select results data providing the ket wf file
+  - these are parameters used to distinguish a specific "mesh point" in the set
+    of diagonaliztion calculation, but not specific states within that mesh
+    point
+  - typical keys include `nuclide`, `interaction`, `hw`, and `Nmax`
+
+- `wf_source_res_format`: `str`
+  - format specifier for res files in source wf runs
+  - this will be used as the `res_format` argument to `mfdnres.input.slurp_res_files`
+  - it should thus be the identifier for one of the res file formats registered
+    with `mfdnres.input.register_data_format`, typically defined in
+    `mfdnres.data_parsers`, e.g., `'mfdn_v15'`
+  - defaults to `None`
+
+- `wf_source_glob_pattern`: `str`
+  - glob pattern to filter the res files to be read as specifying available
+    source wave functions
+  - defaults to `'*.res'`
+  
 - `postprocessor_mask`: `list[tuple]`
   - set of masks to apply, each given as a tuple of a mask function and a
     parameter dictionary to provide to that function
@@ -303,6 +347,9 @@ TODO 03/21/24 (mac): postprocessor parameters need to be documented
   - this leaves it up to the mask to pick the direction actually calculated (can
     be useful, e.g., for manually selecting the sense of transitions to optimize
     use of the multi-ket capability of the postprocessor)
+
+- `postprocessor_mask_verbose`: `bool`
+  - whether or not to print detailed diagonstic information to examine mask operation
 
 ----------------------------------------------------------------
 ## menj parameters ##
@@ -342,3 +389,9 @@ TODO 03/21/24 (mac): postprocessor parameters need to be documented
   - whether or not 3-body interactions are to be read and included in the Hamiltonian
 
 
+----------------------------------------------------------------
+## pass-through parameters ##
+
+- `mfdn_inputlist` : `dict`
+   - additional key-value pairs to pass through to MFDn, e.g., `{"blksize":
+     16000}`
