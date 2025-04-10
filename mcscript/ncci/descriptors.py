@@ -25,6 +25,7 @@ University of Notre Dame
 - 01/16/24 (zz): Revise task_descriptor_menj and add task_descriptor_menj_trans. 
 - 02/12/24 (zz): Revise task_descriptor_menj and task_descriptor_menj_trans.
 - 07/27/24 (mac): Add task_descriptor_10 for shell model runs.
+- 04/09/25 (mac): Add task_descriptor_10_trans for transitions following shell model runs.
 
 """
 import mcscript.exception
@@ -301,6 +302,34 @@ def task_descriptor_10(task):
     descriptor = template_string.format(
         **mcscript.utils.dict_union(task, truncation_parameters)
         )
+
+    return descriptor
+
+
+def task_descriptor_10_trans(task):
+    """Task descriptor format 10_trans
+
+       Stripped-down descriptor for transitoins for traditional shell model runs.
+    """
+    # Note: May later want to add truncation parameters for weight-based shell model truncations.
+    if (
+        task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kManual
+        and
+        task["basis_mode"] is modes.BasisMode.kShellModel
+    ):
+        template_string = (
+            "Z{nuclide[0]}-N{nuclide[1]}-{interaction}"
+            "{subset_field}"
+            )
+    else:
+        raise mcscript.exception.ScriptError("mode not supported by task descriptor")
+
+    truncation_parameters = task.get("truncation_parameters", {})
+    subset_field = "-subset{subset[0]:03d}".format(**task) if (task.get("subset") is not None) else ""
+    descriptor = template_string.format(
+        subset_field=subset_field,
+        **mcscript.utils.dict_union(task, truncation_parameters)
+    )
 
     return descriptor
 
