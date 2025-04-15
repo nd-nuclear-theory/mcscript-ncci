@@ -3,11 +3,11 @@
     Example of explicitly defining a one-body observable and a two-body
     observable.
 
-    Here we explicitly construct the intrinsic kinetic energy
-    operator from its expression as a sum of one-body and separable two-body
-    terms, e.g, equation (4) of "intrinsic" [Caprio, McCoy, Fasano, "Intrinsic
-    operators for the translationally-invariant many-body problem", JPG 47,
-    122001 (2020), doi:10.1088/1361-6471/ab9d38].
+    Here we explicitly construct the intrinsic kinetic energy operator from its
+    expression as a sum of one-body and separable two-body terms, e.g, equation
+    (4) of "intrinsic" [Caprio, McCoy, Fasano, "Intrinsic operators for the
+    translationally-invariant many-body problem", JPG 47, 122001 (2020),
+    doi:10.1088/1361-6471/ab9d38].
 
     We also construct the naive one-body lab-frame kinetic energy operator,
     which will contain a spurious contribution from the zero-point motion of the
@@ -16,13 +16,18 @@
     We compare their expectation values in the eigenstates of 6Li, already
     calculated in runmfdn13.
 
+    For documentation on the syntax we use to define the entries in the lists
+    "obme_sources", "ob_observables", "tbme_sources", and "tb_observables", see
+    the module docstrings in the files operators/ob.py and operators/tb.py.
+
     Make sure to run runmfdn13 first, and that its work directory is accessible
     in NCCI_LIBRARY_PATH. Also add `mcscript-ncci/docs/examples` to
     NCCI_DATA_DIR_H2 to ensure that this script can find the relevant h2 files.
 
     ----------------------------------------------------------------
 
-    Let us compare results...
+    Let us compare the results we get out of this run with the results from
+    mfdn13...
 
     The "H-components" observable set is calculated in runmfdn13.  We thus
     already know the expectation values from the file
