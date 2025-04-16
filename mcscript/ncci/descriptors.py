@@ -25,6 +25,7 @@ University of Notre Dame
 - 01/16/24 (zz): Revise task_descriptor_menj and add task_descriptor_menj_trans. 
 - 02/12/24 (zz): Revise task_descriptor_menj and task_descriptor_menj_trans.
 - 07/27/24 (mac): Add task_descriptor_10 for shell model runs.
+- 09/26/24 (mac): Add trial field in task_descriptor_7.
 - 04/09/25 (mac): Add task_descriptor_10_trans for transitions following shell model runs.
 
 """
@@ -61,6 +62,7 @@ def task_descriptor_7(task):
             "-Nmax{Nmax:02d}{mixed_parity_indicator}{fci_indicator}-Mj{M:03.1f}"
             "-lan{max_iterations:d}-tol{tolerance:.1e}"
             "{natural_orbital_indicator}"
+            "{trial_field}"
             )
     else:
         raise mcscript.exception.ScriptError("mode not supported by task descriptor")
@@ -75,6 +77,7 @@ def task_descriptor_7(task):
     else:
         mixed_parity_indicator = ""
     coulomb_flag = int(task["use_coulomb"])
+    trial_field = "-trial{trial:04d}".format(**task) if (task.get("trial") is not None) else ""
     if task.get("natural_orbitals"):
         natural_orbital_indicator = "-natorb-J{:04.1f}-g{:1d}-n{:02d}".format(*task["natorb_base_state"])
     else:
@@ -90,6 +93,7 @@ def task_descriptor_7(task):
         mixed_parity_indicator=mixed_parity_indicator,
         fci_indicator=fci_indicator,
         natural_orbital_indicator=natural_orbital_indicator,
+        trial_field=trial_field,
         **mcscript.utils.dict_union(task, truncation_parameters)
         )
 
