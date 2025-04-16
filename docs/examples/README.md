@@ -11,9 +11,11 @@ invocations.
 
 12/06/24 (mac): Move runs runmfdn12 and earlier to legacy.
 
+04/16/25 (mac): Rearrange postprocessor runs into tutorial sequence.
+
 ----------------------------------------------------------------
 
-Setup:
+## Setup ##
 
   - These examples make use of small example input TBME files found in the
     subdirectory `example-data`.  In order for the scripting to find these input
@@ -57,13 +59,16 @@ Recommended basic examples for getting started with standard MFDn NCCI runs:
   - runtransitions00: This runs mfdn-transitions, to calculate transitions for
     the wave functions from runmfdn13.
 
-There are also several more specialized examples.
+There are also several more specialized examples.  Although a basic summary of
+the runs is provided below, please be sure to also see the docstring at the
+start of each run script, for further commentary.
 
-----------------------------------------------------------------
 
-runmfdn13: harmonic oscillator direct run with MFDn v15, for use with postprocessor
+## MFDn diagonalization runs ##
 
-    6Li Nmax02,Nmax04 hw15,hw20 (direct)
+  * runmfdn13: harmonic oscillator basis run with MFDn v15 (CPU version)
+
+    6Li Nmax02..04 hw15..20 (direct)
 
     Interaction: example-data
 
@@ -116,7 +121,7 @@ runmfdn13: harmonic oscillator direct run with MFDn v15, for use with postproces
     sequence these jobs, without having to wait for each one to finish.
 
 
-runmfdn13gpu: harmonic oscillator direct run with MFDn v15, for use with postprocessor
+  * runmfdn13gpu: harmonic oscillator direct run with MFDn v15 (GPU version)
 
     For a GPU run, we must disable calculation of one-body observables, since
     these are not yet GPU enabled, and use gpu version of the mfdn executable.
@@ -147,11 +152,11 @@ runmfdn13gpu: harmonic oscillator direct run with MFDn v15, for use with postpro
     qsubm mfdn13gpu xfer 30 --phase=2 --pool="Nmax02" --mail-type=END,FAIL
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-runmfdn15menj: diagonalization run with MFDn v15 menj 3-body variant
+  * runmfdn15menj: diagonalization run with MFDn v15 3-body (menj) variant
 
     (input interaction files not provided)
 
-runmfdn16: shell model diagonalization runs in sd shell, with MFDn v15
+  * runmfdn16: shell model diagonalization runs in sd shell, with MFDn v15 (CPU version)
 
     18O/20O/18F/19F/20N/25Mg, Wildenthal USD and Brown-Richter USDB interactions
 
@@ -165,26 +170,41 @@ runmfdn16: shell model diagonalization runs in sd shell, with MFDn v15
         qsubm --pool=ALL --phase=2 mfdn16
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-runtransitions00: mfdn-transitions postprocessor run
 
-    6Li Nmax02,Nmax04, hw15,hw20
+## MFDn Lanczos decomposition runs ##
 
-    Interaction/operator: example-data
+  See tutorial in docs/decomposition-tutorial.md.
+  
+  * runmfdndecomp01: basic illustration of decomposition using Nex operator
+  
+  * runmfdndecomp02: examples of angular momentum and joint U(3) decompositions
 
+  
+## mfdn-transitions postprocessing runs ##
+
+  * runtransitions01: postprocessing run with standard M1/E2 "observable sets"
+
+    6Li Nmax02..04, hw15..20
+
+    Example postprocessor run with one-body and two-body observables.  This
+    basic example is meant to model a typical production run, covering a range
+    of mesh points.  We illustrate here only the use of predefined "observable
+    sets", which suffice for common electroweak observables (M1, E2, etc.).
+    
     Usage:
 
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        qsubm --pool=ALL --phase=0 transitions00
-        qsubm --pool=ALL --phase=1 transitions00
-        qsubm --pool=ALL --phase=2 transitions00
+        qsubm --pool=ALL --phase=0 transitions01
+        qsubm --pool=ALL --phase=1 transitions01
+        qsubm --pool=ALL --phase=2 transitions01
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     or, for a quick test with just Nmax=2 runs
 
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        qsubm --pool=Nmax02 --phase=0 transitions00
-        qsubm --pool=Nmax02 --phase=1 transitions00
-        qsubm --pool=Nmax02 --phase=2 transitions00
+        qsubm --pool=Nmax02 --phase=0 transitions01
+        qsubm --pool=Nmax02 --phase=1 transitions01
+        qsubm --pool=Nmax02 --phase=2 transitions01
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Uses operator TBMEs from `example-data`.  Make sure to set NCCI_DATA_DIR_H2 to
@@ -205,21 +225,33 @@ runtransitions00: mfdn-transitions postprocessor run
     setup phase:
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    qsubm transitions00 debug 30 --phase=0 --pool="Nmax02" --serialthreads=256 --mail-type=END,FAIL
+    qsubm transitions01 debug 30 --phase=0 --pool="Nmax02" --serialthreads=256 --mail-type=END,FAIL
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Then, for the MFDn diagonalization phase:
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    qsubm transitions00 debug 30 --phase=1 --pool="Nmax02" --ranks=8 --nodes=1 --threads=32 --mail-type=END,FAIL
+    qsubm transitions01 debug 30 --phase=1 --pool="Nmax02" --ranks=8 --nodes=1 --threads=32 --mail-type=END,FAIL
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Then, the mop-up phase only involves some file system operations, and it can
     run either in a regular compute cue on the transfer queue:
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    qsubm transitions00 xfer 30 --phase=2 --pool="Nmax02" --mail-type=END,FAIL
+    qsubm transitions01 xfer 30 --phase=2 --pool="Nmax02" --mail-type=END,FAIL
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     You can use a dependency option (`--dependency=afterok:<job_id>`) to
     sequence these jobs, without having to wait for each one to finish.
+
+  * runtransitions02: example of explicitly defining one-bodyand two-body observables
+
+    Here we explicitly construct the intrinsic kinetic energy operator from its
+    expression as a sum of one-body and separable two-body terms, e.g, equation
+    (4) of "intrinsic" [Caprio, McCoy, Fasano, "Intrinsic operators for the
+    translationally-invariant many-body problem", JPG 47, 122001 (2020),
+    doi:10.1088/1361-6471/ab9d38].
+
+    We also construct the naive one-body lab-frame kinetic energy operator,
+    which will contain a spurious contribution from the zero-point motion of the
+    center of mass.

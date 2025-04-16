@@ -20,9 +20,9 @@ defines the one-body source type:
     "tensor-product": [factor_a_id, factor_b_id]
 
 These correspond to the keywords that can be given to the code obmixer to
-specify how it should an operator.  A source specified as "builtin" must have a
-name already recognized by the code obmixer, such as "r.r".  See initial program
-comments in obmixer.cpp.
+specify how it should construct an operator.  A source specified as "builtin"
+must have a name already recognized by the code obmixer, such as "r.r".  See
+initial program comments in obmixer.cpp.
 
 Supporting information is provided by the supplementary items:
 

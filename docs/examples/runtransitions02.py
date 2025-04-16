@@ -1,7 +1,6 @@
 """runtransitions02.py
 
-    Example of explicitly defining a one-body observable and a two-body
-    observable.
+    Example of explicitly defining one-bodyand two-body observables.
 
     Here we explicitly construct the intrinsic kinetic energy operator from its
     expression as a sum of one-body and separable two-body terms, e.g, equation
