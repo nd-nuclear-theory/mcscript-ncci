@@ -44,6 +44,7 @@ University of Notre Dame
     tbme sources.
 - 01/30/23 (pjf): Rename j0->J0 and tz0->Tz0.
 - 08/17/24 (mac): Search for orbitals file in interaction file search path.
+- 05/03/25 (mac): Support (N1max,N2max) truncation for input interaction files.
 """
 import math
 import os
@@ -73,21 +74,31 @@ def set_up_interaction_orbitals(task, postfix=""):
         return
 
     # generate orbitals -- interaction bases
+    if task["truncation_int"][0] in {"ob", "tb"}:
+        Nmax_orb_int = task["truncation_int"][1]
+    else:
+        # (N1max, N2max) truncation
+        Nmax_orb_int = task["truncation_int"][0]
     mcscript.control.call(
         [
             environ.shell_filename("orbital-gen"),
             "--Nmax",
-            "{truncation_int[1]:d}".format(**task),
+            "{:d}".format(Nmax_orb_int),
             "{:s}".format(environ.orbitals_int_filename(postfix))
         ],
         mode=mcscript.control.CallMode.kSerial
     )
     if task["use_coulomb"]:
+        if task["truncation_coul"][0] in {"ob", "tb"}:
+            Nmax_orb_coul = task["truncation_coul"][1]
+        else:
+            # (N1max, N2max) truncation
+            Nmax_orb_coul = task["truncation_coul"][0]
         mcscript.control.call(
             [
                 environ.shell_filename("orbital-gen"),
                 "--Nmax",
-                "{truncation_coul[1]:d}".format(**task),
+                "{:d}".format(Nmax_orb_coul),
                 "{:s}".format(environ.orbitals_coul_filename(postfix))
             ],
             mode=mcscript.control.CallMode.kSerial

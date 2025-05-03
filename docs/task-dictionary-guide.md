@@ -93,6 +93,8 @@ University of Notre Dame
 
 - `truncation_int`: truncation tuple
   - input interaction TBME cutoff, as tuple `("ob"|"tb", N)`
+  - can also take form `(N1max, N2max)`, e.g., `(13,14)` would be a typical
+    truncation for a p-shell Nmax=12 Hamiltonian
   - used in constructing h2 filename for interaction
   - also determines orbitals used for representing interaction
 
@@ -105,6 +107,8 @@ University of Notre Dame
 
 - `truncation_coul`: truncation tuple
   - input Coulomb TBME cutoff, as tuple `("ob"|"tb",N)`
+  - can also take form `(N1max, N2max)`, e.g., `(13,14)` would be a typical
+    truncation for a p-shell Nmax=12 Hamiltonian
   - used in constructing h2 filename for Coulomb interaction
   - also determines orbitals used for representing Coulomb interaction
 
