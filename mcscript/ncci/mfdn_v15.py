@@ -421,19 +421,18 @@ def run_mfdn(task, postfix=""):
     # copy results out
     print("Saving basic output files...")
     descriptor = task["metadata"]["descriptor"]
-    work_dir = "work{:s}".format(postfix)
     filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
 
     # ...copy res file
     res_filename = "{:s}.res".format(filename_prefix)
     mcscript.task.save_results_single(
-        task, os.path.join(work_dir, "mfdn.res"), res_filename, "res"
+        task, os.path.join(work_dir, "mfdn.res"), res_filename, "res", command="cp",
     )
 
     # ...copy out file
     out_filename = "{:s}.out".format(filename_prefix)
     mcscript.task.save_results_single(
-        task, os.path.join(work_dir, "mfdn.out"), out_filename, "out"
+        task, os.path.join(work_dir, "mfdn.out"), out_filename, "out", command="cp",
     )
 
 
@@ -562,7 +561,7 @@ def save_mfdn_obdme(task, postfix=""):
     archive_file_list = glob.glob(os.path.join(work_dir, "mfdn*obdme*"))
 
     mcscript.task.save_results_multi(
-        task, archive_file_list, target_directory_name, "obdme"
+        task, archive_file_list, target_directory_name, "obdme",
     )
 
 
@@ -583,7 +582,7 @@ def save_mfdn_wavefunctions(task, postfix=""):
     archive_file_list += glob.glob(os.path.join(work_dir, "mfdn_partitioning.*"))
 
     mcscript.task.save_results_multi(
-        task, archive_file_list, target_directory_name, "wf"
+        task, archive_file_list, target_directory_name, "wf",
     )
 
 
