@@ -41,6 +41,7 @@ ncci.environ.operator_dir_list = [
     "casimir-tb-6",
 ]
 
+
 ##################################################################
 # run parameters
 ##################################################################
@@ -72,6 +73,7 @@ tolerance = 1e-6
 
 # Lawson
 a_cm = 50.
+
 
 ##################################################################
 # build task list
@@ -158,12 +160,13 @@ tasks = [
     for hw in hw_list
 ]
 
+
 ##################################################################
 # task dictionary postprocessing functions
 ##################################################################
 
-def task_pool(current_task):
-    pool = "Nmax{truncation_parameters[Nmax]:02d}".format(**current_task)
+def task_pool(task):
+    pool = "Nmax{truncation_parameters[Nmax]:02d}".format(**task)
     return pool
 
 
@@ -177,6 +180,7 @@ mcscript.task.init(
     task_pool=task_pool,
     phase_handler_list=ncci.handlers.task_handler_mfdn_phases,
     )
+
 
 ################################################################
 # termination

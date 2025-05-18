@@ -123,8 +123,8 @@ tasks = [{
 # task dictionary postprocessing functions
 ##################################################################
 
-def task_pool(current_task):
-    pool = "Nmax{truncation_parameters[Nmax]:02d}".format(**current_task)
+def task_pool(task):
+    pool = "Nmax{truncation_parameters[Nmax]:02d}".format(**task)
     return pool
 
 

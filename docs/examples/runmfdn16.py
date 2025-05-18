@@ -128,7 +128,10 @@ tasks = [
 # task dictionary postprocessing functions
 ##################################################################
 
-# none
+def task_pool(task):
+    pool = "shell".format(**task)
+    return pool
+
 
 ##################################################################
 # task control
@@ -137,7 +140,7 @@ tasks = [
 mcscript.task.init(
     tasks,
     task_descriptor=ncci.descriptors.task_descriptor_10,
-    ## task_pool=task_pool,
+    task_pool=task_pool,
     phase_handler_list=ncci.handlers.task_handler_mfdn_phases,
     archive_phase_handler_list=[ncci.handlers.archive_handler_mfdn_hsi],
 )

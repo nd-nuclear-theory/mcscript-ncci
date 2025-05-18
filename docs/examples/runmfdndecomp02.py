@@ -191,14 +191,16 @@ tasks = [
     for decomposition_type in decomposition_type_list
 ]
 
+
 ##################################################################
 # task dictionary postprocessing functions
 ##################################################################
 
-def task_pool(current_task):
-    ## pool = "Nmax{truncation_parameters[Nmax]:02d}-M{truncation_parameters[M]:.1f}".format(**current_task)
-    pool = "Nmax{truncation_parameters[Nmax]:02d}".format(**current_task)
+def task_pool(task):
+    ## pool = "Nmax{truncation_parameters[Nmax]:02d}-M{truncation_parameters[M]:.1f}".format(**task)
+    pool = "Nmax{truncation_parameters[Nmax]:02d}".format(**task)
     return pool
+
 
 ##################################################################
 # task control
@@ -211,6 +213,7 @@ mcscript.task.init(
     phase_handler_list=ncci.handlers.task_handler_mfdn_decomposition_phases,
     archive_phase_handler_list=[ncci.handlers.archive_handler_mfdn_hsi],
 )
+
 
 ################################################################
 # termination

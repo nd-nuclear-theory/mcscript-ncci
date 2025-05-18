@@ -92,7 +92,7 @@
        1.0   0   1   1.0   0   1   1.49683889e+02
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    We thus get the expectation value (which agrees from what we deduced from the
+    We thus get the expectation value (which agrees with what we deduced from the
     mfdn results for Tintr and Tcm above)
 
         <Tlab>=149.684/sqrt(3)=86.420
@@ -129,13 +129,9 @@ mcscript.control.init()
 # TBME paths
 ncci.environ.interaction_dir_list = [
     # paths to TBME files for interactions
-    "daejeon16-tb-6",
-    "jisp16-tb-6",
-    "coulomb-tb-6",
 ]
 ncci.environ.operator_dir_list = [
     # paths to TBME files for observables
-    "casimir-tb-6",
 ]
 
 ##################################################################
@@ -157,7 +153,7 @@ Nmax_range = (2, 2, 2)
 Nmax_list = mcscript.utils.value_range(*Nmax_range)
 
 # hw
-hw_range = (15, 15, 5)
+hw_range = (15, 20, 5)
 hw_list = mcscript.utils.value_range(*hw_range)
 
 
@@ -271,18 +267,20 @@ tasks = [
         "mfdn-transitions_executable": "xtransitions"
 
     }
-    for (interaction,coulomb,truncation_int) in interaction_coulomb_truncation_list
+    for interaction, coulomb, _ in interaction_coulomb_truncation_list
     for Nmax in Nmax_list
     for hw in hw_list
 ]
+
 
 ##################################################################
 # task control
 ##################################################################
 
-def task_pool(current_task):
-    pool = "Nmax{truncation_parameters[Nmax]:02d}".format(**current_task)
+def task_pool(task):
+    pool = "Nmax{truncation_parameters[Nmax]:02d}".format(**task)
     return pool
+
 
 mcscript.task.init(
     tasks,
@@ -295,6 +293,7 @@ mcscript.task.init(
     ],
     archive_phase_handler_list=[ncci.handlers.archive_handler_mfdn_postprocessor_hsi],
 )
+
 
 ################################################################
 # termination

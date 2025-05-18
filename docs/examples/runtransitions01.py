@@ -3,7 +3,7 @@
     Example postprocessor run with one-body and two-body observables.  This
     basic example is meant to model a typical production run, covering a range
     of mesh points.  We illustrate here only the use of predefined "observable
-    sets", which suffice for common electroweak observables:
+    sets", which suffice for common electroweak observables (M1, E2, etc.):
 
         + "M1" (one-body): provides the various components of the M1 operator (lp, ln, sp, sn)
 
@@ -143,18 +143,24 @@ tasks = [
         "mfdn-transitions_executable": "xtransitions"
 
     }
-    for (interaction,coulomb,truncation_int) in interaction_coulomb_truncation_list
+    for interaction, coulomb, _ in interaction_coulomb_truncation_list
     for Nmax in Nmax_list
     for hw in hw_list
 ]
 
+
+##################################################################
+# task dictionary postprocessing functions
+##################################################################
+
+def task_pool(task):
+    pool = "Nmax{truncation_parameters[Nmax]:02d}".format(**task)
+    return pool
+
+
 ##################################################################
 # task control
 ##################################################################
-
-def task_pool(current_task):
-    pool = "Nmax{truncation_parameters[Nmax]:02d}".format(**current_task)
-    return pool
 
 mcscript.task.init(
     tasks,
