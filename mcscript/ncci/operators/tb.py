@@ -778,7 +778,9 @@ def get_tbme_targets(task):
     targets = collections.defaultdict(collections.OrderedDict)
 
     # targets for diagonalization
-    if task.get("diagonalization"):
+
+    # squared radius
+    if task.get("diagonalization") and task.get("calculate_tbo", True):
         # target: radius squared (must be first, for built-in MFDn radii)
         if (task["basis_mode"] in {
                     modes.BasisMode.kDirect, modes.BasisMode.kDilated, modes.BasisMode.kGeneric,
@@ -820,7 +822,7 @@ def get_tbme_targets(task):
     # Hamiltonian components observable set
     #
     # - but not well-defined for shell model run
-    if task.get("diagonalization"):
+    if task.get("diagonalization") and task.get("calculate_tbo", True):
         if task["basis_mode"] in {
                 modes.BasisMode.kDirect, modes.BasisMode.kDilated, modes.BasisMode.kGeneric,
         }:
