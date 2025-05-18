@@ -459,6 +459,9 @@ def task_handler_mfdn_postprocessor_post(task, postfix="", cleanup=True):
         postfix (string): identifier to add to generated files
     """
     postprocessing.evaluate_ob_observables(task, postfix)
+    if task.get("convert_obdme"):
+        postprocessing.convert_ob_densities(task, postfix)
+
     postprocessing.save_postprocessor_obdme(task, postfix)
 
     if cleanup:
@@ -578,6 +581,7 @@ def archive_handler_mfdn_postprocessor():
             {"postfix" : "-transitions-output", "paths" : ["results/transitions-output"], "compress" : True, "include_metadata" : True},
             {"postfix" : "-res", "paths" : ["results/res"], "compress" : True},
             {"postfix" : "-obdme", "paths" : ["results/obdme"], "compress" : True},
+            {"postfix" : "-dens", "paths" : ["results/dens"], "compress" : True},
         ]
     )
     print(archive_filename_list)

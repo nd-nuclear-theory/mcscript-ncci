@@ -228,16 +228,27 @@ University of Notre Dame
   - maximum multipolarity for calculation of densities
   - for `mfdn` runs, this must be large enough to support any one-body operators
     desired to be calculated by `mfdn`, e.g., for M1 or E2 moments
-  - for postprocessor runs, this paremeter is optional, but can be used to
-    request tabulation of obdmes for extra, higher multipolarities than those
-    implied by the operators for the various requested one-body observables (or
-    by the operator quantum numbers specified in `obdme_qn_list`)
-
+  - for postprocessor runs, this parameter is optional, but serves to:
+    + request tabulation of obdmes for extra, higher multipolarities beyond
+      those which occur as a byproduct of calculating the one-body observables
+      (or are specified by the operator quantum numbers specified in
+      `obdme_qn_list`)
+    + define the multipolarities for the densities to be converted to tabular
+      "dens" format for interchange with other codes (see "convert_obdme" option)
+      
 - `obdme_reference_state_list`: list of tuples
   - list of reference states (J, g, i) for density calculation
 
 - `ob_observables`: list of operators
   - list of operators (type, order) to calculate, e.g., `[('E',2),('M',1)]`
+
+- `calculate_obdme`: `bool`
+  - whether or not to enable calculation of OBDMEs in MFDn
+
+- `convert_obdme`: `bool`
+  - whether or not to convert OBDMEs to a simple tabular "dens" format for
+    interchange with other codes, e.g., reaction codes (see initial code
+    comments in `obme2dens.cpp`)
 
 ----------------------------------------------------------------
 ## two-body observables ##
