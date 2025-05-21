@@ -77,6 +77,7 @@ University of Notre Dame
 - 02/12/24 (zz): 
     + Remove hamiltonian_rank. 
     + Add menj.par to archive list.
+- 05/21/25 (mac): Ensure single particle orbitals are set in all run modes.
 
 """
 import errno
@@ -229,9 +230,27 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     else:
         inputlist["Hrank"] = 2
     
-    # truncation mode
-    truncation_setup_functions[task["mb_truncation_mode"]](task, inputlist)
+    # define single particle orbitals
+    if variant_mode is modes.VariantMode.kH2:
+        inputlist["orbitalfile"] = environ.orbitals_filename(postfix)
+        mcscript.control.call([
+            "cp", "--verbose",
+            environ.orbitals_filename(postfix),
+            os.path.join(work_dir, environ.orbitals_filename(postfix))
+        ])
+    elif variant_mode is modes.VariantMode.kMENJ:
+        # define single-particle orbital cutoff
+        #
+        # Since menj variant is not given an explicit orbital list, we must provide
+        # the Nshell parameter.
+        if truncation_parameters.get("Nmax_orb") is not None:
+            Nmax_orb = truncation_parameters["Nmax_orb"]
+        elif task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kNmax:
+            Nmax_orb = truncation_parameters["Nmax"] + utils.Nv_for_nuclide(task["nuclide"])
+        inputlist["Nshell"] = Nmax_orb + 1
 
+    # set up many-body trunction (based on truncation mode)
+    truncation_setup_functions[task["mb_truncation_mode"]](task, inputlist)
    
     if run_mode in [modes.MFDnRunMode.kNormal,modes.MFDnRunMode.kLanczosOnly]:
         if (task["basis_mode"] in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):
@@ -243,25 +262,6 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         inputlist["tol"] = float(task["tolerance"])
         if task.get("reduce_solver_threads"):
             inputlist["reduce_solver_threads"] = task["reduce_solver_threads"]
-
-        # define single particle orbitals
-        if variant_mode is modes.VariantMode.kH2:
-            inputlist["orbitalfile"] = environ.orbitals_filename(postfix)
-            mcscript.control.call([
-                "cp", "--verbose",
-                environ.orbitals_filename(postfix),
-                os.path.join(work_dir, environ.orbitals_filename(postfix))
-            ])
-        elif variant_mode is modes.VariantMode.kMENJ:
-            # define single-particle orbital cutoff
-            #
-            # Since menj variant is not given an explicit orbital list, we must provide
-            # the Nshell parameter.
-            if truncation_parameters.get("Nmax_orb") is not None:
-                Nmax_orb = truncation_parameters["Nmax_orb"]
-            elif task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kNmax:
-                Nmax_orb = truncation_parameters["Nmax"] + utils.Nv_for_nuclide(task["nuclide"])
-            inputlist["Nshell"] = Nmax_orb + 1
 
         # provide Hamiltonian and two-body observable TBME file names
         if variant_mode is modes.VariantMode.kH2:
