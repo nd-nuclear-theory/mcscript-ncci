@@ -13,15 +13,17 @@ invocations.
 
 04/16/25 (mac): Rearrange postprocessor runs into tutorial sequence.
 
+06/19/25 (mac): Update example paths and add threading options.
+
 ----------------------------------------------------------------
 
 ## Setup ##
 
   - These examples make use of small example input TBME files found in the
-    subdirectory `example-data`.  In order for the scripting to find these input
+    subdirectory `doc/examples/data/h2`.  In order for the scripting to find these input
     files, make sure to set the environment variable `NCCI_DATA_DIR_H2` to
-    include the present example directory.  Please follow the instructions in
-    the "Environment configuration" section of `mcscript-ncci/INSTALL.md`.
+    include that directory.  Please follow the instructions in the "Environment
+    configuration" section of `INSTALL.md`.
 
   - Make sure you are familiar with the principles described in the mcscript
     package's `INSTALL.md` file.  In particular, to run a run script with qsubm,
@@ -30,19 +32,20 @@ invocations.
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     % cd ${MCSCRIPT_RUN_HOME}
-    % ln -s ${HOME}/code/mcscript-ncci/docs/examples/runex01.py
+    % ln -s ${HOME}/code/mcscript-ncci/doc/examples/runex01.py
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Alternatively, you can run these scripts wiht the `examples` directory as
     the current working directory, by adding the `--here` argument to `qsubm`.
 
-  - The example submission command lines given for the individual examples below
-    leave off the very-important parallel environment parameters (which we
-    estimate using `mfdnmem`).  They also omit the queue submission information,
-    which varies from one computing system to another.  (Otherwise you'll be
-    trying to run MFDn interactively on the front-end machine, which may get
-    people yelling at you -- although at least the Nmax=2 example runs are are
-    not computationally demanding.  Moreover, execution may simply fail on a
+  - The examples below are for small runs, run locally on your own computer.
+    The example submission command lines given below do not fully illustrate the
+    very-important parallel environment parameters for multi-rank MPI
+    parallelized runs.  They also omit the queue submission information, which
+    varies from one computing system to another.  (Otherwise you'll be trying to
+    run MFDn interactively on the front-end machine, which may get people
+    yelling at you -- although at least the Nmax=2 example runs are are not
+    computationally demanding.  Moreover, execution may simply fail on a
     front-end machine has a different architecture from the compute nodes, and
     the executable file is not compatible!)
 
@@ -68,57 +71,46 @@ start of each run script, for further commentary.
 
   * runmfdn13: harmonic oscillator basis run with MFDn v15 (CPU version)
 
-    6Li Nmax02..04 hw15..20 (direct)
+    6Li Nmax02..04 hw15..20
 
-    Interaction: example-data
-
-    Usage:
+    For a quick test with just Nmax=2 runs, select
 
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        qsubm --pool=ALL --phase=0 mfdn13
-        qsubm --pool=ALL --phase=1 mfdn13
-        qsubm --pool=ALL --phase=2 mfdn13
+        qsubm mfdn13 --pool=Nmax02 --phase=0 --serialthreads=8
+        qsubm mfdn13 --pool=Nmax02 --phase=1 --threads=8
+        qsubm mfdn13 --pool=Nmax02 --phase=2
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    or, for a quick test with just Nmax=2 runs, select
-
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        qsubm --pool=Nmax02 --phase=0 mfdn13
-        qsubm --pool=Nmax02 --phase=1 mfdn13
-        qsubm --pool=Nmax02 --phase=2 mfdn13
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    Generates wave functions needed for runtransitions00.
-
-    Uses operator TBMEs from `example-data`.  Make sure to set NCCI_DATA_DIR_H2 to
-    include `mcscript-ncci/docs/examples` (see `mcscript-ncci/INSTALL.md`).
-
-    See mcscript-ncci/docs/examples/example-results for example results output.
-
-    Notes on job submission at NERSC.  This provides a simple example of a
-    single-node run.  First, make sure the appropriate module files are loaded
-    for the programming environment for which the code was compiled.  For the
-    setup phase:
+    The command lines above assume, for illustration, that you want OpenMP
+    parallelization with 8 threads (e.g., if you are running on a machine with
+    at least 8 virtual cores), but you should choose the threading parameters
+    appropriately for your system.
+ 
+    The following instead provides an example of a single-node run on a
+    computing cluster, namely, NERSC.  First, make sure the appropriate module
+    files are loaded for the programming environment for which the code was
+    compiled.  Then, for the setup phase:
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    qsubm mfdn13 debug 30 --phase=0 --pool="Nmax02" --serialthreads=256 --mail-type=END,FAIL
+    qsubm mfdn13 debug 30 --phase=0 --pool=Nmax02 --serialthreads=256 --mail-type=END,FAIL
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Then, for the MFDn diagonalization phase:
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    qsubm mfdn13 debug 30 --phase=1 --pool="Nmax02" --ranks=1 --nodes=1 --threads=32 --mail-type=END,FAIL
+    qsubm mfdn13 debug 30 --phase=1 --pool=Nmax02 --ranks=1 --nodes=1 --threads=32 --mail-type=END,FAIL
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Then, the mop-up phase only involves some file system operations, and it can
     run either in a regular compute cue on the transfer queue:
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    qsubm mfdn13 xfer 30 --phase=2 --pool="Nmax02" --mail-type=END,FAIL
+    qsubm mfdn13 xfer 30 --phase=2 --pool=Nmax02 --mail-type=END,FAIL
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     You can use a dependency option (`--dependency=afterok:<job_id>`) to
-    sequence these jobs, without having to wait for each one to finish.
+    sequence these jobs, without having to wait for each one to finish before
+    submitting the next one.
 
 
   * runmfdn13gpu: harmonic oscillator direct run with MFDn v15 (GPU version)
@@ -132,7 +124,7 @@ start of each run script, for further commentary.
     module files for the CPU programming environment):
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    qsubm mfdn13gpu debug 30 --phase=0 --pool="Nmax02" --serialthreads=256 --mail-type=END,FAIL
+    qsubm mfdn13gpu debug 30 --phase=0 --pool=Nmax02 --serialthreads=256 --mail-type=END,FAIL
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Then, for the MFDn diagonalization phase should be submitted to the GPU
@@ -140,7 +132,7 @@ start of each run script, for further commentary.
     programming environment):
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    qsubm mfdn13gpu debug 30 --phase=1 --pool="Nmax02" --node-type=gpu --ranks=1 --nodes=1 --threads=32 --mail-type=END,FAIL --account=<account>
+    qsubm mfdn13gpu debug 30 --phase=1 --pool=Nmax02 --node-type=gpu --ranks=1 --nodes=1 --threads=32 --mail-type=END,FAIL --account=<account>
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Notice the `--node-type=gpu` option.  In place of `<account>` you should
@@ -149,19 +141,20 @@ start of each run script, for further commentary.
     above:
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    qsubm mfdn13gpu xfer 30 --phase=2 --pool="Nmax02" --mail-type=END,FAIL
+    qsubm mfdn13gpu xfer 30 --phase=2 --pool=Nmax02 --mail-type=END,FAIL
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
   * runmfdn15menj: diagonalization run with MFDn v15 3-body (menj) variant
 
-    (input interaction files not provided)
+    - Note: The input interaction files required for this run (including a large
+      3-body interaction file) are not provided.
+
 
   * runmfdn16: shell model diagonalization runs in sd shell, with MFDn v15 (CPU version)
 
     18O/20O/18F/19F/20N/25Mg, Wildenthal USD and Brown-Richter USDB interactions
 
-    Interaction: example-data
-    
     Usage:
 
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -173,8 +166,15 @@ start of each run script, for further commentary.
 
 ## MFDn Lanczos decomposition runs ##
 
-  See tutorial in docs/decomposition-tutorial.md.
-  
+  - See tutorial in `doc/decomposition-tutorial.md`.
+
+  - These examples make use of example decomposition parameter files found in
+    the subdirectory `doc/examples/data/decomposition`.  In order for the
+    scripting to find these input files, make sure to set the environment
+    variable `NCCI_DATA_DIR_DECOMPOSITION` to include that directory.  Please
+    follow the instructions in the "Environment configuration" section of
+    `INSTALL.md`.
+
   * runmfdndecomp01: basic illustration of decomposition using Nex operator
   
   * runmfdndecomp02: examples of angular momentum and joint U(3) decompositions
@@ -191,33 +191,19 @@ start of each run script, for further commentary.
     of mesh points.  We illustrate here only the use of predefined "observable
     sets", which suffice for common electroweak observables (M1, E2, etc.).
     
-    Usage:
+    This run uses wave functions created by `runmfdn13`.  Make sure to set
+    NCCI_LIBRARY_PATH to include `mcscript-ncci/doc/examples` (see
+    `INSTALL.md`).  And make sure to first run `runmfdn13`.
+
+    For a quick test with just Nmax=2 runs
 
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        qsubm --pool=ALL --phase=0 transitions01
-        qsubm --pool=ALL --phase=1 transitions01
-        qsubm --pool=ALL --phase=2 transitions01
+        qsubm transitions01 --pool=Nmax02 --phase=0
+        qsubm transitions01 --pool=Nmax02 --phase=1
+        qsubm transitions01 --pool=Nmax02 --phase=2
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    or, for a quick test with just Nmax=2 runs
-
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        qsubm --pool=Nmax02 --phase=0 transitions01
-        qsubm --pool=Nmax02 --phase=1 transitions01
-        qsubm --pool=Nmax02 --phase=2 transitions01
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    Uses operator TBMEs from `example-data`.  Make sure to set NCCI_DATA_DIR_H2 to
-    include `mcscript-ncci/docs/examples` (see `mcscript-ncci/INSTALL.md`).
-
-    Uses wave functions created by runmfdn13.  Make sure to set
-    NCCI_LIBRARY_PATH to include `mcscript-ncci/docs/examples` (see `mcscript-ncci/INSTALL.md`).
-
-    Check that the task dictionary parameter `"mfdn-transitions_executable"` gives
-    the correct location for your mfdn-transitions executable file within your
-    mfdn installation directory.
-
-    See `mcscript-ncci/docs/examples/example-results` for example results output.
+    See `mcscript-ncci/doc/examples/example-output` for example results output.
 
     Notes on job submission at NERSC.  This provides a simple example of a
     single-node run.  First, make sure the appropriate module files are loaded
@@ -225,20 +211,20 @@ start of each run script, for further commentary.
     setup phase:
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    qsubm transitions01 debug 30 --phase=0 --pool="Nmax02" --serialthreads=256 --mail-type=END,FAIL
+    qsubm transitions01 debug 30 --phase=0 --pool=Nmax02 --serialthreads=256 --mail-type=END,FAIL
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Then, for the MFDn diagonalization phase:
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    qsubm transitions01 debug 30 --phase=1 --pool="Nmax02" --ranks=8 --nodes=1 --threads=32 --mail-type=END,FAIL
+    qsubm transitions01 debug 30 --phase=1 --pool=Nmax02 --ranks=8 --nodes=1 --threads=32 --mail-type=END,FAIL
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Then, the mop-up phase only involves some file system operations, and it can
     run either in a regular compute cue on the transfer queue:
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    qsubm transitions01 xfer 30 --phase=2 --pool="Nmax02" --mail-type=END,FAIL
+    qsubm transitions01 xfer 30 --phase=2 --pool=Nmax02 --mail-type=END,FAIL
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     You can use a dependency option (`--dependency=afterok:<job_id>`) to

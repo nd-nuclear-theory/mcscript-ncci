@@ -278,7 +278,7 @@ Some initial pointers on where to look to get started.
   - Instructions.  See `INSTALL.md` for instructions.
   
   - Examples.  This package comes with some example run scripts, under
-    `docs/examples`.  Follow the instructions in `docs/examples/README.md`.
+    `doc/examples`.  Follow the instructions in `doc/examples/README.md`.
 
   - The examples which come with `mcscript-ncci` are pretty minimal.  For
     instance, they don't know about the locations where we keep our group
