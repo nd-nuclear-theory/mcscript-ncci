@@ -101,8 +101,8 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
   # Use read-only mount point for /global/cfs/cdirs/m2032.
   # See https://docs.nersc.gov/performance/io/dvs/.
   setenv GROUP_HOME "/dvs_ro/cfs/cdirs/m2032"
-  setenv NCCI_DATA_DIR_H2 "${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/docs/examples/example-data"
-  setenv NCCI_DATA_DIR_DECOMPOSITION "${GROUP_HOME}/data/u3-subspaces/decomposition:${HOME}/code/mcscript-ncci/docs/examples/example-data"
+  setenv NCCI_DATA_DIR_H2 "${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/doc/examples/data/h2"
+  setenv NCCI_DATA_DIR_DECOMPOSITION "${GROUP_HOME}/data/u3-subspaces/decomposition:${HOME}/code/mcscript-ncci/doc/examples/data/decomposition"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   For `bash` shell users (`.bashrc` or `.bash_profile`):
@@ -111,8 +111,8 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
   # Use read-only mount point for /global/cfs/cdirs/m2032.
   # See https://docs.nersc.gov/performance/io/dvs/.
   export GROUP_HOME="/dvs_ro/cfs/cdirs/m2032"
-  export NCCI_DATA_DIR_H2="${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/docs/examples/example-data"
-  export NCCI_DATA_DIR_DECOMPOSITION="${GROUP_HOME}/data/u3-subspaces/decomposition:${HOME}/code/mcscript-ncci/docs/examples/example-data"
+  export NCCI_DATA_DIR_H2="${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/doc/examples/data/h2"
+  export NCCI_DATA_DIR_DECOMPOSITION="${GROUP_HOME}/data/u3-subspaces/decomposition:${HOME}/code/mcscript-ncci/doc/examples/data/decomposition"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   Or, at the ND CRC, one would set `GROUP_HOME="/afs/crc.nd.edu/group/nuclthy"`
@@ -134,10 +134,10 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
 
   For `tcsh` shell users (`.cshrc` or `.tcshrc`):
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  setenv NCCI_LIBRARY_PATH "${SCRATCH}/runs:${SCRATCH}/library:${HOME}/code/mcscript-ncci/docs/examples"
+  setenv NCCI_LIBRARY_PATH "${SCRATCH}/runs:${SCRATCH}/library:${HOME}/code/mcscript-ncci/doc/examples"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   For `bash` shell users (`.bashrc` or `.bash_profile`):
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  export NCCI_LIBRARY_PATH="${SCRATCH}/runs:${SCRATCH}/library:${HOME}/code/mcscript-ncci/docs/examples"
+  export NCCI_LIBRARY_PATH="${SCRATCH}/runs:${SCRATCH}/library:${HOME}/code/mcscript-ncci/doc/examples"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

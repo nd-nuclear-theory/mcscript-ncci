@@ -40,7 +40,7 @@ ncci.environ.operator_dir_list = [
 
 # decomposition coefficient paths
 ncci.environ.decomposition_dir_list = [
-    "decomposition-Z03-N03",
+    "Z03-N03",
 ]
 
 ##################################################################

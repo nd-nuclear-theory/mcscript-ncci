@@ -244,7 +244,7 @@ start of each run script, for further commentary.
     You can use a dependency option (`--dependency=afterok:<job_id>`) to
     sequence these jobs, without having to wait for each one to finish.
 
-  * runtransitions02: example of explicitly defining one-bodyand two-body observables
+  * runtransitions02: example of explicitly defining one-body and two-body observables
 
     Here we explicitly construct the intrinsic kinetic energy operator from its
     expression as a sum of one-body and separable two-body terms, e.g, equation
