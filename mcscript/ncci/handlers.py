@@ -535,6 +535,7 @@ def archive_handler_mfdn():
             {"postfix" : "-lanczos", "paths" : ["results/lanczos"], "compress" : True},
             {"postfix" : "-task-data", "paths" : ["results/task-data"], "compress" : True},
             {"postfix" : "-obdme", "paths" : ["results/obdme"], "compress" : True},
+            {"postfix" : "-dens", "paths" : ["results/obdme"], "compress" : True},  # retabulated densities
             {"postfix" : "-tbme", "paths" : ["results/tbme"], "compress" : False},
             {"postfix" : "-wf", "paths" : ["results/wf"]},
         ]
