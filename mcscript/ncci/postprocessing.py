@@ -417,9 +417,10 @@ def convert_ob_densities(task, postfix=""):
             ))
 
             # invoke obme2dens
+            twice_J_bra_str = "{}".format(int(2*J_bra))
             mcscript.control.call(
                 [
-                    environ.shell_filename("obme2dens"), obme_filename, dens_filename,
+                    environ.shell_filename("obme2dens"), twice_J_bra_str, obme_filename, dens_filename,
                 ],
                 mode=mcscript.control.CallMode.kSerial
             )
