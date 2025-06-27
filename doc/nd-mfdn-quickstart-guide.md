@@ -7,6 +7,7 @@ Some initial pointers on where to look to get started.
 06/14/24 (mac): Add notes on Ubuntu installation for mfdn/mfdn-transitions.
 06/18/24 (mac): Expand notes on ndconfig.
 12/20/24 (mac): Update notes on mfdn.
+06/27/25 (mac): Update notes on mfdn-transitions.
 
 ----------------
 
@@ -43,6 +44,7 @@ Some initial pointers on where to look to get started.
     codes that use `ndconfig`, such as `shell`, which we will tackle later,
     below.)
 
+
 # shell #
 
    The `shell` package, written in C++, provides a suite of tools for generating
@@ -61,6 +63,7 @@ Some initial pointers on where to look to get started.
 
   - Code test.  Try out the "Optional sanity check for `shell` project" given in
     Section 5 of the `INSTALL.md` file for `ndconfig`.
+
 
 # mfdn #
 
@@ -188,48 +191,44 @@ Some initial pointers on where to look to get started.
        "mfdn_executable": "f94feb3/xmfdn-h2-lan"
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+
 # mfdn-transitions
 
-  - Cloning.  You can clone from either the ND original repository
+  - Cloning.  Clone the `mfdn-transitions` repository:
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     % git clone https://github.com/nd-nuclear-theory/mfdn-transitions.git
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    or from ISU's fork (this might now be quite the latest version)
+    Those involved in code development should be aware that there is also a
+    (private) ISU fork:
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     % git clone https://github.com/isu-nuclear-theory/mfdn-transitions.git
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    These are both private repositories.  In order to access these repositories,
-    you will need to submit your github userid to your contact person on that
-    repository and request read permission.
 
   - Environment.  You can source our usual "env" file from ndconfig, for
     whichever system and compiler you are targeting.  Or see notes under `mfdn`
     for software you may need to have installed to build locally on a Linux
     (Ubuntu) system.
 
-  - Building.  This code is built using CMake.  See instructions in `INSTALL.md`.
+  - Building and installing.  This code is built using CMake.  See instructions
+    in `INSTALL.md`.  To install the binary executable files to the location
+    expected by `mcscript-ncci`, see the instructions in `INSTALL.md` for
+    running `cmake` with the `--install` option.
+    
+    Note that `mfdn-transitions` requires the GSL library to be available at run
+    time.  If you encounter a runtime error message indicating that GSL is not
+    found, verify that the GSL library path is properly inlcuded in your
+    `LD_LIBRARY_PATH` environment variable.
   
-  - Installing executable.  See instructions in `INSTALL.md` for running `cmake`
-    with the `--install` option.  Or else, you can manually copy `xtransitions`
-    to the appropriate directory, much as described above for `mfdn`.  For
-    instance, on your own workstation (or a non-Cray environment):
-  
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    % mkdir --parents ${MCSCRIPT_INSTALL_HOME}/mfdn-transitions/bin
-    % cp xtransitions ${MCSCRIPT_INSTALL_HOME}/mfdn-transitions/bin
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - Documentation and examples.  See the `doc` directory.  Some basic standalone
+    examples of running the postprocessor, which require only some small example
+    input files included with the repository, are provided in `doc/examples`.
+    (Further examples of scripted runs are provided in the `mcscript-ncci`
+    documentation.)
 
-    Or, at NERSC, on perlmutter CPU:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    % mkdir --parents ${MCSCRIPT_INSTALL_HOME}/${CRAY_CPU_TARGET}/mfdn-transitions/bin
-    % cp xtransitions ${MCSCRIPT_INSTALL_HOME}/${CRAY_CPU_TARGET}/mfdn-transitions/bin
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  
 # mcscript #
 
   This package provides basic scripting tools for workflow management.  There is
@@ -252,6 +251,7 @@ Some initial pointers on where to look to get started.
 
   - Run the examples described in INSTALL.md, to get the basic idea of a
     task-based run.
+
 
 # mcscript-ncci #
 
@@ -297,4 +297,3 @@ Some initial pointers on where to look to get started.
 
     For information on machine-specific parameters for running at NERSC, see
     `notes/nersc-run-parameters.txt` in our group `runs` repository.
-
