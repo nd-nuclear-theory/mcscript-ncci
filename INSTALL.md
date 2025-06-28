@@ -87,11 +87,13 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
 
     * `NCCI_DATA_DIR_H2` for two-body matrix element files
 
+    * `NCCI_DATA_DIR_PARTITIONING` for MFDn partitioning files
+    
     * `NCCI_DATA_DIR_REL` for relative matrix element files
 
     * `NCCI_DATA_DIR_DECOMPOSITION` for decomposition operators coefficient files
 
-  However, only `NCCI_DATA_DIR_H2` need be set for ordinary MFDn diagonalization runs.
+  However, only `NCCI_DATA_DIR_H2` need be set for basic MFDn diagonalization runs.
 
   E.g., for running under project m2032 at NERSC...
 
@@ -102,6 +104,7 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
   # See https://docs.nersc.gov/performance/io/dvs/.
   setenv GROUP_HOME "/dvs_ro/cfs/cdirs/m2032"
   setenv NCCI_DATA_DIR_H2 "${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/doc/examples/data/h2"
+  setenv NCCI_DATA_DIR_PARTITIONING "${GROUP_HOME}/data/partitioning/v15"
   setenv NCCI_DATA_DIR_DECOMPOSITION "${GROUP_HOME}/data/u3-subspaces/decomposition:${HOME}/code/mcscript-ncci/doc/examples/data/decomposition"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -112,6 +115,7 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
   # See https://docs.nersc.gov/performance/io/dvs/.
   export GROUP_HOME="/dvs_ro/cfs/cdirs/m2032"
   export NCCI_DATA_DIR_H2="${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/doc/examples/data/h2"
+  export NCCI_DATA_DIR_PARTITIONING="${GROUP_HOME}/data/partitioning/v15"
   export NCCI_DATA_DIR_DECOMPOSITION="${GROUP_HOME}/data/u3-subspaces/decomposition:${HOME}/code/mcscript-ncci/doc/examples/data/decomposition"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

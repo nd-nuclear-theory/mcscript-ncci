@@ -18,8 +18,10 @@ import math
 import os
 
 import mcscript.exception
+import mcscript.utils
 
 from . import constants
+from . import environ
 
 
 ################################################################
@@ -245,7 +247,7 @@ def partition_filename(
         Nshell_for_default_partition=set(range(9, 18+1)),
         Nshell_for_partition_by_A={},
         partition_file_by_Nshell={},
-        partition_file_dir="/global/cfs/cdirs/m2032/data/partitioning/v15",
+        partition_file_dir=None,
         partition_filename_template_for_default_partition="mfdn_partitioning.info_Nshell{Nshell:02d}",
         partition_filename_template_for_partition_by_A="by-A/A{A:02d}/mfdn_partitioning.info_Nshell{Nshell:02d}",
         verbose=False,
@@ -275,7 +277,9 @@ def partition_filename(
 
         partition_file_by_Nshell (dict, optional): explicit overrides (Nshell -> filename)
 
-        partition_file_dir (str, optional): base directory under which to find partition files
+        partition_file_dir (str, optional): Base directory under which to find
+            partition files.  DEPRECATED in favor of using
+            NCCI_DATA_DIR_PARTITIONING search path.
 
         partition_filename_template_for_default_partition (str, optional):
             fmt template string for filenames of generic (nuclide-independent)
@@ -304,7 +308,15 @@ def partition_filename(
 
     # qualify filename with full path
     if partition_filename is not None:
-        partition_filename = os.path.join(partition_file_dir, partition_filename)
+        if partition_file_dir is None:
+            partition_filename = mcscript.utils.search_in_subdirectories(
+                environ.data_dir_partitioning_list, partition_filename,
+                fail_on_not_found=True,
+                error_message="Partition file not found (check that you have set NCCI_DATA_DIR_PARTITIONING appropriately)",
+                verbose=verbose,
+            )
+        else:
+            partition_filename = os.path.join(partition_file_dir, partition_filename)
 
     # diagnostic output
     if verbose:
