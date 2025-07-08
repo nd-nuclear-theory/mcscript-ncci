@@ -107,6 +107,7 @@ University of Notre Dame
     - 08/21/24 (mac):
         + Provide "Hmf" observable set (with Hmf) for shell-model Hamiltonian.
     - 04/14/25 (mac): Extend module docstring to provide more detailed explanations.
+    - 07/08/25 (mac): Add option include_interaction for Hamiltonian.
 
 """
 import collections
@@ -640,7 +641,7 @@ def Qnintr(nuclide):
 ################################################################
 
 def Hamiltonian(
-        A, hw, a_cm=0., hw_cm=None, use_coulomb=True, include_ke = True, hw_coul=None, hw_coul_rescaled=None,
+        A, hw, a_cm=0., hw_cm=None, use_interaction=True, use_coulomb=True, include_ke = True, hw_coul=None, hw_coul_rescaled=None,
         **kwargs,
 ):
     """A standard Hamiltonian for NCCI runs.
@@ -650,6 +651,7 @@ def Hamiltonian(
         hw (float): oscillator basis parameter
         a_cm (float, default 0.0): Lawson term coefficient
         hw_cm (float, default hw): Lawson term oscillator frequency
+        use_interaction (bool, default True): include nucleon-nucleon interaction (VNN)
         use_coulomb (bool, default True): include Coulomb interaction
         hw_coul (float): hw for input Coulomb matrix elements
         hw_coul_rescaled (float, default hw): target hw for analytic scaling of Coulomb matrix elements
@@ -663,7 +665,10 @@ def Hamiltonian(
         hw_coul_rescaled = hw
     
     lawson_term = a_cm * Ncm(A=A, hw=hw_cm)
-    interaction = VNN()
+    if use_interaction:
+        interaction = VNN()
+    else:
+        interaction = mcscript.utils.CoefficientDict()
     if use_coulomb:
         coulomb_interaction = VC(hw_basis=hw_coul_rescaled, hw_coul=hw_coul)
     else:
