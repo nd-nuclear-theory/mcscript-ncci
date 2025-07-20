@@ -57,6 +57,7 @@ University of Notre Dame
 - 04/09/25 (mac): Provide for evaluation of obdmes beyond those required for observables 
   (add task options "obdme_qn_list" and "obdme_multipolarity").
 - 05/18/25 (mac): Add convert_ob_densities() for conversion of obdmes to density tabulations. 
+- 07/20/25 (mac): Refactor identification of source wf data into select_source_wf_data().
 """
 import collections
 import deprecated
@@ -502,6 +503,88 @@ def allowed_by_masks(task, qn_pair):
     return allowed
 
 
+def select_source_wf_data(
+        run_list, selector, *,
+        res_format=None,
+        filename_format=None,
+        glob_pattern=None,
+        verbose=False,
+):
+    """Extract MFDnResultsData objects from given runs matching given selector.
+
+    Since the results are intended for use in picking wave functions for
+    postprocessing, results coming from calculations with different values for
+    the "technical" keys (lanczos, M) are distinghished, allowing later
+    selection of wave functions by these keys.
+
+    Fails with exceptions if no results are found matching selector.
+
+    Arguments:
+
+        run_list (list[str]): List of run identifiers (for library.get_res_directory).
+
+        selector (dict): Key-value pairs for selecting the relevant mesh points.
+
+        res_format (str, optional): Identifier string for the results file
+        parser to use (for mfdnres.input.slurp_res_files).
+
+        filename_format (str, optional): Filename format to match (for
+        mfdnres.input.slurp_res_files).
+
+        glob_pattern (str, optional): Glob pattern for results filenames to read
+            within each directory (for mfdnres.input.slurp_res_files).
+
+    Returns:
+
+       mesh_data (list[MFDnResultsData]): List of selected mesh points,
+       distingished (and sorted) by technical keys (lanczos, M).
+
+       merged_data (MFDnResultsData): Single merged mesh point, not distingished by technical keys (lanczos, M).
+
+    """
+    
+    # slurp res files
+    SORT_KEY_DESCRIPTOR = (("lanczos", int), ("M", float))
+    UNMERGEABLE_KEYS = {"nuclide", "natorb_base_state", "natural_orbital_iteration"}
+    res_dir_list = []
+    for run in run_list:
+        res_dir_list += [library.get_res_directory(run)]
+    mesh_data = mfdnres.input.slurp_res_files(
+        res_dir_list,
+        filename_format=filename_format,
+        glob_pattern=glob_pattern,
+        res_format=res_format,
+        verbose=verbose,
+    )
+    
+    # find results matching selector
+    mesh_data = mfdnres.analysis.selected_mesh_data(
+        mesh_data, selector,
+        )
+    if len(mesh_data) == 0:
+        raise mcscript.exception.ScriptError(
+            "No MFDn res files found matching selector: {:s}".format(str(selector))
+        )
+
+    # provide default value for lanczos for sorting
+    for results_data in mesh_data:
+        results_data.params.setdefault("lanczos", 0)
+
+    # sort by "technical" keys (lanczos, M)
+    mesh_data = mfdnres.analysis.sorted_mesh_data(
+        mesh_data, SORT_KEY_DESCRIPTOR,
+        )
+
+    # merge over "technical" keys (lanczos, M)
+    merged_data = mfdnres.analysis.merged_mesh(
+        mesh_data, set(selector.keys()) & UNMERGEABLE_KEYS,
+        )
+    assert len(merged_data) == 1
+    merged_data = merged_data[0]
+
+    return mesh_data, merged_data
+
+
 def get_run_descriptor_pair(bra_mesh_data, ket_mesh_data, qn_pair, operator_qn):
     """Get (run, descriptor) pair for a given set of state and operator quantum numbers.
 
@@ -512,7 +595,7 @@ def get_run_descriptor_pair(bra_mesh_data, ket_mesh_data, qn_pair, operator_qn):
         operator_qn (tuple): (J0,g0,Tz0)
 
     Returns:
-        (tuple of tuples): ((bra_run,bra_descriptor),(ket_run,ket_descriptor))
+        (tuple of tuples): ((bra_run, bra_descriptor), (ket_run, ket_descriptor))
     """
     # convenience variables
     (bra_qn, ket_qn) = qn_pair
@@ -559,6 +642,7 @@ def get_run_descriptor_pair(bra_mesh_data, ket_mesh_data, qn_pair, operator_qn):
 
     return (bra_run_descriptor_pair, ket_run_descriptor_pair)
 
+
 def init_postprocessor_db(task, postfix=""):
     """Initialize sqlite3 database for postprocessor runs.
 
@@ -604,44 +688,21 @@ def init_postprocessor_db(task, postfix=""):
     ################################################################
     # slurp res files and create bra and ket data objects
     ################################################################
-    SORT_KEY_DESCRIPTOR = (("lanczos", int), ("M", float))
-    UNMERGEABLE_KEYS = {"nuclide","natorb_base_state","natural_orbital_iteration"}
-    # slurp source wave function info
-    wf_source_res_dir_list = []
-    for run in task["wf_source_run_list"]:
-        wf_source_res_dir_list += [library.get_res_directory(run)]
-    wf_source_glob_pattern = task.get("wf_source_glob_pattern","*.res")
-    wf_source_res_format = task.get("wf_source_res_format")
-    wf_source_mesh_data = mfdnres.input.slurp_res_files(
-        wf_source_res_dir_list,
-        filename_format="ALL",
-        glob_pattern = wf_source_glob_pattern,
-        res_format = wf_source_res_format,
-        verbose=True
-    )
-    
-    # provide default value for lanczos for sorting
-    for results_data in wf_source_mesh_data:
-        results_data.params["lanczos"] = results_data.params.get("lanczos", 0)
-
-    # construct bra and ket info
+    run_list = task["wf_source_run_list"]
+    res_format = task.get("wf_source_res_format")
+    glob_pattern = task.get("wf_source_glob_pattern")
     bra_selector = task["wf_source_bra_selector"]
     ket_selector = task["wf_source_ket_selector"]
-    bra_mesh_data = mfdnres.analysis.selected_mesh_data(
-        wf_source_mesh_data, bra_selector
-        )
-    if len(bra_mesh_data) == 0:
-        raise mcscript.exception.ScriptError(
-            "No MFDn res files found matching selector: "+str(bra_selector)
-        )
-    bra_mesh_data = mfdnres.analysis.sorted_mesh_data(
-        bra_mesh_data, SORT_KEY_DESCRIPTOR
-        )
-    bra_merged_data = mfdnres.analysis.merged_mesh(
-        bra_mesh_data, set(bra_selector.keys()) & UNMERGEABLE_KEYS
-        )
-    assert len(bra_merged_data) == 1
-    bra_merged_data = bra_merged_data[0]
+    
+    bra_mesh_data, bra_merged_data = select_source_wf_data(
+        run_list=run_list,
+        selector=bra_selector,
+        res_format=res_format,
+        filename_format="ALL",
+        glob_pattern=glob_pattern,
+        verbose=True,
+    )
+    
     if bra_selector == ket_selector:
         # special case where bra and ket selection is equal:
         # allow canonicalization of transitions, and don't duplicate work
@@ -653,21 +714,14 @@ def init_postprocessor_db(task, postfix=""):
         ket_merged_data = bra_merged_data
     else:
         canonicalize = False
-        ket_mesh_data = mfdnres.analysis.selected_mesh_data(
-            wf_source_mesh_data, ket_selector
-            )
-        if len(ket_mesh_data) == 0:
-            raise mcscript.exception.ScriptError(
-                "No MFDn res files found matching selector: "+str(ket_selector)
-            )
-        ket_mesh_data = mfdnres.analysis.sorted_mesh_data(
-            ket_mesh_data, SORT_KEY_DESCRIPTOR
-            )
-        ket_merged_data = mfdnres.analysis.merged_mesh(
-            ket_mesh_data, set(ket_selector.keys()) & UNMERGEABLE_KEYS
-            )
-        assert len(ket_merged_data) == 1
-        ket_merged_data = ket_merged_data[0]
+        ket_mesh_data, ket_merged_data = select_source_wf_data(
+            run_list=run_list,
+            selector=ket_selector,
+            res_format=res_format,
+            filename_format="ALL",
+            glob_pattern=glob_pattern,
+            verbose=True,
+        )
         
     # provide access to results data for use by masking functions
     task["metadata"]["bra_results_data"] = bra_merged_data
@@ -1134,6 +1188,7 @@ def run_postprocessor_two_body(task, postfix="", one_body=False):
         for (operator_id, transition_dict) in res["two_body_observables"].items():
             operator_id = operator_id.replace('tbme-','')
             for ((bra_qn,ket_qn), rme) in transition_dict.items():
+                ## print("Saving transition: {} <- {} operator {} rme {}".format(bra_qn, ket_qn, operator_id, rme))
                 db.execute(
                     """UPDATE tb_transitions
                     SET rme = ?
