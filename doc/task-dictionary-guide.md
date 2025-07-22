@@ -182,10 +182,13 @@ University of Notre Dame
   - number of spare diagonal nodes (MFDn v14 only)
 
 - `partition_filename`: `str`, optional
-  - (str) filename for partition file to use with MFDn
-  - If `None`, no partition file
-  - NOTE: for now absolute path is required, but path search protocol may
+  - Filename for partition file to use with MFDn.
+  - If `None`, no partition file.
+  - NOTE: For now absolute path is required, but path search protocol may
     be restored in future.
+  - NOTE: This parameter is ignored in Lanczos decomposition runs, for which the
+    partitioning is provided by the `mfdn_smwf.info` file of the source wave
+    function.
 
 ----------------------------------------------------------------
 ## decomposition parameters ##

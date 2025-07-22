@@ -64,12 +64,14 @@ University of Notre Dame
 - 07/21/25 (mac):
   + Provide decomposition wf selection by "wf_source_runs" and "wf_source_selector".
   + Add sensible default task dictionary parameters for decomposition handlers.
+- 07/22/25 (mac): Extract partitioning for decomposition runs from mfdn_smwf.info.
 """
 import os
 
 import mcscript.exception
 import mcscript.parameters
 import mcscript.task
+import mfdnres
 
 from . import (
     environ,
@@ -273,6 +275,63 @@ def task_handler_mfdn_decomposition_pre(task, postfix=""):
     task_handler_mfdn_pre(task, postfix)
 
     
+def extract_partitioning_from_smwf_info_file(
+        wf_source_dir,
+        *,
+        smwf_info_filename="mfdn_smwf.info",
+        partitioning_info_filename="mfdn_partitioning.info",
+):
+    """Parse smwf info file to extract partitioning and write to partitioning info file.
+
+    Arguments:
+
+        wf_source_dir (str): Path to wave function directory.
+
+        smwf_info_filename (str, optional): Filename for smwf info file within
+        wave function directory.
+
+        partitioning_info_filename (str, optional): Filename for partitioning
+        info file within partitioning target directory.
+
+    """
+
+    # parse
+    in_file = open(os.path.join(wf_source_dir, smwf_info_filename), "r")
+    in_file_lines = [row for row in in_file]
+    in_file.close()
+    tokenized_lines = list(mfdnres.tools.split_and_prune_lines(in_file_lines))
+                   
+    # skip header (checking version)
+    tokens = tokenized_lines.pop(0)
+    if int(tokens[0]) != 15200:
+        raise mcscript.exception.ScriptError("Unrecognized version number in smwf_info file")
+    tokens = tokenized_lines.pop(0)
+    tokens = tokenized_lines.pop(0)
+
+    # skip orbitals
+    tokens = tokenized_lines.pop(0)
+    num_orbitals = int(tokens[0]) + int(tokens[1])
+    for _ in range(num_orbitals):
+        tokens = tokenized_lines.pop(0)
+
+    # parse and store partitioning
+    lines = []
+    tokens = tokenized_lines.pop(0)
+    lines.append(" ".join(tokens))
+    num_partitions = int(tokens[0]) + int(tokens[1])
+    num_partitions_read = 0
+    while num_partitions_read < num_partitions:
+        tokens = tokenized_lines.pop(0)
+        lines.append(" ".join(tokens))
+        num_partitions_read += len(tokens)
+        
+    # write output
+    mcscript.utils.write_input(
+        partitioning_info_filename,
+        input_lines=lines,
+    )
+
+
 def task_handler_mfdn_decomposition_run(task, postfix=""):
     """Task handler for MFDn Lanczos decomposition, assuming oscillator basis.
 
@@ -280,8 +339,6 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
-    import mfdnres
-
 
     # set some defaults
     task.setdefault("diagonalization", True)  # to disable unnecessary obdme calculation
@@ -359,25 +416,20 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
     if source_wf_Nmax != Nmax:
         raise mcscript.exception.ScriptError("Mismatched Nmax for source wave function ({}) and present decomposition run ({})".format(Nmax, source_wf_Nmax))
         
-    # get partitioning info
-    #  TODO(pjf) eventually this should be handled by MFDn reading mfdn_smwf.info
-    #  TODO(mac) but, in the meantime, this should be handled by the scripting
-    #  extracting the partitioning from mfdn_smwf.info
-    task_data_prefix = library.get_task_data_prefix(wf_source_run, wf_source_descriptor)
-    partition_filename = os.path.join(task_data_prefix, "mfdn_partitioning.info")
-    if not os.path.exists(partition_filename):
-        partition_filename = task.get("partition_filename")
-        if partition_filename is not None:
-            print("WARN: using manually-provided partitioning {}".format(partition_filename))
-
+    # extract partitioning info
+    if task.get("partition_filename"):
+        print("WARN: A partition_filename was specified but is being ignored.")
     wf_source_wf_prefix = library.get_wf_prefix(wf_source_run, wf_source_descriptor)
+    extract_partitioning_from_smwf_info_file(wf_source_wf_prefix)
+            
+    # set MFDn parameters
     task["mfdn_inputlist"] = {
         "selectpiv" : 4,
         "initvec_index": level_seq_lookup[qn],
         "initvec_smwffilename": os.path.join(wf_source_wf_prefix, "mfdn_smwf"),
     }
-    task["partition_filename"] = partition_filename
-
+    task["partition_filename"] = "mfdn_partitioning.info"
+    
     # run MFDn
     mfdn_driver = task.get("mfdn_driver")
     if mfdn_driver is None:
@@ -388,8 +440,8 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
     mfdn_driver.run_mfdn(task=task, postfix=postfix)
 
     # copy out lanczos file
-    descriptor = task["metadata"]["descriptor"]
     work_dir = "work{:s}".format(postfix)
+    descriptor = task["metadata"]["descriptor"]
     filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
     lanczos_source_filename = os.path.join(work_dir, "mfdn_alphabeta.dat")
     lanczos_target_filename = "{:s}.lanczos".format(filename_prefix)

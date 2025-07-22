@@ -125,7 +125,6 @@ tasks = [
 
         # diagonalization parameters
         "max_iterations": decomposition_max_iterations,
-        "partition_filename": None,
 
         # decomposition
         ## "hamiltonian": ncci.operators.tb.Ntotal(A, hw),

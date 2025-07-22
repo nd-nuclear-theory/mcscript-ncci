@@ -147,7 +147,6 @@ tasks = [
 
         # diagonalization parameters
         "max_iterations": decomposition_max_iterations,
-        "partition_filename": None,
 
         # sources
         "tbme_sources": [
