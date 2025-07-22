@@ -481,9 +481,9 @@ than a raw Python dict:
 
 Wow, we were already converged at 5 lanczos iterations, despite that wifty stray
 non-integer eigenvalue!  (The eigenvalue 3.32 was lumped in with 4.0, but it was
-also so small that it didn't matter.)  This is maybe *too* nice of an example!
-In fact, how low can we push the number of Lanczos iterations?  We clearly need
-at least three iterations to cover three eigenvalues!
+also so small that it didn't matter.)  In fact, how low can we push the number
+of Lanczos iterations?  We clearly need at least three iterations to cover three
+eigenvalues!
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     lanczos_iterations 2
@@ -497,11 +497,11 @@ at least three iterations to cover three eigenvalues!
     0.058347 (4,)
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-But 3 iterations seems to do it.
+But, indeed, 3 iterations seems to do it.
 
-In fact, convergence is to be expected, when the number of iterations is equal
-to the number of distinct eigenvalues.  See Sec. 5.2.1 "Decomposition" of
-Ref. [johnson2018:bigstick].
+In fact, this is not just a fluke.  Convergence is actually to be expected when
+the number of iterations is equal to the number of distinct eigenvalues.  See
+Sec. 5.2.1 "Decomposition" of Ref. [johnson2018:bigstick].
 
 Incidentally, if we try the same thing using Nex itself as the decomposition
 operator, the raw eigenvalues are shifted, but the end result is the same:

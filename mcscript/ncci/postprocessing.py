@@ -58,6 +58,7 @@ University of Notre Dame
   (add task options "obdme_qn_list" and "obdme_multipolarity").
 - 05/18/25 (mac): Add convert_ob_densities() for conversion of obdmes to density tabulations. 
 - 07/20/25 (mac): Refactor identification of source wf data into select_source_wf_data().
+- 07/21/25 (mac): Provide get_run_descriptor() to extract wf info for single wf.
 """
 import collections
 import deprecated
@@ -585,17 +586,58 @@ def select_source_wf_data(
     return mesh_data, merged_data
 
 
-def get_run_descriptor_pair(bra_mesh_data, ket_mesh_data, qn_pair, operator_qn):
-    """Get (run, descriptor) pair for a given set of state and operator quantum numbers.
+def get_run_descriptor(mesh_data, qn):
+    """Get (run, descriptor) tuple given state qn.
+
+    In general, the sort order of mesh_data is important, since the adopted
+    (run, descriptor) pair will be taken from the last point in mesh_data
+    containing the state of the given qn.
 
     Arguments:
-        bra_mesh_data (list of mfdnres.MFDnResultsData): results mesh for bra sources
-        ket_mesh_data (list of mfdnres.MFDnResultsData): results mesh for ket sources
+
+        mesh_data (list[mfdnres.MFDnResultsData]): Results mesh for wf sources.
+
+        qn (tuple): (J,g,n)
+
+    Returns:
+        
+        (run, descriptor) (tuple[str,str]): Run and descriptor strings for wf.
+
+    """
+
+    run_descriptor = None
+    for mesh_point in mesh_data:
+        if qn not in mesh_point.levels:
+            continue
+
+        run_descriptor = (
+            mesh_point.params["run"],
+            mesh_point.params["descriptor"]
+        )
+
+    return run_descriptor
+
+
+def get_run_descriptor_pair(bra_mesh_data, ket_mesh_data, qn_pair, operator_qn):
+    """Get bra/ket pair of (run, descriptor) tuples, for a given set of state and operator
+    quantum numbers.
+
+    Arguments:
+
+        bra_mesh_data (list[mfdnres.MFDnResultsData]): results mesh for bra sources
+
+        ket_mesh_data (list[mfdnres.MFDnResultsData]): results mesh for ket sources
+
         qn_pair (tuple of tuples): (qnf,qni)
+
         operator_qn (tuple): (J0,g0,Tz0)
 
     Returns:
-        (tuple of tuples): ((bra_run, bra_descriptor), (ket_run, ket_descriptor))
+        
+        (bra_run, bra_descriptor) (tuple[str,str]): Run and descriptor strings for bra wf.
+
+        (ket_run, ket_descriptor) (tuple[str,str]): Run and descriptor strings for ket wf.
+
     """
     # convenience variables
     (bra_qn, ket_qn) = qn_pair
@@ -605,8 +647,8 @@ def get_run_descriptor_pair(bra_mesh_data, ket_mesh_data, qn_pair, operator_qn):
     bra_J = am.HalfInt(round(2*bra_J), 2)
     ket_J = am.HalfInt(round(2*ket_J), 2)
 
-    bra_run_descriptor_pair = None
-    ket_run_descriptor_pair = None
+    bra_run_descriptor = None
+    ket_run_descriptor = None
     for bra_mesh_point in bra_mesh_data:
         if bra_qn not in bra_mesh_point.levels:
             continue
@@ -631,16 +673,16 @@ def get_run_descriptor_pair(bra_mesh_data, ket_mesh_data, qn_pair, operator_qn):
                 continue
 
             # update runs and descriptors
-            bra_run_descriptor_pair = (
+            bra_run_descriptor = (
                 bra_mesh_point.params["run"],
                 bra_mesh_point.params["descriptor"]
                 )
-            ket_run_descriptor_pair = (
+            ket_run_descriptor = (
                 ket_mesh_point.params["run"],
                 ket_mesh_point.params["descriptor"]
                 )
 
-    return (bra_run_descriptor_pair, ket_run_descriptor_pair)
+    return (bra_run_descriptor, ket_run_descriptor)
 
 
 def init_postprocessor_db(task, postfix=""):
@@ -829,17 +871,17 @@ def init_postprocessor_db(task, postfix=""):
         if not allowed_by_masks(task, (bra_qn,ket_qn)):
             continue
 
-        (bra_run_descriptor_pair, ket_run_descriptor_pair) = get_run_descriptor_pair(
+        (bra_run_descriptor, ket_run_descriptor) = get_run_descriptor_pair(
             bra_mesh_data, ket_mesh_data, (bra_qn, ket_qn), operator_qn
             )
-        if (bra_run_descriptor_pair is None) or (ket_run_descriptor_pair is None):
+        if (bra_run_descriptor is None) or (ket_run_descriptor is None):
             continue
         db.executemany(
             "INSERT INTO tb_transitions VALUES (?,?,?, ?,?,?, ?, NULL)",
             [
-                (*bra_run_descriptor_pair, bra_id_dict[bra_qn],
-                *ket_run_descriptor_pair, ket_id_dict[ket_qn],
-                operator_name)
+                (*bra_run_descriptor, bra_id_dict[bra_qn],
+                 *ket_run_descriptor, ket_id_dict[ket_qn],
+                 operator_name)
                 for operator_name in tb_observables_by_qn[operator_qn]]
             )
     db.commit()
@@ -895,15 +937,15 @@ def init_postprocessor_db(task, postfix=""):
         if not allowed_by_masks(task, (bra_qn,ket_qn)):
             continue
 
-        (bra_run_descriptor_pair, ket_run_descriptor_pair) = get_run_descriptor_pair(
+        (bra_run_descriptor, ket_run_descriptor) = get_run_descriptor_pair(
             bra_mesh_data, ket_mesh_data, (bra_qn, ket_qn), operator_qn
             )
-        if (bra_run_descriptor_pair is None) or (ket_run_descriptor_pair is None):
+        if (bra_run_descriptor is None) or (ket_run_descriptor is None):
             continue
         db.execute(
             "INSERT OR IGNORE INTO ob_transitions VALUES (?,?,?, ?,?,?, NULL)",
-            (*bra_run_descriptor_pair, bra_id_dict[bra_qn],
-            *ket_run_descriptor_pair, ket_id_dict[ket_qn])
+            (*bra_run_descriptor, bra_id_dict[bra_qn],
+             *ket_run_descriptor, ket_id_dict[ket_qn])
             )
     db.commit()
 

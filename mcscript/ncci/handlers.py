@@ -61,7 +61,9 @@ University of Notre Dame
                   determining condition to copy the interaction files.
 - 01/16/23 (zz): Generate mfdn_smwf.info for menj runs.
 - 02/05/24 (mac): Add -tbme archive to archive_handler_mfdn.
-
+- 07/21/25 (mac):
+  + Provide decomposition wf selection by "wf_source_runs" and "wf_source_selector".
+  + Add sensible default task dictionary parameters for decomposition handlers.
 """
 import os
 
@@ -251,49 +253,128 @@ task_handler_mfdn_phases = [
     task_handler_mfdn_post,
 ]
 
-task_handler_mfdn_decomposition_pre = task_handler_mfdn_pre
 
+def task_handler_mfdn_decomposition_pre(task, postfix=""):
+    """Task handler for serial components before MFDn phase of Lanczos
+    decomposition, assuming oscillator basis.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+
+    """
+
+    # set some defaults
+    task.setdefault("diagonalization", True)  # to disable unnecessary obdme calculation
+    task.setdefault("calculate_obdme", False)  # to disable unnecessary obdme calculation
+    task.setdefault("calculate_tbo", False)  # to disable unnecessary Ncm and rrel2 operators
+    task.setdefault("tolerance", 0)  # iterate to max iterations
+    
+    task_handler_mfdn_pre(task, postfix)
+
+    
 def task_handler_mfdn_decomposition_run(task, postfix=""):
     """Task handler for MFDn Lanczos decomposition, assuming oscillator basis.
-
-    Task fields:
-       "source_wf_qn"
-       "wf_source_info"
 
     Arguments:
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
-
-    # process source wave function task/descriptor info
-    wf_source_info = task["wf_source_info"]
-    wf_source_info.setdefault("metadata",{})
-    wf_source_info["metadata"]["descriptor"] = wf_source_info["descriptor"](wf_source_info)
-
-    # retrieve level data
     import mfdnres
-    ket_run = wf_source_info["run"]
-    ket_descriptor = wf_source_info["metadata"]["descriptor"]
-    res_data = library.get_res_data(ket_run,ket_descriptor)
-    levels = res_data.levels
-    level_seq_lookup = dict(map(reversed,enumerate(levels,1)))
 
+
+    # set some defaults
+    task.setdefault("diagonalization", True)  # to disable unnecessary obdme calculation
+    task.setdefault("calculate_obdme", False)  # to disable unnecessary obdme calculation
+    task.setdefault("calculate_tbo", False)  # to disable unnecessary Ncm and rrel2 operators
+    task.setdefault("tolerance", 0)  # iterate to max iterations
+    
+    # set up run parameters
+    # legacy: support deprecated task key "source_wf_qn"
+    if "source_wf_qn" in task:
+        task["decomposition_qn"] = task["source_wf_qn"]
+    qn = task["decomposition_qn"]
+    if "wf_source_run_descriptor" in task:
+        # explicit designation of run and descriptor for wf
+        #
+        # Keys: "wf_source_run_descriptor"
+        wf_source_run, wf_source_descriptor = task["wf_source_run_descriptor"]
+    elif "wf_source_info" in task:
+        # legacy API: explicit construction of descriptor
+        #
+        # Keys: "wf_source_run", "wf_source_info"
+
+        # process source wave function task/descriptor info
+        wf_source_info = task["wf_source_info"]
+        wf_source_info.setdefault("metadata",{})
+        wf_source_info["metadata"]["descriptor"] = wf_source_info["descriptor"](wf_source_info)
+
+        # retrieve level data
+        wf_source_run = wf_source_info["run"]
+        wf_source_descriptor = wf_source_info["metadata"]["descriptor"]
+    elif "wf_source_selector" in task:
+        # postprocessor-like API: obtain descriptor by hunting in res data
+        #
+        # Keys: "wf_source_run_list", "wf_source_selector"
+        #
+        # Also uses: "truncation_parameters" for "M"
+        
+        # process source wave function info
+        print("Reading mesh data:")
+        wf_source_run_list = task["wf_source_run_list"]
+        wf_source_res_format = task.get("wf_source_res_format")
+        wf_source_glob_pattern = task.get("wf_source_glob_pattern")
+        wf_source_selector = task["wf_source_selector"]
+        mesh_data, merged_data = postprocessing.select_source_wf_data(
+            run_list=wf_source_run_list,
+            selector=wf_source_selector,
+            res_format=wf_source_res_format,
+            filename_format="ALL",
+            glob_pattern=wf_source_glob_pattern,
+            verbose=True,
+        )
+        
+        # diagnostic output
+        print("Mesh points:")
+        for mesh_point in mesh_data:
+            print(" ", mesh_point.params.get("run"), mesh_point.params.get("descriptor"))
+
+        # select run and descriptor
+        wf_source_run, wf_source_descriptor = postprocessing.get_run_descriptor(
+            mesh_data, qn,
+        )
+        
+    # get sequence number for level within smwf file
+    res_data = library.get_res_data(wf_source_run, wf_source_descriptor)
+    levels = res_data.levels
+    level_seq_lookup = dict(map(reversed, enumerate(levels, 1)))
+
+    # validate selected source wf
+    M = task["truncation_parameters"]["M"]
+    source_wf_M = res_data.params["M"]
+    if source_wf_M != M:
+        raise mcscript.exception.ScriptError("Mismatched M for source wave function ({}) and present decomposition run ({})".format(M, source_wf_M))
+    Nmax = task["truncation_parameters"].get("Nmax")  # use get to allow for runs without Nmax
+    source_wf_Nmax = res_data.params.get("Nmax")
+    if source_wf_Nmax != Nmax:
+        raise mcscript.exception.ScriptError("Mismatched Nmax for source wave function ({}) and present decomposition run ({})".format(Nmax, source_wf_Nmax))
+        
     # get partitioning info
     #  TODO(pjf) eventually this should be handled by MFDn reading mfdn_smwf.info
-    task_data_prefix = library.get_task_data_prefix(ket_run, ket_descriptor)
+    #  TODO(mac) but, in the meantime, this should be handled by the scripting
+    #  extracting the partitioning from mfdn_smwf.info
+    task_data_prefix = library.get_task_data_prefix(wf_source_run, wf_source_descriptor)
     partition_filename = os.path.join(task_data_prefix, "mfdn_partitioning.info")
     if not os.path.exists(partition_filename):
         partition_filename = task.get("partition_filename")
         if partition_filename is not None:
             print("WARN: using manually-provided partitioning {}".format(partition_filename))
 
-    # set up run parameters
-    qn = task["source_wf_qn"]
-    ket_wf_prefix = library.get_wf_prefix(ket_run, ket_descriptor)
+    wf_source_wf_prefix = library.get_wf_prefix(wf_source_run, wf_source_descriptor)
     task["mfdn_inputlist"] = {
         "selectpiv" : 4,
         "initvec_index": level_seq_lookup[qn],
-        "initvec_smwffilename": os.path.join(ket_wf_prefix, "mfdn_smwf"),
+        "initvec_smwffilename": os.path.join(wf_source_wf_prefix, "mfdn_smwf"),
     }
     task["partition_filename"] = partition_filename
 

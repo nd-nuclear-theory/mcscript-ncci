@@ -191,6 +191,15 @@ def task_descriptor_7_trans(task):
 
     return descriptor
 
+
+def task_descriptor_7_decomposition(task):
+    """Task descriptor format 7_decomposition
+    """
+
+    wf_descriptor = task_descriptor_7_trans(task)  # use stripped down descriptor meant for trans (omits a_cm, etc.)
+    return task_descriptor_for_decomposition(task, wf_descriptor)
+
+
 def task_descriptor_8(task):
     """Task descriptor format 8
 
@@ -346,7 +355,7 @@ def task_descriptor_decomposition_1(task):
 
     template_string = (
         "{source_wf_descriptor:s}"
-        "-J{source_wf_qn[0]:04.1f}-g{source_wf_qn[1]:1d}-n{source_wf_qn[2]:02d}"
+        "-J{wf_source_qn[0]:04.1f}-g{wf_source_qn[1]:1d}-n{wf_source_qn[2]:02d}"
         "-op{decomposition_operator_name:s}-dlan{max_iterations:d}"
         # 01/19/21 (mac): However, we propose moving away from calling this an "operator",
         # but rather a decomposition type.  See runmac0566.py.  "-{decomposition_name:s}".
@@ -355,7 +364,7 @@ def task_descriptor_decomposition_1(task):
 
     descriptor = template_string.format(
         source_wf_descriptor=task["wf_source_info"]["descriptor"](task["wf_source_info"]),
-        **task
+        **task,
     )
 
     return descriptor
@@ -369,18 +378,53 @@ def task_descriptor_decomposition_2(task):
     # extracted from runmac0688
     template_string = (
         "{source_wf_descriptor:s}"
-        "-J{source_wf_qn[0]:04.1f}-g{source_wf_qn[1]:1d}-n{source_wf_qn[2]:02d}"
+        "-J{wf_source_qn[0]:04.1f}-g{wf_source_qn[1]:1d}-n{wf_source_qn[2]:02d}"
         "-{decomposition_type:s}-dlan{max_iterations:d}"
     )
-
     
     descriptor = template_string.format(
         source_wf_descriptor=task["wf_source_info"]["descriptor"](task["wf_source_info"]),
-        **task
+        **task,
     )
 
     return descriptor
 
+
+def task_descriptor_for_decomposition(task, wf_descriptor):
+    """Generic task descriptor for decomposition.
+
+    This generic descriptor function requires a wrapper, to specify a descriptor
+    for the underlying wf (but, as with transitions, this may be less detailed
+    than the descriptor for the original wf run).
+
+    Relative to task_descriptor_decomposition_2:
+
+        - Do not assume presence of "wf_source_info" dictionary.
+
+        - This means no "descriptor" is provided by "wf_source_info" dictionary.
+          Instead, a wrapper function must provide this information via the
+          source_wf_descriptor argument.
+
+        - Use new "decomposition_qn" key, while supporting legacy "source_wf_qn"
+          key.
+
+    """
+    template_string = (
+        "{wf_descriptor:s}"
+        "-J{decomposition_qn[0]:04.1f}-g{decomposition_qn[1]:1d}-n{decomposition_qn[2]:02d}"
+        "-{decomposition_type:s}-dlan{max_iterations:d}"
+    )
+
+    # support legacy key "source_wf_qn"
+    if "source_wf_qn" in task:
+        task["decomposition_qn"] = task["source_wf_qn"]
+        
+    descriptor = template_string.format(
+        wf_descriptor=wf_descriptor,
+        **task,
+    )
+
+    return descriptor
 
 ################################################################
 # task descriptor for mfdn menj runs (and postprocessing)

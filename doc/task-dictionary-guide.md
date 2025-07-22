@@ -14,6 +14,8 @@ University of Notre Dame
 + 04/04/25 (mac): Add descriptions for parameters `calculate_obdme`,
     `calculate_tbo`, and `mfdn_inputlist`.
 + 04/09/25 (mac): Add descriptions of postprocessing parameters.
++ 07/21/25 (mac): Update descriptions of decomposition parameters, to add
+    postprocessor-like wf selection parameters.
 
 ----------------------------------------------------------------
 ## nuclide parameters ##
@@ -195,12 +197,48 @@ University of Notre Dame
      ncci.decomposition.decomposition_operator() to construct the decomposition
      operator to feed into MFDn as the "hamiltonian"
 
-- `source_wf_qn`: tuple
+- `wf_source_run_list`: `list[str]`
+  - list of runs to search for wave functions (omit initial `run` stem from run
+    names)
+
+- `wf_source_selector`: `dict`
+  - parameters to select results data providing the bra wf file
+  - these are parameters used to distinguish a specific "mesh point" in the set
+    of diagonaliztion calculation, but not specific states within that mesh
+    point
+  - typical keys include `nuclide`, `interaction`, `hw`, and `Nmax`
+
+- `wf_source_res_format`: `str`, optional
+  - format specifier for res files in source wf runs
+  - this will be used as the `res_format` argument to `mfdnres.input.slurp_res_files`
+  - it should thus be the identifier for one of the res file formats registered
+    with `mfdnres.input.register_data_format`, typically defined in
+    `mfdnres.data_parsers`, e.g., `'mfdn_v15'`
+  - defaults to `None`
+
+- `wf_source_glob_pattern`: `str`, optional
+  - glob pattern to filter the res files to be read as specifying available
+    source wave functions
+  - defaults to `'*.res'`
+
+- `decomposition_qn`: tuple
   - state (J, g, i) to use as pivot vector for Lanczos decomposition [i.e., ith
     state of angular momentum J and parity (-)^g, as determined from the source
     run's res file]
 
+- `wf_source_run_descriptor`: `tuple[str,str]`, optional
+  - for manual selection of a specific wave function, the run and descriptor can
+    instead be explicitly specified as a tuple
+  - this will take precedence over searching via the `wf_run_list` and
+    `wf_source_selector` parameters
+  - for example: `("mfdn13",
+    "Z3-N3-Daejeon16-coul1-hw15.000-a_cm50-Nmax04-Mj1.0-lan600-tol1.0e-06")`
+
+The following deprecated parameters are still supported for compatibility with
+older run scripts:
+
 - `wf_source_info`: dict
+  - DEPRECATED: instead, use `wf_source_run_list` and `wf_source_selector`
   - information used to locate the wave function file for the state to decompose
   - this information is used to construct the run directory name and then the task descriptor for the specific task
   - the corresponding res file is then read in and parsed (to obtain the sequence number for the target state)
@@ -216,6 +254,10 @@ University of Notre Dame
     generally duplicate the values appearing in the task dictionary for the
     present decomposition run, where instead they are used to construct the
     descriptor for the present decomposition run
+
+- `source_wf_qn`: tuple
+  - DEPRECATED: instead, use `qn`
+
 
 ----------------------------------------------------------------
 ## obdme parameters ##
@@ -350,7 +392,7 @@ University of Notre Dame
     point
   - typical keys include `nuclide`, `interaction`, `hw`, and `Nmax`
 
-- `wf_source_res_format`: `str`
+- `wf_source_res_format`: `str`, optional
   - format specifier for res files in source wf runs
   - this will be used as the `res_format` argument to `mfdnres.input.slurp_res_files`
   - it should thus be the identifier for one of the res file formats registered
@@ -358,7 +400,7 @@ University of Notre Dame
     `mfdnres.data_parsers`, e.g., `'mfdn_v15'`
   - defaults to `None`
 
-- `wf_source_glob_pattern`: `str`
+- `wf_source_glob_pattern`: `str`, optional
   - glob pattern to filter the res files to be read as specifying available
     source wave functions
   - defaults to `'*.res'`
@@ -425,4 +467,4 @@ University of Notre Dame
 
 - `mfdn_inputlist` : `dict`
    - additional key-value pairs to pass through to MFDn, e.g., `{"blksize":
-     16000}`
+     16000}` or `{"observables_only": True}`
