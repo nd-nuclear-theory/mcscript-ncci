@@ -16,6 +16,8 @@ University of Notre Dame
 + 04/09/25 (mac): Add descriptions of postprocessing parameters.
 + 07/21/25 (mac): Update descriptions of decomposition parameters, to add
     postprocessor-like wf selection parameters.
++ 08/08/25 (mac): Update descriptions of decomposition parameters, to add
+    wf truncation.
 
 ----------------------------------------------------------------
 ## nuclide parameters ##
@@ -86,7 +88,7 @@ University of Notre Dame
     generic shell model Hamiltonian H = Hmf + Vres (see
     `ncci.operators.tb.ShellModelHamiltonian`), depending on `basis_mode`
 
-
+----------------------------------------------------------------
 ## input TBME parameters ##
 
 - `interaction_file`: `str`
@@ -165,21 +167,23 @@ University of Notre Dame
 ## diagonalization parameters ##
 
 - `eigenvectors`: `int`, optional
-  - number of eigenvectors to calculate
-  - must be positive (nonzero!) to avoid failure of MFDn
-  - for decomposition run, the value is largely irrelevant, but does
-    control how many eigenvalues are shown in the Lanzos convergence diagonostic
-    output, which may be useful in test runs
+  - Number of eigenvectors to calculate.
+  - Must be positive (nonzero!) to avoid failure of MFDn.
+  - For decomposition run: The value is largely irrelevant, but it does control
+    how many eigenvalues are shown in the Lanzos convergence diagonostic output,
+    which may be useful in test runs.
   - If `None`, defaults to `4`.
 
 - `max_iterations`: `int`
-  - maximum number of diagonalization iterations
+  - Maximum number of diagonalization iterations.
+  - NOTE: Must be at least `4` to avoid array dimension error in MFDn
+    (`src_common/subrts_Observables.f`).
 
 - `tolerance`: `float`
-  - diagonalization tolerance parameter
+  - Diagonalization tolerance parameter.
 
 - `ndiag`: `int`
-  - number of spare diagonal nodes (MFDn v14 only)
+  - Number of spare diagonal nodes (MFDn v14 only).
 
 - `partition_filename`: `str`, optional
   - Filename for partition file to use with MFDn.
@@ -187,79 +191,105 @@ University of Notre Dame
   - NOTE: For now absolute path is required, but path search protocol may
     be restored in future.
   - NOTE: This parameter is ignored in Lanczos decomposition runs, for which the
-    partitioning is provided by the `mfdn_smwf.info` file of the source wave
+    partitioning is extracted from the `mfdn_smwf.info` file of the input wave
     function.
 
 ----------------------------------------------------------------
 ## decomposition parameters ##
 
 - `decomposition_type`: str
-   - identifier for decomposition operator
-   - used here just to define the decomposition label in the task descriptor
-   - but typically will be the same identifier used in as an argument to
+   - Identifier for decomposition operator.
+   - Used here just to define the decomposition label in the task descriptor.
+   - But typically will be the same identifier used in as an argument to
      ncci.decomposition.decomposition_operator() to construct the decomposition
-     operator to feed into MFDn as the "hamiltonian"
+     operator to feed into MFDn as the "hamiltonian".
 
 - `wf_source_run_list`: `list[str]`
-  - list of runs to search for wave functions (omit initial `run` stem from run
-    names)
+  - List of runs to search for wave functions (omit initial `run` stem from run
+    names).
 
 - `wf_source_selector`: `dict`
-  - parameters to select results data providing the bra wf file
-  - these are parameters used to distinguish a specific "mesh point" in the set
+  - Parameters to select results data providing the bra wf file.
+  - These are parameters used to distinguish a specific "mesh point" in the set
     of diagonaliztion calculation, but not specific states within that mesh
-    point
-  - typical keys include `nuclide`, `interaction`, `hw`, and `Nmax`
+    point.
+  - Typical keys include `nuclide`, `interaction`, `hw`, and `Nmax`.
 
 - `wf_source_res_format`: `str`, optional
-  - format specifier for res files in source wf runs
-  - this will be used as the `res_format` argument to `mfdnres.input.slurp_res_files`
-  - it should thus be the identifier for one of the res file formats registered
+  - Format specifier for res files in source wf runs.
+  - This will be used as the `res_format` argument to `mfdnres.input.slurp_res_files`.
+  - It should thus be the identifier for one of the res file formats registered
     with `mfdnres.input.register_data_format`, typically defined in
-    `mfdnres.data_parsers`, e.g., `'mfdn_v15'`
-  - defaults to `None`
+    `mfdnres.data_parsers`, e.g., `'mfdn_v15'`.
+  - Defaults to `None`.
 
 - `wf_source_glob_pattern`: `str`, optional
-  - glob pattern to filter the res files to be read as specifying available
-    source wave functions
-  - defaults to `'*.res'`
+  - Glob pattern to filter the res files to be read as specifying available
+    source wave functions.
+  - Defaults to `'*.res'`.
 
 - `decomposition_qn`: tuple
-  - state (J, g, i) to use as pivot vector for Lanczos decomposition [i.e., ith
+  - State (J, g, i) to use as pivot vector for Lanczos decomposition [i.e., ith
     state of angular momentum J and parity (-)^g, as determined from the source
-    run's res file]
+    run's res file].
 
 - `wf_source_run_descriptor`: `tuple[str,str]`, optional
-  - for manual selection of a specific wave function, the run and descriptor can
-    instead be explicitly specified as a tuple
-  - this will take precedence over searching via the `wf_run_list` and
-    `wf_source_selector` parameters
-  - for example: `("mfdn13",
+  - This dictionary key is provided for *debugging* purposes only.  Instead, you
+    should normally use `wf_source_run_list` and `wf_source_selector`.
+  - For manual selection of a specific wave function, the run and descriptor can
+    instead be explicitly specified as a tuple.
+  - NOTE: this parameter is primarily meant for debugging use, not for
+    production runs, where it will be easier to use `wf_source_selector`
+  - This will take precedence over searching via the `wf_run_list` and
+    `wf_source_selector` parameters.
+  - For example: `("mfdn13",
     "Z3-N3-Daejeon16-coul1-hw15.000-a_cm50-Nmax04-Mj1.0-lan600-tol1.0e-06")`
 
+- `truncation_model_info`: dict
+  - Information used to locate template wave function files specifying the
+    target truncation that the wave function should be truncated to before
+    decomposition.
+  - If this key is specified, this activiates wave function truncation before
+    decomposition.  That is, the source wave function is copied (with
+    truncation) to a new target wave function file, using the utility
+    `smwf-truncate`.  And it is this latter truncation which governs the MFDn
+    run truncation parameters.
+  - Only the indexing files (`mfdn_smwf.info` and `mfdn_MBgroups<nnn>`) are
+    needed, not actual wave function amplitude files.
+  - `run`: str
+    - Run directory in which to search for wf files.
+  - `descriptor`: callable
+    - Function used to construct a descriptor from a given task dictionary,
+      e.g., `ncci.descriptors.task_descriptor_c1`.
+  - The remaining fields are passed through in the "task dictionary" given to
+    the task descriptor function, to construct the wf descriptor.
+  
 The following deprecated parameters are still supported for compatibility with
 older run scripts:
 
 - `wf_source_info`: dict
-  - DEPRECATED: instead, use `wf_source_run_list` and `wf_source_selector`
-  - information used to locate the wave function file for the state to decompose
-  - this information is used to construct the run directory name and then the task descriptor for the specific task
-  - the corresponding res file is then read in and parsed (to obtain the sequence number for the target state)
-  - and the eigenvector for the correponsing sequence number is used as the Lanczos pivot
+  - DEPRECATED: Instead, use `wf_source_run_list` and `wf_source_selector`.
+  - Information used to locate the wave function file for the state to
+    decompose.
+  - This information is used to construct the run directory name and then the
+    task descriptor for the specific task.
+  - The corresponding res file is then read in and parsed (to obtain the
+    sequence number for the target state).
+  - The eigenvector for the correponsing sequence number is used as the Lanczos pivot.
   - `run`: str
-    - run directory in which to search for res and wf files
+    - Run directory in which to search for res and wf files.
   - `descriptor`: callable
-    - function used to construct a descriptor from a given task dictionary,
-      e.g., `ncci.descriptors.task_descriptor_7`
-  - the remaining fields are passed through in the "task dictionary" given to
-    the task descriptor function, to construct the wf descriptor
-  - the values of several of these fields (e.g., `nuclide`, `interaction`) will
+    - Function used to construct a descriptor from a given task dictionary,
+      e.g., `ncci.descriptors.task_descriptor_7`.
+  - The remaining fields are passed through in the "task dictionary" given to
+    the task descriptor function, to construct the wf descriptor.
+  - The values of several of these fields (e.g., `nuclide`, `interaction`) will
     generally duplicate the values appearing in the task dictionary for the
     present decomposition run, where instead they are used to construct the
-    descriptor for the present decomposition run
+    descriptor for the present decomposition run.
 
 - `source_wf_qn`: tuple
-  - DEPRECATED: instead, use `qn`
+  - DEPRECATED: Instead, use `qn`.
 
 
 ----------------------------------------------------------------
@@ -299,13 +329,16 @@ older run scripts:
 ## two-body observables ##
 
 - `calculate_tbo`: `bool`
-  - whether or not to enable calculation of two-body observables in MFDn
+  - Whether or not to enable calculation of two-body observables in MFDn.
+  - NOTE: Setting `calculate_tbo` to false leads to intermittent and
+    nondeterministic memory deallocation errors, dependent upon OpenMP
+    parameters (with mfdn commit 3f34aa7).  [08/08/25 (mac)]
   
 - `tb_observables`: list of `("basename", CoefficientDict)` tuples
-  - additional observable definitions (see `ncci.operators`)
+  - Additional observable definitions (see `ncci.operators`).
 
 - `observable_sets`: list of `str`
-  - codes for predefined observable sets to include:
+  - Codes for predefined observable sets to include:
     - "H-components": Hamiltonian terms
     - "am-sqr": squared angular momenta
     - "isospin": isospin observables

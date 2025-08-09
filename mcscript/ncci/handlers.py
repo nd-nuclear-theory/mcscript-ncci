@@ -65,7 +65,9 @@ University of Notre Dame
   + Provide decomposition wf selection by "wf_source_runs" and "wf_source_selector".
   + Add sensible default task dictionary parameters for decomposition handlers.
 - 07/22/25 (mac): Extract partitioning for decomposition runs from mfdn_smwf.info.
+- 08/08/25 (mac): Add wf truncation capability for decomposition.
 """
+import glob
 import os
 
 import mcscript.exception
@@ -182,6 +184,7 @@ def task_handler_mfdn_post(task, postfix="", cleanup=True):
     if (cleanup):
         mfdn_driver.cleanup_mfdn_workdir(task, postfix=postfix)
 
+        
 def task_handler_mfdn_post_no_cleanup(task, postfix=""):
     """ Task handler for serial components after MFDn run (no cleanup).
 
@@ -219,7 +222,8 @@ def task_handler_mfdn_pre(task, postfix=""):
         
     else:
         raise(ValueError("unsupported variant mode"))
-            
+
+    
 def task_handler_mfdn_run(task, postfix=""):
     """Task handler for MFDn phase of oscillator basis run.
 
@@ -235,6 +239,7 @@ def task_handler_mfdn_run(task, postfix=""):
     mfdn_driver.generate_mfdn_input(task=task, postfix=postfix)
     mfdn_driver.run_mfdn(task=task, postfix=postfix)
 
+    
 def task_handler_mfdn(task, postfix=""):
     """Task handler for complete oscillator basis run, including serial pre and post
     steps.
@@ -249,6 +254,7 @@ def task_handler_mfdn(task, postfix=""):
     task_handler_mfdn_run(task, postfix=postfix)
     task_handler_mfdn_post(task, postfix=postfix)
 
+    
 task_handler_mfdn_phases = [
     task_handler_mfdn_pre,
     task_handler_mfdn_run,
@@ -269,7 +275,10 @@ def task_handler_mfdn_decomposition_pre(task, postfix=""):
     # set some defaults
     task.setdefault("diagonalization", True)  # to disable unnecessary obdme calculation
     task.setdefault("calculate_obdme", False)  # to disable unnecessary obdme calculation
-    task.setdefault("calculate_tbo", False)  # to disable unnecessary Ncm and rrel2 operators
+    # 08/08/25 (mac): Setting calculate_tbo to false leads to intermittent and
+    # nondeterministic memory deallocation errors with mfdn commit 3f34aa7,
+    # dependent upon OpenMP parameters.
+    ## task.setdefault("calculate_tbo", False)  # to disable unnecessary Ncm and rrel2 operators
     task.setdefault("tolerance", 0)  # iterate to max iterations
     
     task_handler_mfdn_pre(task, postfix)
@@ -340,17 +349,23 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
         postfix (string, optional): identifier to add to generated files
     """
 
+    work_dir = "work{:s}".format(postfix)
+    
     # set some defaults
     task.setdefault("diagonalization", True)  # to disable unnecessary obdme calculation
     task.setdefault("calculate_obdme", False)  # to disable unnecessary obdme calculation
-    task.setdefault("calculate_tbo", False)  # to disable unnecessary Ncm and rrel2 operators
+    # 08/08/25 (mac): Setting calculate_tbo to false leads to intermittent and
+    # nondeterministic memory deallocation errors with mfdn commit 3f34aa7,
+    # dependent upon OpenMP parameters.
+    ## task.setdefault("calculate_tbo", False)  # to disable unnecessary Ncm and rrel2 operators 
     task.setdefault("tolerance", 0)  # iterate to max iterations
-    
-    # set up run parameters
+
     # legacy: support deprecated task key "source_wf_qn"
     if "source_wf_qn" in task:
         task["decomposition_qn"] = task["source_wf_qn"]
     qn = task["decomposition_qn"]
+    
+    # set up run parameters
     if "wf_source_run_descriptor" in task:
         # explicit designation of run and descriptor for wf
         #
@@ -359,7 +374,7 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
     elif "wf_source_info" in task:
         # legacy API: explicit construction of descriptor
         #
-        # Keys: "wf_source_run", "wf_source_info"
+        # Keys: "wf_source_info"
 
         # process source wave function task/descriptor info
         wf_source_info = task["wf_source_info"]
@@ -373,8 +388,6 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
         # postprocessor-like API: obtain descriptor by hunting in res data
         #
         # Keys: "wf_source_run_list", "wf_source_selector"
-        #
-        # Also uses: "truncation_parameters" for "M"
         
         # process source wave function info
         print("Reading mesh data:")
@@ -382,7 +395,7 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
         wf_source_res_format = task.get("wf_source_res_format")
         wf_source_glob_pattern = task.get("wf_source_glob_pattern")
         wf_source_selector = task["wf_source_selector"]
-        mesh_data, merged_data = postprocessing.select_source_wf_data(
+        mesh_data, _ = postprocessing.select_source_wf_data(
             run_list=wf_source_run_list,
             selector=wf_source_selector,
             res_format=wf_source_res_format,
@@ -405,28 +418,82 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
     res_data = library.get_res_data(wf_source_run, wf_source_descriptor)
     levels = res_data.levels
     level_seq_lookup = dict(map(reversed, enumerate(levels, 1)))
+    level_seq = level_seq_lookup[qn]
 
-    # validate selected source wf
+    # validate selected source wf qn
     M = task["truncation_parameters"]["M"]
     source_wf_M = res_data.params["M"]
     if source_wf_M != M:
-        raise mcscript.exception.ScriptError("Mismatched M for source wave function ({}) and present decomposition run ({})".format(M, source_wf_M))
-    Nmax = task["truncation_parameters"].get("Nmax")  # use get to allow for runs without Nmax
+        raise mcscript.exception.ScriptError("Mismatched M for source wave function ({}) and present decomposition run ({})".format(source_wf_M, M))
+    Nmax = task["truncation_parameters"].get("Nmax")
     source_wf_Nmax = res_data.params.get("Nmax")
-    if source_wf_Nmax != Nmax:
-        raise mcscript.exception.ScriptError("Mismatched Nmax for source wave function ({}) and present decomposition run ({})".format(Nmax, source_wf_Nmax))
+    if source_wf_Nmax != Nmax and "truncation_model_info" not in task:
+        raise mcscript.exception.ScriptError("Mismatched Nmax for source wave function ({}) and present decomposition run ({})".format(source_wf_Nmax, Nmax))
+
+    # identify source wf location
+    wf_source_wf_prefix = library.get_wf_prefix(wf_source_run, wf_source_descriptor)
+
+    # impose truncation
+    #
+    # TODO 08/08/25 (mac): Move truncation into "pre" phase, since it is a
+    # serial task.  But then some information, e.g., the value of level_seq and
+    # wf_source_wf_prefix will have to be regenerated in the "run" phase.
+    if "truncation_model_info" in task:
+
+        # locate model wf info
+        model_info = task["truncation_model_info"]
+        model_run = model_info["run"]
+        model_descriptor = model_info["descriptor"](task | model_info)
+        model_prefix = library.get_wf_prefix(model_run, model_descriptor)
+
+        # check consistency of Nmax with present run
+        model_M = model_info["truncation_parameters"]["M"]
+        if model_M != M:
+            raise mcscript.exception.ScriptError("Mismatched M for wave function truncation model ({}) and present decomposition run ({})".format(model_M, M))
+        model_Nmax = model_info["truncation_parameters"]["Nmax"]
+        if model_Nmax != Nmax:
+            raise mcscript.exception.ScriptError("Mismatched Nmax for wave function truncation model ({}) and present decomposition run ({})".format(model_Nmax, Nmax))
+
+        # truncate
+        target_prefix = os.path.join(work_dir, "smwf")
+        mcscript.utils.mkdir(target_prefix, exist_ok=True)
+        model_indexing_files = (
+            [os.path.join(model_prefix, "mfdn_smwf.info")]
+            + glob.glob(os.path.join(model_prefix, "mfdn_MBgroups*"))
+        )
+        mcscript.call(
+            [
+                "cp",
+                "--target-directory={}".format(target_prefix),
+            ] + model_indexing_files
+        )
         
+        mcscript.control.call(
+            [
+                environ.shell_filename("smwf-truncate"),
+                wf_source_wf_prefix,  # input wf directory
+                model_prefix,  # truncation model wf directory
+                target_prefix,  # target wf directory
+                "{:d}".format(level_seq),  # state sequence number
+                "test",  # TEMPORARY mode flag for slv
+            ],
+            mode=mcscript.control.CallMode.kSerial,
+        )
+        
+        # reset wf info for mfdn to point to truncated wf
+        level_seq = 1
+        wf_source_wf_prefix = target_prefix
+
     # extract partitioning info
     if task.get("partition_filename"):
         print("WARN: A partition_filename was specified but is being ignored.")
-    wf_source_wf_prefix = library.get_wf_prefix(wf_source_run, wf_source_descriptor)
     extract_partitioning_from_smwf_info_file(wf_source_wf_prefix)
             
     # set MFDn parameters
     task["mfdn_inputlist"] = {
         "selectpiv" : 4,
-        "initvec_index": level_seq_lookup[qn],
-        "initvec_smwffilename": os.path.join(wf_source_wf_prefix, "mfdn_smwf"),
+        "initvec_index": level_seq,
+        "initvec_smwffilename": os.path.join("..", wf_source_wf_prefix, "mfdn_smwf"),
     }
     task["partition_filename"] = "mfdn_partitioning.info"
     
@@ -440,7 +507,6 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
     mfdn_driver.run_mfdn(task=task, postfix=postfix)
 
     # copy out lanczos file
-    work_dir = "work{:s}".format(postfix)
     descriptor = task["metadata"]["descriptor"]
     filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
     lanczos_source_filename = os.path.join(work_dir, "mfdn_alphabeta.dat")
@@ -449,7 +515,9 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
         task, lanczos_source_filename, lanczos_target_filename, "lanczos"
     )
 
+   
 task_handler_mfdn_decomposition_post = task_handler_mfdn_post
+
 
 def task_handler_mfdn_decomposition(task, postfix=""):
     """Task handler for complete decomposition run, including serial pre and post
@@ -464,6 +532,7 @@ def task_handler_mfdn_decomposition(task, postfix=""):
     task_handler_mfdn_decomposition_run(task, postfix=postfix)
     task_handler_mfdn_decomposition_post(task, postfix=postfix)
 
+    
 task_handler_mfdn_decomposition_phases = [
     task_handler_mfdn_decomposition_pre,
     task_handler_mfdn_decomposition_run,
@@ -525,7 +594,9 @@ def task_handler_mfdn_natorb_run(task, postfix):
     mfdn_driver.generate_mfdn_input(task=task, postfix=postfix)
     mfdn_driver.run_mfdn(task=task, postfix=postfix)
 
+    
 task_handler_mfdn_natorb_post = task_handler_mfdn_post
+
 
 def task_handler_mfdn_natorb(task, cleanup=True):
     """Task handler for basic oscillator+natural orbital run.
@@ -551,6 +622,7 @@ def task_handler_mfdn_natorb(task, cleanup=True):
         task=task, postfix=utils.natural_orbital_indicator(1), cleanup=cleanup
         )
 
+    
 task_handler_mfdn_natorb_phases = [
     task_handler_mfdn_natorb_pre,
     task_handler_mfdn_natorb_run,
@@ -574,6 +646,7 @@ def task_handler_mfdn_postprocessor_pre(task, postfix=""):
     radial.set_up_obme_analytic(task, postfix)
     tbme.generate_tbme(task, postfix)
 
+    
 def task_handler_mfdn_postprocessor_run(task, postfix=""):
     """Task handler for MFDn postprocessor phase of postprocessor run.
 
@@ -584,6 +657,7 @@ def task_handler_mfdn_postprocessor_run(task, postfix=""):
     postprocessing.run_postprocessor_two_body(task, postfix=postfix, one_body=True)
     postprocessing.run_postprocessor_one_body(task, postfix=postfix)
 
+    
 def task_handler_mfdn_postprocessor_post(task, postfix="", cleanup=True):
     """Task handler for components after postprocessor run.
 
@@ -600,6 +674,7 @@ def task_handler_mfdn_postprocessor_post(task, postfix="", cleanup=True):
     if cleanup:
         postprocessing.cleanup_workdir(task, postfix=postfix)
 
+        
 def task_handler_mfdn_postprocessor_post_no_cleanup(task, postfix=""):
     """ Task handler for serial components after postprocessor run (no cleanup).
 
@@ -622,6 +697,7 @@ def task_handler_mfdn_postprocessor(task, postfix="", cleanup=True):
     task_handler_mfdn_postprocessor_run(task, postfix)
     task_handler_mfdn_postprocessor_post(task, postfix, cleanup)
 
+    
 task_handler_mfdn_postprocessor_phases = [
     task_handler_mfdn_postprocessor_pre,
     task_handler_mfdn_postprocessor_run,
@@ -638,16 +714,19 @@ def task_handler_relative_run(task):
     relative.generate_rel_targets(task)
     relative.generate_moshinsky_targets(task)
 
+    
 def task_handler_relative_post(task):
     """Task handler for components after relative run."""
     relative.save_rel(task)
     relative.save_moshinsky(task)
 
+    
 def task_handler_relative(task):
     """Task handler for basic relative/Moshinsky run."""
     task_handler_relative_run(task)
     task_handler_relative_post(task)
 
+    
 task_handler_relative_phases = [
     task_handler_relative_run,
     task_handler_relative_post,
@@ -675,6 +754,7 @@ def archive_handler_mfdn():
     )
     return archive_filename_list
 
+
 def archive_handler_mfdn_lightweight():
     """Generate archives for MFDn results (but not task data or wavefunctions).
 
@@ -689,6 +769,7 @@ def archive_handler_mfdn_lightweight():
         ]
     )
     return archive_filename_list
+
 
 def archive_handler_mfdn_hsi(split_large_archives=False):
     """Generate archives for MFDn and save to tape.
@@ -707,6 +788,7 @@ def archive_handler_mfdn_hsi(split_large_archives=False):
     # save to tape
     mcscript.task.archive_handler_hsi(archive_filename_list, split_large_archives=split_large_archives)
 
+    
 def archive_handler_mfdn_postprocessor():
     """Generate archives for MFDn postprocessor results."""
 
@@ -720,6 +802,7 @@ def archive_handler_mfdn_postprocessor():
     )
     print(archive_filename_list)
     return archive_filename_list
+
 
 def archive_handler_mfdn_postprocessor_hsi():
     """Generate archives for MFDn postprocessor and save to tape."""
