@@ -1,25 +1,25 @@
 
 [MFDn]
 Version = 15
-Revision = v15b01-112-g74922b7
+Revision = v15b01-111-g8db04f7-dirty
 Platform = 
 Username = 
 ndiags   =        1
 MPIranks  =        1
-OMPthreads =        1
+OMPthreads =        8
 
 [PARAMETERS]
 
 [Basis]
-Nprotons  =        2
-Nneutrons =        6
+Nprotons  =        3
+Nneutrons =        3
 # Orbitals read in from file
 TwoMj  =        0
 parity =        1
 Nmin   =        0
-Nmax   =        8
+Nmax   =        4
 DeltaN =        2
-WTmax  =    12.1000
+WTmax  =     6.1000
 
 [Diagonalization]
 neivals   =        5
@@ -29,4 +29,6 @@ selectpiv =        3
 tol       =     0.0000
 
 [Many-body matrix]
-dimension  =            7463678
+dimension  =              17040
+numnonzero =            2074924
+

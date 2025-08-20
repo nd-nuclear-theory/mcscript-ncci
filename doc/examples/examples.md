@@ -15,6 +15,8 @@ invocations.
 
 06/19/25 (mac): Update example paths and add threading options.
 
+08/19/25 (mac): Add runmfdncounting01 counting run example.
+
 ----------------------------------------------------------------
 
 ## Setup ##
@@ -164,22 +166,6 @@ start of each run script, for further commentary.
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-## MFDn Lanczos decomposition runs ##
-
-  - See tutorial in `doc/decomposition-tutorial.md`.
-
-  - These examples make use of example decomposition parameter files found in
-    the subdirectory `doc/examples/data/decomposition`.  In order for the
-    scripting to find these input files, make sure to set the environment
-    variable `NCCI_DATA_DIR_DECOMPOSITION` to include that directory.  Please
-    follow the instructions in the "Environment configuration" section of
-    `INSTALL.md`.
-
-  * runmfdndecomp01: basic illustration of decomposition using Nex operator
-  
-  * runmfdndecomp02: examples of angular momentum and joint U(3) decompositions
-
-  
 ## mfdn-transitions postprocessing runs ##
 
   * runtransitions01: postprocessing run with standard M1/E2 "observable sets"
@@ -241,3 +227,52 @@ start of each run script, for further commentary.
     We also construct the naive one-body lab-frame kinetic energy operator,
     which will contain a spurious contribution from the zero-point motion of the
     center of mass.
+
+
+## MFDn counting runs ##
+
+  * runmfdncounting01: counting run
+  
+      6Li Nmax02..04
+
+      Example counting runs matching the cases (M=0.0/1.0, Nmax=2/4) actually
+      run in `runmfdn13`.
+      
+      - Phase 0: Just count dimension.  This is faster, and has lowest memory
+        demands, than a full counting run for dimension and number of nonzeros
+        (phase 1 below).  The dimension will be found in the res file.
+      
+      - Phase 1: Count dimension and number of nonzeros.  This subsumes the simple
+        dimension counting run, but takes longer (and has higher memory
+        demands). The dimension and number of nonzeros will be found in the res
+        file.
+      
+      - Phase 2: Save wave function indexing information (`mfdn_smwf.info` and
+        `mfdn_MBgroups`).  These files may be needed for codes which postprocess
+        MFDn wave functions.
+
+     Unlike in `runmfdn13`, in this example, we choose the single particle
+     orbitals to be uniformly defined across Nmax.  In particular, we choose
+     Nmax_orb=7 (i.e., N=2n+l<=7), independent of Nmax.  This only affects the
+     indexing for the orbitals, in the wave function indexing files.  However,
+     having a uniform indexing for the orbitals across Nmax is important if
+     these wave function indexing files are to used later in certain
+     postprocessing applications (e.g., acting with an operator, in
+     `mfdn-transitions`, on an Nmax=4 input wave function to yield an Nmax=2
+     output wave function).
+
+
+## MFDn Lanczos decomposition runs ##
+
+  - See tutorial in `doc/decomposition-tutorial.md`.
+
+  - These examples make use of example decomposition parameter files found in
+    the subdirectory `doc/examples/data/decomposition`.  In order for the
+    scripting to find these input files, make sure to set the environment
+    variable `NCCI_DATA_DIR_DECOMPOSITION` to include that directory.  Please
+    follow the instructions in the "Environment configuration" section of
+    `INSTALL.md`.
+
+  * runmfdndecomp01: Basic illustration of decomposition using Nex operator.
+  
+  * runmfdndecomp02: Examples of angular momentum and joint U(3) decompositions.
