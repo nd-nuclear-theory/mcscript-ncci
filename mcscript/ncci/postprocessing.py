@@ -513,6 +513,12 @@ def select_source_wf_data(
 ):
     """Extract MFDnResultsData objects from given runs matching given selector.
 
+    This function returns both an unmerged mesh (needed to look back and see the
+    appropriate wave function run and descriptor that go with the results) and a
+    single merged results data object (possibly useful for extracting some
+    relevant parameters, and definitely useful in providing the full
+    spectrscopic information for subsequent use by transition mask functions).
+
     Since the results are intended for use in picking wave functions for
     postprocessing, results coming from calculations with different values for
     the "technical" keys (lanczos, M) are distinghished, allowing later
