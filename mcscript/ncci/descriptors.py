@@ -194,10 +194,38 @@ def task_descriptor_7_trans(task):
 
 def task_descriptor_7_decomposition(task):
     """Task descriptor format 7_decomposition
+
+       - Provide stripped down descriptor (omitting a_cm, etc.), similar to
+         task_descriptor_7_trans, but determining Nmax differently, and forcing
+         omission of M.
+
     """
 
-    wf_descriptor = task_descriptor_7_trans(task)  # use stripped down descriptor meant for trans (omits a_cm, etc.)
-    return task_descriptor_for_decomposition(task, wf_descriptor)
+    # Nmax for source wf
+    if task.get("wf_source_selector"):
+        # use Nmax from wf_source_selector
+        Nmax = task["wf_source_selector"]["Nmax"]
+    elif task.get("wf_source_info"):
+        # use Nmax from wf_source_info (deprecated)
+        Nmax = task["wf_source_info"]["truncation_parameters"]["Nmax"]
+    else:
+        # wf must have been manually specified as run and descriptor
+        if "truncation_model_info" not in task:
+            # if no truncation is applied, we can use the run Nmax
+            Nmax = task["truncation_parameters"]["Nmax"]
+        else:
+            raise mcscript.exception.ScriptError("No way to determine Nmax of source wave function")
+
+    # prepare stripped down descriptor for source wf
+    task_for_wf_descriptor = task.copy()  # shallow copy -- beware need to make deeper copy of truncation_parameters
+    task_for_wf_descriptor["truncation_parameters"] = task_for_wf_descriptor["truncation_parameters"].copy()  # safely editable copy of truncation_parameters
+    task_for_wf_descriptor["truncation_parameters"].pop("M")  # suppress M (otherwise included as a legacy field by task_descriptor_7_trans)
+    task_for_wf_descriptor["truncation_parameters"]["Nmax"] = Nmax  # use Nmax for source wf
+    wf_descriptor = task_descriptor_7_trans(task_for_wf_descriptor)
+
+    descriptor = task_descriptor_with_decomposition_tags(task, wf_descriptor)
+    
+    return descriptor
 
 
 def task_descriptor_8(task):
@@ -390,8 +418,8 @@ def task_descriptor_decomposition_2(task):
     return descriptor
 
 
-def task_descriptor_for_decomposition(task, wf_descriptor):
-    """Generic task descriptor for decomposition.
+def task_descriptor_with_decomposition_tags(task, wf_descriptor):
+    """Convert base task descriptor into task descriptor for decomposition.
 
     This generic descriptor function requires a wrapper, to specify a descriptor
     for the underlying wf (but, as with transitions, this may be less detailed
@@ -403,24 +431,29 @@ def task_descriptor_for_decomposition(task, wf_descriptor):
 
         - This means no "descriptor" is provided by "wf_source_info" dictionary.
           Instead, a wrapper function must provide this information via the
-          source_wf_descriptor argument.
+          wf_descriptor argument.
 
         - Use new "decomposition_qn" key, while supporting legacy "source_wf_qn"
           key.
+
+        - Add decomposition Nmax (dNmax) to descriptor.
 
     """
     template_string = (
         "{wf_descriptor:s}"
         "-J{decomposition_qn[0]:04.1f}-g{decomposition_qn[1]:1d}-n{decomposition_qn[2]:02d}"
-        "-{decomposition_type:s}-dlan{max_iterations:d}"
+        "-{decomposition_type:s}-dNmax{decomposition_Nmax:02d}-dlan{max_iterations:04d}"
     )
 
     # support legacy key "source_wf_qn"
     if "source_wf_qn" in task:
         task["decomposition_qn"] = task["source_wf_qn"]
-        
+
+    decomposition_Nmax = task["truncation_parameters"]["Nmax"]
+
     descriptor = template_string.format(
         wf_descriptor=wf_descriptor,
+        decomposition_Nmax=decomposition_Nmax,
         **task,
     )
 
