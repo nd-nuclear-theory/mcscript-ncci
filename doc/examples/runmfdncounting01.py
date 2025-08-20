@@ -10,7 +10,7 @@
     - 09/07/19 (pjf): Remove Nv from truncation_parameters.
     - 08/12/25 (seb): Rename and remove unneeded parameters.
     - 08/19/25 (mac):
-      + Change example to 6Li (matching runmfdn13), and with fixed Nmax_orb.
+      + Change example nuclide to 6Li (matching runmfdn13).
       + Add post phase to save wf indexing files.
 """
 
@@ -28,7 +28,7 @@ mcscript.control.init()
 Nmax_range = (2, 4, 2)
 Nmax_list = mcscript.utils.value_range(*Nmax_range)
 M_list = [0.0, 1.0]
-Nmax_orb = 7  # uniform orbital set across Nmax (for use with postprocessor)
+Nmax_orb = None  # can be used to set uniform orbital set independent of Nmax (for use with postprocessor)
 
 ##################################################################
 # build task list
@@ -49,7 +49,7 @@ tasks = [
             "Nmax": Nmax,
             "Nstep": 2,
             "M": M,
-            "Nmax_orb": Nmax_orb,  # uniform orbital set across Nmax
+            "Nmax_orb": Nmax_orb,
         },
 
         # wavefunction storage -- save mfdn_smwf.info and mfdn_MBgroups files

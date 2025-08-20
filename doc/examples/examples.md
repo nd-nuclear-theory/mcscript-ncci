@@ -251,16 +251,6 @@ start of each run script, for further commentary.
         `mfdn_MBgroups`).  These files may be needed for codes which postprocess
         MFDn wave functions.
 
-     Unlike in `runmfdn13`, in this example, we choose the single particle
-     orbitals to be uniformly defined across Nmax.  In particular, we choose
-     Nmax_orb=7 (i.e., N=2n+l<=7), independent of Nmax.  This only affects the
-     indexing for the orbitals, in the wave function indexing files.  However,
-     having a uniform indexing for the orbitals across Nmax is important if
-     these wave function indexing files are to used later in certain
-     postprocessing applications (e.g., acting with an operator, in
-     `mfdn-transitions`, on an Nmax=4 input wave function to yield an Nmax=2
-     output wave function).
-
 
 ## MFDn Lanczos decomposition runs ##
 
