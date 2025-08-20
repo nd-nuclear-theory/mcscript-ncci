@@ -78,7 +78,7 @@ University of Notre Dame
     + Remove hamiltonian_rank. 
     + Add menj.par to archive list.
 - 05/21/25 (mac): Ensure single particle orbitals are set in all run modes.
-
+- 08/19/25 (mac): In save_mfdn_task_data, gracefully handle missing h2mixer.in and tbo_names.dat files.
 """
 import errno
 import os
@@ -492,10 +492,10 @@ def save_mfdn_task_data(task, postfix=""):
     
     # save H2 related files if MFDn is run on kH2 mode    
     if (variant_mode is modes.VariantMode.kH2):
-        archive_file_list = [
-            environ.h2mixer_filename(postfix),
-            "tbo_names{:s}.dat".format(postfix)
-        ]
+        # tbme information -- not applicable to counting runs
+        archive_file_list += glob.glob(environ.h2mixer_filename(postfix))
+        archive_file_list += glob.glob("tbo_names{:s}.dat".format(postfix))
+        
         # orbital information
         archive_file_list += glob.glob(environ.orbitals_int_filename(postfix))
         archive_file_list += glob.glob(environ.orbitals_filename(postfix))
