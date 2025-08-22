@@ -10,7 +10,7 @@ setup(
     python_requires='>=3.8',
     install_requires=[
         "deprecated>=1.2.10",
-        "mcscript>=2.0.0",
+        "mcscript>=2.1.0",
         "am",
         "mfdnres>=1.0.1",
     ],
