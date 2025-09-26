@@ -17,6 +17,8 @@ invocations.
 
 08/19/25 (mac): Add runmfdncounting01 counting run example.
 
+0926/25 (mac): Add runtbme01 TBME generation run example.
+
 ----------------------------------------------------------------
 
 ## Setup ##
@@ -266,3 +268,8 @@ start of each run script, for further commentary.
   * runmfdndecomp01: Basic illustration of decomposition using Nex operator.
   
   * runmfdndecomp02: Examples of angular momentum and joint U(3) decompositions.
+
+## TBME generation runs ##
+
+  * runtbme01: Illustration of generating TBMEs for various operators, at
+    various truncations, and with conversion from h2 to me2j format.

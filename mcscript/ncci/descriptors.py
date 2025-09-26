@@ -609,3 +609,29 @@ def task_descriptor_c1(task):
     return descriptor
 
 
+################################################################
+# task descriptors for tbme generation runs
+################################################################
+
+def task_descriptor_tbme_1(task):
+    """Task descriptor tbme_1
+
+    """
+    template_string = (
+        "Z{nuclide[0]}-N{nuclide[1]}"
+        "-hw{hw:06.3f}"
+        "-{target_truncation[0]}-{target_truncation[1]}"
+    )
+
+    if task.get("natural_orbitals"):
+        natural_orbital_indicator = "-natorb-J{:04.1f}-g{:1d}-n{:02d}".format(*task["natorb_base_state"])
+    else:
+        natural_orbital_indicator = ""
+    descriptor = template_string.format(
+        natural_orbital_indicator=natural_orbital_indicator,
+        **task,
+    )
+
+    return descriptor
+    
+

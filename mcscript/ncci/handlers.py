@@ -66,6 +66,7 @@ University of Notre Dame
   + Add sensible default task dictionary parameters for decomposition handlers.
 - 07/22/25 (mac): Extract partitioning for decomposition runs from mfdn_smwf.info.
 - 08/08/25 (mac): Add wf truncation capability for decomposition.
+- 09/26/25 (mac): Add TBME generation run task handler task_handler_tbme.
 """
 import glob
 import os
@@ -628,6 +629,99 @@ task_handler_mfdn_natorb_phases = [
     task_handler_mfdn_natorb_run,
     task_handler_mfdn_natorb_post,
 ]
+
+
+################################################################
+# TBME generation run
+################################################################
+
+def task_handler_tbme(task, postfix=""):
+    """Task handler for generation of operator tbmes.
+
+    Special keys:
+      "number_operator_orbitals"  
+      "tbme_conversion"
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string): identifier to add to generated files
+    """
+
+    # set task dictionary defaults for oscillator-basis tbme generation
+    task.setdefault("basis_mode", modes.BasisMode.kDirect)
+    task.setdefault("sp_truncation_mode", modes.SingleParticleTruncationMode.kNmax)
+
+    # set minimal orbital set for given truncation
+    target_truncation = task["target_truncation"]
+    code, cutoff = target_truncation
+    if code not in ["ob", "tb"]:
+        raise ValueError("Unexpected truncation code ({})".format(code))
+    task.setdefault("truncation_parameters", dict(Nmax_orb=cutoff))
+
+    # define orbitals
+    radial.set_up_orbitals(task, postfix)
+
+    # define orbital number operators
+    #
+    # NOTE (mac): Number operator generation may someday be absorbed into obmixer or h2mixer.
+    task.setdefault("number_operator_orbitals", {})
+    Nmax_orb = task["truncation_parameters"]["Nmax_orb"]
+    task.setdefault("obme_sources", [])
+    task.setdefault("tb_observables", [])
+    orbital_filename = "orbitals.dat"
+    for particle_species in ["p", "n"]:
+        for n, l, j in task["number_operator_orbitals"]:
+            number_operator_name = "N{:1d}{:1d}{:1d}{:1s}".format(n, l, int(2*j), particle_species)
+            number_operator_filename = "{}_obme.dat".format(number_operator_name)
+            mcscript.control.call(
+                [
+                    environ.shell_filename("number-op-gen"), orbital_filename,
+                    str(n), str(l), str(int(2*j)), particle_species, str(Nmax_orb),
+                    number_operator_filename,
+                ],
+                mode=mcscript.control.CallMode.kSerial
+            )
+            task["obme_sources"].append(
+                (number_operator_name, {"filename": number_operator_filename, "qn": (0,0,0)}),
+            )
+            task["tb_observables"].append(
+                (number_operator_name, (0,0,0), {"U[{}]".format(number_operator_name): 1.0}),
+            )
+
+    # generate tbmes
+    radial.set_up_obme_analytic(task, postfix)
+    tbme.generate_tbme(task, postfix)
+            
+    # convert tbme files
+    tbme_conversion = task.get("tbme_conversion")
+    if tbme_conversion:
+        target_format = tbme_conversion["target_format"]
+        keep_h2 = tbme_conversion.get("keep_h2")
+        if target_format != "me2j":
+            raise(ValueError("Unrecognized tbme target format ({})".format(target_format)))
+        me2j_extension = tbme_conversion["me2j_extension"]
+        me2j_precision = tbme_conversion.get("me2j_precision", "double")
+        me2j_tag = "me2j-{}".format(me2j_precision) if me2j_extension=="bin" else "me2j"
+        work_dir = "work{:s}".format(postfix)
+        h2_filename_list = glob.glob(os.path.join(work_dir, "tbme-*"))
+        for h2_filename in h2_filename_list:
+            me2j_filename = "{}_{}.{}".format(h2_filename[:-4], me2j_tag, me2j_extension)
+            mcscript.control.call(
+                [
+                    environ.shell_filename("h22me2j"), "--precision", me2j_precision, h2_filename, me2j_filename,
+                ],
+                mode=mcscript.control.CallMode.kSerial
+            )
+        if not keep_h2:
+            mcscript.control.call(
+                [
+                    "rm", h2_filename,
+                ],
+                mode=mcscript.control.CallMode.kSerial
+            )
+
+    # save tbme files
+    tbme.save_tbme(task, postfix=postfix)
 
 
 ################################################################
