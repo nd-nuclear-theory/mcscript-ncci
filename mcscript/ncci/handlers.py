@@ -67,6 +67,7 @@ University of Notre Dame
 - 07/22/25 (mac): Extract partitioning for decomposition runs from mfdn_smwf.info.
 - 08/08/25 (mac): Add wf truncation capability for decomposition.
 - 09/26/25 (mac): Add TBME generation run task handler task_handler_tbme.
+- 10/22/25 (mac/seb): Move truncation before decomposition into task_handler_decomposition_pre.
 """
 import glob
 import os
@@ -263,28 +264,6 @@ task_handler_mfdn_phases = [
 ]
 
 
-def task_handler_mfdn_decomposition_pre(task, postfix=""):
-    """Task handler for serial components before MFDn phase of Lanczos
-    decomposition, assuming oscillator basis.
-
-    Arguments:
-        task (dict): as described in module docstring
-        postfix (string, optional): identifier to add to generated files
-
-    """
-
-    # set some defaults
-    task.setdefault("diagonalization", True)  # to disable unnecessary obdme calculation
-    task.setdefault("calculate_obdme", False)  # to disable unnecessary obdme calculation
-    # 08/08/25 (mac): Setting calculate_tbo to false leads to intermittent and
-    # nondeterministic memory deallocation errors with mfdn commit 3f34aa7,
-    # dependent upon OpenMP parameters.
-    ## task.setdefault("calculate_tbo", False)  # to disable unnecessary Ncm and rrel2 operators
-    task.setdefault("tolerance", 0)  # iterate to max iterations
-    
-    task_handler_mfdn_pre(task, postfix)
-
-    
 def extract_partitioning_from_smwf_info_file(
         wf_source_dir,
         *,
@@ -339,39 +318,45 @@ def extract_partitioning_from_smwf_info_file(
     mcscript.utils.write_input(
         partitioning_info_filename,
         input_lines=lines,
-    )
+    )    
 
-
-def task_handler_mfdn_decomposition_run(task, postfix=""):
-    """Task handler for MFDn Lanczos decomposition, assuming oscillator basis.
+    
+def get_wf_source_info(task):
+    """ Identify source directory and sequence number for single wf to process.
 
     Arguments:
-        task (dict): as described in module docstring
-        postfix (string, optional): identifier to add to generated files
-    """
 
-    work_dir = "work{:s}".format(postfix)
-    
-    # set some defaults
-    task.setdefault("diagonalization", True)  # to disable unnecessary obdme calculation
-    task.setdefault("calculate_obdme", False)  # to disable unnecessary obdme calculation
-    # 08/08/25 (mac): Setting calculate_tbo to false leads to intermittent and
-    # nondeterministic memory deallocation errors with mfdn commit 3f34aa7,
-    # dependent upon OpenMP parameters.
-    ## task.setdefault("calculate_tbo", False)  # to disable unnecessary Ncm and rrel2 operators 
-    task.setdefault("tolerance", 0)  # iterate to max iterations
+        task (dict): as described in module docstring
+
+    Returns:
+        
+        wf_source_run [str]: Run string
+
+        wf_source_descriptor [str]: Descriptor string
+
+        res_data (mfdnres.ResultsData): Results data object providing level
+
+        level_seq [int]: Sequence number
+     
+    """
 
     # legacy: support deprecated task key "source_wf_qn"
     if "source_wf_qn" in task:
-        task["decomposition_qn"] = task["source_wf_qn"]
-    qn = task["decomposition_qn"]
+        task.setdefault("wf_qn", task["source_wf_qn"])
+    elif "decomposition_qn" in task:
+        task.setdefault("wf_qn", task["decomposition_qn"])
+    qn = task["wf_qn"]
     
     # set up run parameters
-    if "wf_source_run_descriptor" in task:
+    if "wf_source_run_descriptor_seq" in task:
         # explicit designation of run and descriptor for wf
         #
-        # Keys: "wf_source_run_descriptor"
+        # Keys: "wf_source_run_descriptor_seq"
         wf_source_run, wf_source_descriptor = task["wf_source_run_descriptor"]
+
+        # confirm existence of run and retrieve results data
+        res_data = library.get_res_data(wf_source_run, wf_source_descriptor)
+        
     elif "wf_source_info" in task:
         # legacy API: explicit construction of descriptor
         #
@@ -385,6 +370,10 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
         # retrieve level data
         wf_source_run = wf_source_info["run"]
         wf_source_descriptor = wf_source_info["metadata"]["descriptor"]
+
+        # confirm existence of run and retrieve results data
+        res_data = library.get_res_data(wf_source_run, wf_source_descriptor)
+        
     elif "wf_source_selector" in task:
         # postprocessor-like API: obtain descriptor by hunting in res data
         #
@@ -410,47 +399,76 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
         for mesh_point in mesh_data:
             print(" ", mesh_point.params.get("run"), mesh_point.params.get("descriptor"))
 
-        # select run and descriptor
-        wf_source_run, wf_source_descriptor = postprocessing.get_run_descriptor(
-            mesh_data, qn,
-        )
-        
+        # select run, descriptor, and sequence number
+        res_data = None
+        for mesh_point in mesh_data:
+            if qn not in mesh_point.levels:
+                continue
+    
+            wf_source_run = mesh_point.params["run"]
+            wf_source_descriptor = mesh_point.params["descriptor"]
+    
+            res_data = mesh_point
+
+        if res_data is None:
+            raise mcscript.ScriptError("No source wave function found with given qn")
+
     # get sequence number for level within smwf file
-    res_data = library.get_res_data(wf_source_run, wf_source_descriptor)
     levels = res_data.levels
     level_seq_lookup = dict(map(reversed, enumerate(levels, 1)))
     level_seq = level_seq_lookup[qn]
+    if level_seq is None:
+        raise mcscript.ScriptError("No source wave function found with given qn")
+    
+    return wf_source_run, wf_source_descriptor, res_data, level_seq
 
-    # validate selected source wf qn
-    M = task["truncation_parameters"]["M"]
-    source_wf_M = res_data.params["M"]
-    if source_wf_M != M:
-        raise mcscript.exception.ScriptError("Mismatched M for source wave function ({}) and present decomposition run ({})".format(source_wf_M, M))
-    Nmax = task["truncation_parameters"].get("Nmax")
-    source_wf_Nmax = res_data.params.get("Nmax")
-    if source_wf_Nmax != Nmax and "truncation_model_info" not in task:
-        raise mcscript.exception.ScriptError("Mismatched Nmax for source wave function ({}) and present decomposition run ({})".format(source_wf_Nmax, Nmax))
 
-    # identify source wf location
-    wf_source_wf_prefix = library.get_wf_prefix(wf_source_run, wf_source_descriptor)
+def task_handler_mfdn_decomposition_pre(task, postfix=""):
+    """Task handler for serial components before MFDn phase of Lanczos
+    decomposition, assuming oscillator basis.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+
+    """
+
+    work_dir = "work{:s}".format(postfix)
+    
+    # set some defaults
+    task.setdefault("diagonalization", True)  # to disable unnecessary obdme calculation
+    task.setdefault("calculate_obdme", False)  # to disable unnecessary obdme calculation
+    # 08/08/25 (mac): Setting calculate_tbo to false leads to intermittent and
+    # nondeterministic memory deallocation errors with mfdn commit 3f34aa7,
+    # dependent upon OpenMP parameters.
+    ## task.setdefault("calculate_tbo", False)  # to disable unnecessary Ncm and rrel2 operators
+    task.setdefault("tolerance", 0)  # iterate to max iterations
 
     # impose truncation
-    #
-    # TODO 08/08/25 (mac): Move truncation into "pre" phase, since it is a
-    # serial task.  But then some information, e.g., the value of level_seq and
-    # wf_source_wf_prefix will have to be regenerated in the "run" phase.
     if "truncation_model_info" in task:
 
+        # locate wave function
+        wf_source_run, wf_source_descriptor, res_data, level_seq = get_wf_source_info(task)
+        wf_prefix = library.get_wf_prefix(wf_source_run, wf_source_descriptor)
+        
+        # validate selected wf basis (M) against basis parameters
+        M = task["truncation_parameters"]["M"]
+        wf_M = res_data.params["M"]
+        if wf_M != M:
+            raise mcscript.exception.ScriptError("Mismatched M for source wave function ({}) and present decomposition run ({})".format(wf_M, M))
+        
         # locate model wf info
         model_info = task["truncation_model_info"]
         model_run = model_info["run"]
         model_descriptor = model_info["descriptor"](task | model_info)
         model_prefix = library.get_wf_prefix(model_run, model_descriptor)
 
-        # check consistency of Nmax with present run
+        # validate selected truncation model basis (M and Nmax) against basis parameters
+        M = task["truncation_parameters"]["M"]
         model_M = model_info["truncation_parameters"]["M"]
         if model_M != M:
             raise mcscript.exception.ScriptError("Mismatched M for wave function truncation model ({}) and present decomposition run ({})".format(model_M, M))
+        Nmax = task["truncation_parameters"].get("Nmax")
         model_Nmax = model_info["truncation_parameters"]["Nmax"]
         if model_Nmax != Nmax:
             raise mcscript.exception.ScriptError("Mismatched Nmax for wave function truncation model ({}) and present decomposition run ({})".format(model_Nmax, Nmax))
@@ -472,7 +490,7 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
         mcscript.control.call(
             [
                 environ.shell_filename("smwf-truncate"),
-                wf_source_wf_prefix,  # input wf directory
+                wf_prefix,  # input wf directory
                 model_prefix,  # truncation model wf directory
                 target_prefix,  # target wf directory
                 "{:d}".format(level_seq),  # state sequence number
@@ -480,21 +498,63 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
             ],
             mode=mcscript.control.CallMode.kSerial,
         )
+    
+    task_handler_mfdn_pre(task, postfix)
+
+    
+def task_handler_mfdn_decomposition_run(task, postfix=""):
+    """Task handler for MFDn Lanczos decomposition, assuming oscillator basis.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+
+    work_dir = "work{:s}".format(postfix)
+    
+    # set some defaults
+    task.setdefault("diagonalization", True)  # to disable unnecessary obdme calculation
+    task.setdefault("calculate_obdme", False)  # to disable unnecessary obdme calculation
+    # 08/08/25 (mac): Setting calculate_tbo to false leads to intermittent and
+    # nondeterministic memory deallocation errors with mfdn commit 3f34aa7,
+    # dependent upon OpenMP parameters.
+    # 10/22/25 (mac): Though these seem to very occasionally happen ("free(): invalid size"),
+    # testing under Ubuntu, even otherwise.
+    ## task.setdefault("calculate_tbo", False)  # to disable unnecessary Ncm and rrel2 operators 
+    task.setdefault("tolerance", 0)  # iterate to max iterations
+
+    # handle case where wf was truncated
+    if "truncation_model_info" not in task:
+
+        # locate wave function
+        wf_source_run, wf_source_descriptor, res_data, level_seq = get_wf_source_info(task)
+        wf_prefix = library.get_wf_prefix(wf_source_run, wf_source_descriptor)
+
+        # validate selected wf basis (M and Nmax) against basis parameters
+        M = task["truncation_parameters"]["M"]
+        wf_M = res_data.params["M"]
+        if wf_M != M:
+            raise mcscript.exception.ScriptError("Mismatched M for source wave function ({}) and present decomposition run ({})".format(wf_M, M))
+        Nmax = task["truncation_parameters"].get("Nmax")
+        wf_Nmax = res_data.params.get("Nmax")
+        if wf_Nmax != Nmax:
+            raise mcscript.exception.ScriptError("Mismatched Nmax for source wave function ({}) and present decomposition run ({})".format(wf_Nmax, Nmax))
         
+    else:
         # reset wf info for mfdn to point to truncated wf
+        wf_prefix = os.path.join(work_dir, "smwf")
         level_seq = 1
-        wf_source_wf_prefix = target_prefix
 
     # extract partitioning info
     if task.get("partition_filename"):
         print("WARN: A partition_filename was specified but is being ignored.")
-    extract_partitioning_from_smwf_info_file(wf_source_wf_prefix)
+    extract_partitioning_from_smwf_info_file(wf_prefix)
             
     # set MFDn parameters
     task["mfdn_inputlist"] = {
         "selectpiv" : 4,
         "initvec_index": level_seq,
-        "initvec_smwffilename": os.path.join("..", wf_source_wf_prefix, "mfdn_smwf"),
+        "initvec_smwffilename": os.path.join("..", wf_prefix, "mfdn_smwf"),
     }
     task["partition_filename"] = "mfdn_partitioning.info"
     

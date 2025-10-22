@@ -134,9 +134,8 @@ tasks = [
             ncci.operators.tb.Nex(nuclide, hw)  # Nex
         ),
         "decomposition_type": decomposition_type,
-        "decomposition_qn": qn,
 
-        # wf source selection
+        # wf selection
         "wf_source_run_list": ["mfdn13"],
         "wf_source_selector": {
             "nuclide": nuclide,
@@ -145,6 +144,7 @@ tasks = [
             "Nmax": Nmax,
             "M": M,
             },
+        "wf_qn": qn,
 
         # obdme parameters
         "calculate_obdme": False,

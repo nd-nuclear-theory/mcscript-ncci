@@ -59,6 +59,7 @@ University of Notre Dame
 - 05/18/25 (mac): Add convert_ob_densities() for conversion of obdmes to density tabulations. 
 - 07/20/25 (mac): Refactor identification of source wf data into select_source_wf_data().
 - 07/21/25 (mac): Provide get_run_descriptor() to extract wf info for single wf.
+- 10/22/25 (mac): Remove get_run_descriptor().
 """
 import collections
 import deprecated
@@ -590,38 +591,6 @@ def select_source_wf_data(
     merged_data = merged_data[0]
 
     return mesh_data, merged_data
-
-
-def get_run_descriptor(mesh_data, qn):
-    """Get (run, descriptor) tuple given state qn.
-
-    In general, the sort order of mesh_data is important, since the adopted
-    (run, descriptor) pair will be taken from the last point in mesh_data
-    containing the state of the given qn.
-
-    Arguments:
-
-        mesh_data (list[mfdnres.MFDnResultsData]): Results mesh for wf sources.
-
-        qn (tuple): (J,g,n)
-
-    Returns:
-        
-        (run, descriptor) (tuple[str,str]): Run and descriptor strings for wf.
-
-    """
-
-    run_descriptor = None
-    for mesh_point in mesh_data:
-        if qn not in mesh_point.levels:
-            continue
-
-        run_descriptor = (
-            mesh_point.params["run"],
-            mesh_point.params["descriptor"]
-        )
-
-    return run_descriptor
 
 
 def get_run_descriptor_pair(bra_mesh_data, ket_mesh_data, qn_pair, operator_qn):

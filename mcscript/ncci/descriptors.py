@@ -433,21 +433,23 @@ def task_descriptor_with_decomposition_tags(task, wf_descriptor):
           Instead, a wrapper function must provide this information via the
           wf_descriptor argument.
 
-        - Use new "decomposition_qn" key, while supporting legacy "source_wf_qn"
-          key.
+        - Use new "wf_qn" key, while supporting legacy "source_wf_qn" or
+          "decomposition_qn" key.
 
         - Add decomposition Nmax (dNmax) to descriptor.
 
     """
     template_string = (
         "{wf_descriptor:s}"
-        "-J{decomposition_qn[0]:04.1f}-g{decomposition_qn[1]:1d}-n{decomposition_qn[2]:02d}"
+        "-J{wf_qn[0]:04.1f}-g{wf_qn[1]:1d}-n{wf_qn[2]:02d}"
         "-{decomposition_type:s}-dNmax{decomposition_Nmax:02d}-dlan{max_iterations:04d}"
     )
 
     # support legacy key "source_wf_qn"
     if "source_wf_qn" in task:
-        task["decomposition_qn"] = task["source_wf_qn"]
+        task.setdefault("wf_qn", task["source_wf_qn"])
+    elif "decomposition_qn" in task:
+        task.setdefault("wf_qn", task["decomposition_qn"])
 
     decomposition_Nmax = task["truncation_parameters"]["Nmax"]
 

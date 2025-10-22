@@ -9,7 +9,7 @@
     Debugging: Some tasks may intermittently fail.  This appears to be related
     to numerical issues in the presence of highly-degenerate 0 eigenvalues.
 
-    Patrick J. Fasano
+    Patrick J. Fasano, Mark A. Caprio
     University of Notre Dame
 
     03/27/25 (mac): Rename from runmfdn14 to runmfdndecomp02.
@@ -116,9 +116,8 @@ tasks = [
         # decomposition
         "hamiltonian": ncci.decomposition.decomposition_operator(nuclide,Nmax,hw,decomposition_type,verbose=False),
         "decomposition_type": decomposition_type,
-        "decomposition_qn": qn,
 
-        # wf source selection
+        # wf selection
         "wf_source_run_list": ["mfdn13"],
         "wf_source_selector": {
             "nuclide": nuclide,
@@ -127,6 +126,7 @@ tasks = [
             "Nmax": Nmax,
             "M": wf_source_M(qn),
             },
+        "wf_qn": qn,
 
         # input TBME parameters
         "truncation_int": truncation_int,  # used in constructing orbital truncation
