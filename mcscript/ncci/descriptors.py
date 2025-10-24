@@ -25,6 +25,8 @@ University of Notre Dame
 - 01/16/24 (zz): Revise task_descriptor_menj and add task_descriptor_menj_trans. 
 - 02/12/24 (zz): Revise task_descriptor_menj and task_descriptor_menj_trans.
 - 07/27/24 (mac): Add task_descriptor_10 for shell model runs.
+- 09/26/24 (mac): Add trial field in task_descriptor_7.
+- 04/09/25 (mac): Add task_descriptor_10_trans for transitions following shell model runs.
 
 """
 import mcscript.exception
@@ -60,6 +62,7 @@ def task_descriptor_7(task):
             "-Nmax{Nmax:02d}{mixed_parity_indicator}{fci_indicator}-Mj{M:03.1f}"
             "-lan{max_iterations:d}-tol{tolerance:.1e}"
             "{natural_orbital_indicator}"
+            "{trial_field}"
             )
     else:
         raise mcscript.exception.ScriptError("mode not supported by task descriptor")
@@ -74,6 +77,7 @@ def task_descriptor_7(task):
     else:
         mixed_parity_indicator = ""
     coulomb_flag = int(task["use_coulomb"])
+    trial_field = "-trial{trial:04d}".format(**task) if (task.get("trial") is not None) else ""
     if task.get("natural_orbitals"):
         natural_orbital_indicator = "-natorb-J{:04.1f}-g{:1d}-n{:02d}".format(*task["natorb_base_state"])
     else:
@@ -89,6 +93,7 @@ def task_descriptor_7(task):
         mixed_parity_indicator=mixed_parity_indicator,
         fci_indicator=fci_indicator,
         natural_orbital_indicator=natural_orbital_indicator,
+        trial_field=trial_field,
         **mcscript.utils.dict_union(task, truncation_parameters)
         )
 
@@ -185,6 +190,43 @@ def task_descriptor_7_trans(task):
     )
 
     return descriptor
+
+
+def task_descriptor_7_decomposition(task):
+    """Task descriptor format 7_decomposition
+
+       - Provide stripped down descriptor (omitting a_cm, etc.), similar to
+         task_descriptor_7_trans, but determining Nmax differently, and forcing
+         omission of M.
+
+    """
+
+    # Nmax for source wf
+    if task.get("wf_source_selector"):
+        # use Nmax from wf_source_selector
+        Nmax = task["wf_source_selector"]["Nmax"]
+    elif task.get("wf_source_info"):
+        # use Nmax from wf_source_info (deprecated)
+        Nmax = task["wf_source_info"]["truncation_parameters"]["Nmax"]
+    else:
+        # wf must have been manually specified as run and descriptor
+        if "truncation_model_info" not in task:
+            # if no truncation is applied, we can use the run Nmax
+            Nmax = task["truncation_parameters"]["Nmax"]
+        else:
+            raise mcscript.exception.ScriptError("No way to determine Nmax of source wave function")
+
+    # prepare stripped down descriptor for source wf
+    task_for_wf_descriptor = task.copy()  # shallow copy -- beware need to make deeper copy of truncation_parameters
+    task_for_wf_descriptor["truncation_parameters"] = task_for_wf_descriptor["truncation_parameters"].copy()  # safely editable copy of truncation_parameters
+    task_for_wf_descriptor["truncation_parameters"].pop("M")  # suppress M (otherwise included as a legacy field by task_descriptor_7_trans)
+    task_for_wf_descriptor["truncation_parameters"]["Nmax"] = Nmax  # use Nmax for source wf
+    wf_descriptor = task_descriptor_7_trans(task_for_wf_descriptor)
+
+    descriptor = task_descriptor_with_decomposition_tags(task, wf_descriptor)
+    
+    return descriptor
+
 
 def task_descriptor_8(task):
     """Task descriptor format 8
@@ -305,6 +347,34 @@ def task_descriptor_10(task):
     return descriptor
 
 
+def task_descriptor_10_trans(task):
+    """Task descriptor format 10_trans
+
+       Stripped-down descriptor for transitoins for traditional shell model runs.
+    """
+    # Note: May later want to add truncation parameters for weight-based shell model truncations.
+    if (
+        task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kManual
+        and
+        task["basis_mode"] is modes.BasisMode.kShellModel
+    ):
+        template_string = (
+            "Z{nuclide[0]}-N{nuclide[1]}-{interaction}"
+            "{subset_field}"
+            )
+    else:
+        raise mcscript.exception.ScriptError("mode not supported by task descriptor")
+
+    truncation_parameters = task.get("truncation_parameters", {})
+    subset_field = "-subset{subset[0]:03d}".format(**task) if (task.get("subset") is not None) else ""
+    descriptor = template_string.format(
+        subset_field=subset_field,
+        **mcscript.utils.dict_union(task, truncation_parameters)
+    )
+
+    return descriptor
+
+
 def task_descriptor_decomposition_1(task):
     """Task descriptor for decomposition.
 
@@ -313,7 +383,7 @@ def task_descriptor_decomposition_1(task):
 
     template_string = (
         "{source_wf_descriptor:s}"
-        "-J{source_wf_qn[0]:04.1f}-g{source_wf_qn[1]:1d}-n{source_wf_qn[2]:02d}"
+        "-J{wf_source_qn[0]:04.1f}-g{wf_source_qn[1]:1d}-n{wf_source_qn[2]:02d}"
         "-op{decomposition_operator_name:s}-dlan{max_iterations:d}"
         # 01/19/21 (mac): However, we propose moving away from calling this an "operator",
         # but rather a decomposition type.  See runmac0566.py.  "-{decomposition_name:s}".
@@ -322,7 +392,7 @@ def task_descriptor_decomposition_1(task):
 
     descriptor = template_string.format(
         source_wf_descriptor=task["wf_source_info"]["descriptor"](task["wf_source_info"]),
-        **task
+        **task,
     )
 
     return descriptor
@@ -336,18 +406,60 @@ def task_descriptor_decomposition_2(task):
     # extracted from runmac0688
     template_string = (
         "{source_wf_descriptor:s}"
-        "-J{source_wf_qn[0]:04.1f}-g{source_wf_qn[1]:1d}-n{source_wf_qn[2]:02d}"
+        "-J{wf_source_qn[0]:04.1f}-g{wf_source_qn[1]:1d}-n{wf_source_qn[2]:02d}"
         "-{decomposition_type:s}-dlan{max_iterations:d}"
     )
-
     
     descriptor = template_string.format(
         source_wf_descriptor=task["wf_source_info"]["descriptor"](task["wf_source_info"]),
-        **task
+        **task,
     )
 
     return descriptor
 
+
+def task_descriptor_with_decomposition_tags(task, wf_descriptor):
+    """Convert base task descriptor into task descriptor for decomposition.
+
+    This generic descriptor function requires a wrapper, to specify a descriptor
+    for the underlying wf (but, as with transitions, this may be less detailed
+    than the descriptor for the original wf run).
+
+    Relative to task_descriptor_decomposition_2:
+
+        - Do not assume presence of "wf_source_info" dictionary.
+
+        - This means no "descriptor" is provided by "wf_source_info" dictionary.
+          Instead, a wrapper function must provide this information via the
+          wf_descriptor argument.
+
+        - Use new "wf_qn" key, while supporting legacy "source_wf_qn" or
+          "decomposition_qn" key.
+
+        - Add decomposition Nmax (dNmax) to descriptor.
+
+    """
+    template_string = (
+        "{wf_descriptor:s}"
+        "-J{wf_qn[0]:04.1f}-g{wf_qn[1]:1d}-n{wf_qn[2]:02d}"
+        "-{decomposition_type:s}-dNmax{decomposition_Nmax:02d}-dlan{max_iterations:04d}"
+    )
+
+    # support legacy key "source_wf_qn"
+    if "source_wf_qn" in task:
+        task.setdefault("wf_qn", task["source_wf_qn"])
+    elif "decomposition_qn" in task:
+        task.setdefault("wf_qn", task["decomposition_qn"])
+
+    decomposition_Nmax = task["truncation_parameters"]["Nmax"]
+
+    descriptor = template_string.format(
+        wf_descriptor=wf_descriptor,
+        decomposition_Nmax=decomposition_Nmax,
+        **task,
+    )
+
+    return descriptor
 
 ################################################################
 # task descriptor for mfdn menj runs (and postprocessing)
@@ -498,4 +610,30 @@ def task_descriptor_c1(task):
 
     return descriptor
 
+
+################################################################
+# task descriptors for tbme generation runs
+################################################################
+
+def task_descriptor_tbme_1(task):
+    """Task descriptor tbme_1
+
+    """
+    template_string = (
+        "Z{nuclide[0]}-N{nuclide[1]}"
+        "-hw{hw:06.3f}"
+        "-{target_truncation[0]}-{target_truncation[1]}"
+    )
+
+    if task.get("natural_orbitals"):
+        natural_orbital_indicator = "-natorb-J{:04.1f}-g{:1d}-n{:02d}".format(*task["natorb_base_state"])
+    else:
+        natural_orbital_indicator = ""
+    descriptor = template_string.format(
+        natural_orbital_indicator=natural_orbital_indicator,
+        **task,
+    )
+
+    return descriptor
+    
 

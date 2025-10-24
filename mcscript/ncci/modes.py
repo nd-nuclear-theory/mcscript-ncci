@@ -126,7 +126,9 @@ class SingleParticleTruncationMode(enum.Enum):
                 (interpreted as one-body Nmax_orb for "FCI" truncation, or
                 many-body excitation cutoff Nmax for "Nmax" truncation)
             - "Nstep" (int): Nstep (2 for single parity, 1 for mixed parity)
-
+            - "Nmax_orb" (int): direct override to specify oscillator cutoff
+               for single-particle basis; otherwise, cutoff is inferred from 
+               many-body truncation and controlled by "Nmax" parameter    
 
     kTriangular:
         - weight is (n_coeff*n + l_coeff*l)

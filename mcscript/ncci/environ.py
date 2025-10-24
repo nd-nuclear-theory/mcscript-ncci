@@ -31,6 +31,7 @@ University of Notre Dame
     + Allow truncation argument of None in find_interaction_file().
     + Add find_operator_file().
     + Rename tmbe_filename() to tbme_filename().
+- 06/28/25 (mac): Provide data_dir_partitioning_list
 
 """
 
@@ -48,7 +49,12 @@ import mcscript.exception
 ################################################################
 
 data_dir_h2_list = os.environ.get("NCCI_DATA_DIR_H2", "").split(":")
-# Base directories for interaction tbme files ("NCCI_DATA_DIR_H2")
+# Base directories for interaction tbme files (NCCI_DATA_DIR_H2)
+# Environment variable is interpreted as a PATH-style colon-delimited list.
+
+data_dir_partitioning_list_default = "/global/cfs/cdirs/m2032/data/partitioning/v15"  # 06/28/25 (mac): legacy support
+data_dir_partitioning_list = os.environ.get("NCCI_DATA_DIR_PARTITIONING", data_dir_partitioning_list_default).split(":")
+# Base directories for interaction tbme files (NCCI_DATA_DIR_PARTITIONING)
 # Environment variable is interpreted as a PATH-style colon-delimited list.
 
 interaction_run_list = []

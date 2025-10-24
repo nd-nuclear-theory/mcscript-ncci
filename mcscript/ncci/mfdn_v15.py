@@ -77,7 +77,8 @@ University of Notre Dame
 - 02/12/24 (zz): 
     + Remove hamiltonian_rank. 
     + Add menj.par to archive list.
-
+- 05/21/25 (mac): Ensure single particle orbitals are set in all run modes.
+- 08/19/25 (mac): In save_mfdn_task_data, gracefully handle missing h2mixer.in and tbo_names.dat files.
 """
 import errno
 import os
@@ -229,9 +230,27 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     else:
         inputlist["Hrank"] = 2
     
-    # truncation mode
-    truncation_setup_functions[task["mb_truncation_mode"]](task, inputlist)
+    # define single particle orbitals
+    if variant_mode is modes.VariantMode.kH2:
+        inputlist["orbitalfile"] = environ.orbitals_filename(postfix)
+        mcscript.control.call([
+            "cp", "--verbose",
+            environ.orbitals_filename(postfix),
+            os.path.join(work_dir, environ.orbitals_filename(postfix))
+        ])
+    elif variant_mode is modes.VariantMode.kMENJ:
+        # define single-particle orbital cutoff
+        #
+        # Since menj variant is not given an explicit orbital list, we must provide
+        # the Nshell parameter.
+        if truncation_parameters.get("Nmax_orb") is not None:
+            Nmax_orb = truncation_parameters["Nmax_orb"]
+        elif task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kNmax:
+            Nmax_orb = truncation_parameters["Nmax"] + utils.Nv_for_nuclide(task["nuclide"])
+        inputlist["Nshell"] = Nmax_orb + 1
 
+    # set up many-body trunction (based on truncation mode)
+    truncation_setup_functions[task["mb_truncation_mode"]](task, inputlist)
    
     if run_mode in [modes.MFDnRunMode.kNormal,modes.MFDnRunMode.kLanczosOnly]:
         if (task["basis_mode"] in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):
@@ -243,25 +262,6 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         inputlist["tol"] = float(task["tolerance"])
         if task.get("reduce_solver_threads"):
             inputlist["reduce_solver_threads"] = task["reduce_solver_threads"]
-
-        # define single particle orbitals
-        if variant_mode is modes.VariantMode.kH2:
-            inputlist["orbitalfile"] = environ.orbitals_filename(postfix)
-            mcscript.control.call([
-                "cp", "--verbose",
-                environ.orbitals_filename(postfix),
-                os.path.join(work_dir, environ.orbitals_filename(postfix))
-            ])
-        elif variant_mode is modes.VariantMode.kMENJ:
-            # define single-particle orbital cutoff
-            #
-            # Since menj variant is not given an explicit orbital list, we must provide
-            # the Nshell parameter.
-            if truncation_parameters.get("Nmax_orb") is not None:
-                Nmax_orb = truncation_parameters["Nmax_orb"]
-            elif task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kNmax:
-                Nmax_orb = truncation_parameters["Nmax"] + utils.Nv_for_nuclide(task["nuclide"])
-            inputlist["Nshell"] = Nmax_orb + 1
 
         # provide Hamiltonian and two-body observable TBME file names
         if variant_mode is modes.VariantMode.kH2:
@@ -421,19 +421,18 @@ def run_mfdn(task, postfix=""):
     # copy results out
     print("Saving basic output files...")
     descriptor = task["metadata"]["descriptor"]
-    work_dir = "work{:s}".format(postfix)
     filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
 
     # ...copy res file
     res_filename = "{:s}.res".format(filename_prefix)
     mcscript.task.save_results_single(
-        task, os.path.join(work_dir, "mfdn.res"), res_filename, "res"
+        task, os.path.join(work_dir, "mfdn.res"), res_filename, "res", command="cp",
     )
 
     # ...copy out file
     out_filename = "{:s}.out".format(filename_prefix)
     mcscript.task.save_results_single(
-        task, os.path.join(work_dir, "mfdn.out"), out_filename, "out"
+        task, os.path.join(work_dir, "mfdn.out"), out_filename, "out", command="cp",
     )
 
 
@@ -493,10 +492,10 @@ def save_mfdn_task_data(task, postfix=""):
     
     # save H2 related files if MFDn is run on kH2 mode    
     if (variant_mode is modes.VariantMode.kH2):
-        archive_file_list = [
-            environ.h2mixer_filename(postfix),
-            "tbo_names{:s}.dat".format(postfix)
-        ]
+        # tbme information -- not applicable to counting runs
+        archive_file_list += glob.glob(environ.h2mixer_filename(postfix))
+        archive_file_list += glob.glob("tbo_names{:s}.dat".format(postfix))
+        
         # orbital information
         archive_file_list += glob.glob(environ.orbitals_int_filename(postfix))
         archive_file_list += glob.glob(environ.orbitals_filename(postfix))
@@ -562,7 +561,7 @@ def save_mfdn_obdme(task, postfix=""):
     archive_file_list = glob.glob(os.path.join(work_dir, "mfdn*obdme*"))
 
     mcscript.task.save_results_multi(
-        task, archive_file_list, target_directory_name, "obdme"
+        task, archive_file_list, target_directory_name, "obdme",
     )
 
 
@@ -583,7 +582,7 @@ def save_mfdn_wavefunctions(task, postfix=""):
     archive_file_list += glob.glob(os.path.join(work_dir, "mfdn_partitioning.*"))
 
     mcscript.task.save_results_multi(
-        task, archive_file_list, target_directory_name, "wf"
+        task, archive_file_list, target_directory_name, "wf",
     )
 
 

@@ -136,7 +136,7 @@ def task_handler_mfdn_postprocessor_salvage_mfdn_levels(task):
     # postprocessor does not support v15099 binary input
     operator_id_list = ["H", "J2", "T2"]
     for operator_id in operator_id_list:
-        mcscript.control.call(["h2conv", "15200", "tbme-{}.bin".format(operator_id), "tbme-{}-v15200.bin".format(operator_id)])
+        mcscript.control.call([environ.shell_filename("h2conv"), "15200", "tbme-{}.bin".format(operator_id), "tbme-{}-v15200.bin".format(operator_id)])
     
     # for each state: run postprocessor and harvest observables
     dummy_J=task["truncation_parameters"]["M"]

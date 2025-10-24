@@ -60,13 +60,22 @@ University of Notre Dame
 - 10/19/23 (slv): Remove the menj_pre handler and use the modes.VariantMode.kMENJ as the 
                   determining condition to copy the interaction files.
 - 01/16/23 (zz): Generate mfdn_smwf.info for menj runs.
-
+- 02/05/24 (mac): Add -tbme archive to archive_handler_mfdn.
+- 07/21/25 (mac):
+  + Provide decomposition wf selection by "wf_source_runs" and "wf_source_selector".
+  + Add sensible default task dictionary parameters for decomposition handlers.
+- 07/22/25 (mac): Extract partitioning for decomposition runs from mfdn_smwf.info.
+- 08/08/25 (mac): Add wf truncation capability for decomposition.
+- 09/26/25 (mac): Add TBME generation run task handler task_handler_tbme.
+- 10/22/25 (mac/seb): Move truncation before decomposition into task_handler_decomposition_pre.
 """
+import glob
 import os
 
 import mcscript.exception
 import mcscript.parameters
 import mcscript.task
+import mfdnres
 
 from . import (
     environ,
@@ -177,6 +186,7 @@ def task_handler_mfdn_post(task, postfix="", cleanup=True):
     if (cleanup):
         mfdn_driver.cleanup_mfdn_workdir(task, postfix=postfix)
 
+        
 def task_handler_mfdn_post_no_cleanup(task, postfix=""):
     """ Task handler for serial components after MFDn run (no cleanup).
 
@@ -214,7 +224,8 @@ def task_handler_mfdn_pre(task, postfix=""):
         
     else:
         raise(ValueError("unsupported variant mode"))
-            
+
+    
 def task_handler_mfdn_run(task, postfix=""):
     """Task handler for MFDn phase of oscillator basis run.
 
@@ -230,6 +241,7 @@ def task_handler_mfdn_run(task, postfix=""):
     mfdn_driver.generate_mfdn_input(task=task, postfix=postfix)
     mfdn_driver.run_mfdn(task=task, postfix=postfix)
 
+    
 def task_handler_mfdn(task, postfix=""):
     """Task handler for complete oscillator basis run, including serial pre and post
     steps.
@@ -244,58 +256,308 @@ def task_handler_mfdn(task, postfix=""):
     task_handler_mfdn_run(task, postfix=postfix)
     task_handler_mfdn_post(task, postfix=postfix)
 
+    
 task_handler_mfdn_phases = [
     task_handler_mfdn_pre,
     task_handler_mfdn_run,
     task_handler_mfdn_post,
 ]
 
-task_handler_mfdn_decomposition_pre = task_handler_mfdn_pre
 
+def extract_partitioning_from_smwf_info_file(
+        wf_source_dir,
+        *,
+        smwf_info_filename="mfdn_smwf.info",
+        partitioning_info_filename="mfdn_partitioning.info",
+):
+    """Parse smwf info file to extract partitioning and write to partitioning info file.
+
+    Arguments:
+
+        wf_source_dir (str): Path to wave function directory.
+
+        smwf_info_filename (str, optional): Filename for smwf info file within
+        wave function directory.
+
+        partitioning_info_filename (str, optional): Filename for partitioning
+        info file within partitioning target directory.
+
+    """
+
+    # parse
+    in_file = open(os.path.join(wf_source_dir, smwf_info_filename), "r")
+    in_file_lines = [row for row in in_file]
+    in_file.close()
+    tokenized_lines = list(mfdnres.tools.split_and_prune_lines(in_file_lines))
+                   
+    # skip header (checking version)
+    tokens = tokenized_lines.pop(0)
+    if int(tokens[0]) != 15200:
+        raise mcscript.exception.ScriptError("Unrecognized version number in smwf_info file")
+    tokens = tokenized_lines.pop(0)
+    tokens = tokenized_lines.pop(0)
+
+    # skip orbitals
+    tokens = tokenized_lines.pop(0)
+    num_orbitals = int(tokens[0]) + int(tokens[1])
+    for _ in range(num_orbitals):
+        tokens = tokenized_lines.pop(0)
+
+    # parse and store partitioning
+    lines = []
+    tokens = tokenized_lines.pop(0)
+    lines.append(" ".join(tokens))
+    num_partitions = int(tokens[0]) + int(tokens[1])
+    num_partitions_read = 0
+    while num_partitions_read < num_partitions:
+        tokens = tokenized_lines.pop(0)
+        lines.append(" ".join(tokens))
+        num_partitions_read += len(tokens)
+        
+    # write output
+    mcscript.utils.write_input(
+        partitioning_info_filename,
+        input_lines=lines,
+    )    
+
+    
+def get_wf_source_info(task):
+    """ Identify source directory and sequence number for single wf to process.
+
+    Arguments:
+
+        task (dict): as described in module docstring
+
+    Returns:
+        
+        wf_source_run [str]: Run string
+
+        wf_source_descriptor [str]: Descriptor string
+
+        res_data (mfdnres.ResultsData): Results data object providing level
+
+        level_seq [int]: Sequence number
+     
+    """
+
+    # legacy: support deprecated task key "source_wf_qn"
+    if "source_wf_qn" in task:
+        task.setdefault("wf_qn", task["source_wf_qn"])
+    elif "decomposition_qn" in task:
+        task.setdefault("wf_qn", task["decomposition_qn"])
+    qn = task["wf_qn"]
+    
+    # set up run parameters
+    if "wf_source_run_descriptor_seq" in task:
+        # explicit designation of run and descriptor for wf
+        #
+        # Keys: "wf_source_run_descriptor_seq"
+        wf_source_run, wf_source_descriptor = task["wf_source_run_descriptor"]
+
+        # confirm existence of run and retrieve results data
+        res_data = library.get_res_data(wf_source_run, wf_source_descriptor)
+        
+    elif "wf_source_info" in task:
+        # legacy API: explicit construction of descriptor
+        #
+        # Keys: "wf_source_info"
+
+        # process source wave function task/descriptor info
+        wf_source_info = task["wf_source_info"]
+        wf_source_info.setdefault("metadata",{})
+        wf_source_info["metadata"]["descriptor"] = wf_source_info["descriptor"](wf_source_info)
+
+        # retrieve level data
+        wf_source_run = wf_source_info["run"]
+        wf_source_descriptor = wf_source_info["metadata"]["descriptor"]
+
+        # confirm existence of run and retrieve results data
+        res_data = library.get_res_data(wf_source_run, wf_source_descriptor)
+        
+    elif "wf_source_selector" in task:
+        # postprocessor-like API: obtain descriptor by hunting in res data
+        #
+        # Keys: "wf_source_run_list", "wf_source_selector"
+        
+        # process source wave function info
+        print("Reading mesh data:")
+        wf_source_run_list = task["wf_source_run_list"]
+        wf_source_res_format = task.get("wf_source_res_format")
+        wf_source_glob_pattern = task.get("wf_source_glob_pattern")
+        wf_source_selector = task["wf_source_selector"]
+        mesh_data, _ = postprocessing.select_source_wf_data(
+            run_list=wf_source_run_list,
+            selector=wf_source_selector,
+            res_format=wf_source_res_format,
+            filename_format="ALL",
+            glob_pattern=wf_source_glob_pattern,
+            verbose=True,
+        )
+        
+        # diagnostic output
+        print("Mesh points:")
+        for mesh_point in mesh_data:
+            print(" ", mesh_point.params.get("run"), mesh_point.params.get("descriptor"))
+
+        # select run, descriptor, and sequence number
+        res_data = None
+        for mesh_point in mesh_data:
+            if qn not in mesh_point.levels:
+                continue
+    
+            wf_source_run = mesh_point.params["run"]
+            wf_source_descriptor = mesh_point.params["descriptor"]
+    
+            res_data = mesh_point
+
+        if res_data is None:
+            raise mcscript.ScriptError("No source wave function found with given qn")
+
+    # get sequence number for level within smwf file
+    levels = res_data.levels
+    level_seq_lookup = dict(map(reversed, enumerate(levels, 1)))
+    level_seq = level_seq_lookup[qn]
+    if level_seq is None:
+        raise mcscript.ScriptError("No source wave function found with given qn")
+    
+    return wf_source_run, wf_source_descriptor, res_data, level_seq
+
+
+def task_handler_mfdn_decomposition_pre(task, postfix=""):
+    """Task handler for serial components before MFDn phase of Lanczos
+    decomposition, assuming oscillator basis.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+
+    """
+
+    work_dir = "work{:s}".format(postfix)
+    
+    # set some defaults
+    task.setdefault("diagonalization", True)  # to disable unnecessary obdme calculation
+    task.setdefault("calculate_obdme", False)  # to disable unnecessary obdme calculation
+    # 08/08/25 (mac): Setting calculate_tbo to false leads to intermittent and
+    # nondeterministic memory deallocation errors with mfdn commit 3f34aa7,
+    # dependent upon OpenMP parameters.
+    ## task.setdefault("calculate_tbo", False)  # to disable unnecessary Ncm and rrel2 operators
+    task.setdefault("tolerance", 0)  # iterate to max iterations
+
+    # impose truncation
+    if "truncation_model_info" in task:
+
+        # locate wave function
+        wf_source_run, wf_source_descriptor, res_data, level_seq = get_wf_source_info(task)
+        wf_prefix = library.get_wf_prefix(wf_source_run, wf_source_descriptor)
+        
+        # validate selected wf basis (M) against basis parameters
+        M = task["truncation_parameters"]["M"]
+        wf_M = res_data.params["M"]
+        if wf_M != M:
+            raise mcscript.exception.ScriptError("Mismatched M for source wave function ({}) and present decomposition run ({})".format(wf_M, M))
+        
+        # locate model wf info
+        model_info = task["truncation_model_info"]
+        model_run = model_info["run"]
+        model_descriptor = model_info["descriptor"](task | model_info)
+        model_prefix = library.get_wf_prefix(model_run, model_descriptor)
+
+        # validate selected truncation model basis (M and Nmax) against basis parameters
+        M = task["truncation_parameters"]["M"]
+        model_M = model_info["truncation_parameters"]["M"]
+        if model_M != M:
+            raise mcscript.exception.ScriptError("Mismatched M for wave function truncation model ({}) and present decomposition run ({})".format(model_M, M))
+        Nmax = task["truncation_parameters"].get("Nmax")
+        model_Nmax = model_info["truncation_parameters"]["Nmax"]
+        if model_Nmax != Nmax:
+            raise mcscript.exception.ScriptError("Mismatched Nmax for wave function truncation model ({}) and present decomposition run ({})".format(model_Nmax, Nmax))
+
+        # truncate
+        target_prefix = os.path.join(work_dir, "smwf")
+        mcscript.utils.mkdir(target_prefix, exist_ok=True)
+        model_indexing_files = (
+            [os.path.join(model_prefix, "mfdn_smwf.info")]
+            + glob.glob(os.path.join(model_prefix, "mfdn_MBgroups*"))
+        )
+        mcscript.call(
+            [
+                "cp",
+                "--target-directory={}".format(target_prefix),
+            ] + model_indexing_files
+        )
+        
+        mcscript.control.call(
+            [
+                environ.shell_filename("smwf-truncate"),
+                wf_prefix,  # input wf directory
+                model_prefix,  # truncation model wf directory
+                target_prefix,  # target wf directory
+                "{:d}".format(level_seq),  # state sequence number
+                "test",  # TEMPORARY mode flag for slv
+            ],
+            mode=mcscript.control.CallMode.kSerial,
+        )
+    
+    task_handler_mfdn_pre(task, postfix)
+
+    
 def task_handler_mfdn_decomposition_run(task, postfix=""):
     """Task handler for MFDn Lanczos decomposition, assuming oscillator basis.
-
-    Task fields:
-       "source_wf_qn"
-       "wf_source_info"
 
     Arguments:
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
 
-    # process source wave function task/descriptor info
-    wf_source_info = task["wf_source_info"]
-    wf_source_info.setdefault("metadata",{})
-    wf_source_info["metadata"]["descriptor"] = wf_source_info["descriptor"](wf_source_info)
+    work_dir = "work{:s}".format(postfix)
+    
+    # set some defaults
+    task.setdefault("diagonalization", True)  # to disable unnecessary obdme calculation
+    task.setdefault("calculate_obdme", False)  # to disable unnecessary obdme calculation
+    # 08/08/25 (mac): Setting calculate_tbo to false leads to intermittent and
+    # nondeterministic memory deallocation errors with mfdn commit 3f34aa7,
+    # dependent upon OpenMP parameters.
+    # 10/22/25 (mac): Though these seem to very occasionally happen ("free(): invalid size"),
+    # testing under Ubuntu, even otherwise.
+    ## task.setdefault("calculate_tbo", False)  # to disable unnecessary Ncm and rrel2 operators 
+    task.setdefault("tolerance", 0)  # iterate to max iterations
 
-    # retrieve level data
-    import mfdnres
-    ket_run = wf_source_info["run"]
-    ket_descriptor = wf_source_info["metadata"]["descriptor"]
-    res_data = library.get_res_data(ket_run,ket_descriptor)
-    levels = res_data.levels
-    level_seq_lookup = dict(map(reversed,enumerate(levels,1)))
+    # handle case where wf was truncated
+    if "truncation_model_info" not in task:
 
-    # get partitioning info
-    #  TODO(pjf) eventually this should be handled by MFDn reading mfdn_smwf.info
-    task_data_prefix = library.get_task_data_prefix(ket_run, ket_descriptor)
-    partition_filename = os.path.join(task_data_prefix, "mfdn_partitioning.info")
-    if not os.path.exists(partition_filename):
-        partition_filename = task.get("partition_filename")
-        if partition_filename is not None:
-            print("WARN: using manually-provided partitioning {}".format(partition_filename))
+        # locate wave function
+        wf_source_run, wf_source_descriptor, res_data, level_seq = get_wf_source_info(task)
+        wf_prefix = library.get_wf_prefix(wf_source_run, wf_source_descriptor)
 
-    # set up run parameters
-    qn = task["source_wf_qn"]
-    ket_wf_prefix = library.get_wf_prefix(ket_run, ket_descriptor)
+        # validate selected wf basis (M and Nmax) against basis parameters
+        M = task["truncation_parameters"]["M"]
+        wf_M = res_data.params["M"]
+        if wf_M != M:
+            raise mcscript.exception.ScriptError("Mismatched M for source wave function ({}) and present decomposition run ({})".format(wf_M, M))
+        Nmax = task["truncation_parameters"].get("Nmax")
+        wf_Nmax = res_data.params.get("Nmax")
+        if wf_Nmax != Nmax:
+            raise mcscript.exception.ScriptError("Mismatched Nmax for source wave function ({}) and present decomposition run ({})".format(wf_Nmax, Nmax))
+        
+    else:
+        # reset wf info for mfdn to point to truncated wf
+        wf_prefix = os.path.join(work_dir, "smwf")
+        level_seq = 1
+
+    # extract partitioning info
+    if task.get("partition_filename"):
+        print("WARN: A partition_filename was specified but is being ignored.")
+    extract_partitioning_from_smwf_info_file(wf_prefix)
+            
+    # set MFDn parameters
     task["mfdn_inputlist"] = {
         "selectpiv" : 4,
-        "initvec_index": level_seq_lookup[qn],
-        "initvec_smwffilename": os.path.join(ket_wf_prefix, "mfdn_smwf"),
+        "initvec_index": level_seq,
+        "initvec_smwffilename": os.path.join("..", wf_prefix, "mfdn_smwf"),
     }
-    task["partition_filename"] = partition_filename
-
+    task["partition_filename"] = "mfdn_partitioning.info"
+    
     # run MFDn
     mfdn_driver = task.get("mfdn_driver")
     if mfdn_driver is None:
@@ -307,7 +569,6 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
 
     # copy out lanczos file
     descriptor = task["metadata"]["descriptor"]
-    work_dir = "work{:s}".format(postfix)
     filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
     lanczos_source_filename = os.path.join(work_dir, "mfdn_alphabeta.dat")
     lanczos_target_filename = "{:s}.lanczos".format(filename_prefix)
@@ -315,7 +576,9 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
         task, lanczos_source_filename, lanczos_target_filename, "lanczos"
     )
 
+   
 task_handler_mfdn_decomposition_post = task_handler_mfdn_post
+
 
 def task_handler_mfdn_decomposition(task, postfix=""):
     """Task handler for complete decomposition run, including serial pre and post
@@ -330,6 +593,7 @@ def task_handler_mfdn_decomposition(task, postfix=""):
     task_handler_mfdn_decomposition_run(task, postfix=postfix)
     task_handler_mfdn_decomposition_post(task, postfix=postfix)
 
+    
 task_handler_mfdn_decomposition_phases = [
     task_handler_mfdn_decomposition_pre,
     task_handler_mfdn_decomposition_run,
@@ -391,7 +655,9 @@ def task_handler_mfdn_natorb_run(task, postfix):
     mfdn_driver.generate_mfdn_input(task=task, postfix=postfix)
     mfdn_driver.run_mfdn(task=task, postfix=postfix)
 
+    
 task_handler_mfdn_natorb_post = task_handler_mfdn_post
+
 
 def task_handler_mfdn_natorb(task, cleanup=True):
     """Task handler for basic oscillator+natural orbital run.
@@ -417,11 +683,105 @@ def task_handler_mfdn_natorb(task, cleanup=True):
         task=task, postfix=utils.natural_orbital_indicator(1), cleanup=cleanup
         )
 
+    
 task_handler_mfdn_natorb_phases = [
     task_handler_mfdn_natorb_pre,
     task_handler_mfdn_natorb_run,
     task_handler_mfdn_natorb_post,
 ]
+
+
+################################################################
+# TBME generation run
+################################################################
+
+def task_handler_tbme(task, postfix=""):
+    """Task handler for generation of operator tbmes.
+
+    Special keys:
+      "number_operator_orbitals"  
+      "tbme_conversion"
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string): identifier to add to generated files
+    """
+
+    # set task dictionary defaults for oscillator-basis tbme generation
+    task.setdefault("basis_mode", modes.BasisMode.kDirect)
+    task.setdefault("sp_truncation_mode", modes.SingleParticleTruncationMode.kNmax)
+
+    # set minimal orbital set for given truncation
+    target_truncation = task["target_truncation"]
+    code, cutoff = target_truncation
+    if code not in ["ob", "tb"]:
+        raise ValueError("Unexpected truncation code ({})".format(code))
+    task.setdefault("truncation_parameters", dict(Nmax_orb=cutoff))
+
+    # define orbitals
+    radial.set_up_orbitals(task, postfix)
+
+    # define orbital number operators
+    #
+    # NOTE (mac): Number operator generation may someday be absorbed into obmixer or h2mixer.
+    task.setdefault("number_operator_orbitals", {})
+    Nmax_orb = task["truncation_parameters"]["Nmax_orb"]
+    task.setdefault("obme_sources", [])
+    task.setdefault("tb_observables", [])
+    orbital_filename = "orbitals.dat"
+    for particle_species in ["p", "n"]:
+        for n, l, j in task["number_operator_orbitals"]:
+            number_operator_name = "N{:1d}{:1d}{:1d}{:1s}".format(n, l, int(2*j), particle_species)
+            number_operator_filename = "{}_obme.dat".format(number_operator_name)
+            mcscript.control.call(
+                [
+                    environ.shell_filename("number-op-gen"), orbital_filename,
+                    str(n), str(l), str(int(2*j)), particle_species, str(Nmax_orb),
+                    number_operator_filename,
+                ],
+                mode=mcscript.control.CallMode.kSerial
+            )
+            task["obme_sources"].append(
+                (number_operator_name, {"filename": number_operator_filename, "qn": (0,0,0)}),
+            )
+            task["tb_observables"].append(
+                (number_operator_name, (0,0,0), {"U[{}]".format(number_operator_name): 1.0}),
+            )
+
+    # generate tbmes
+    radial.set_up_obme_analytic(task, postfix)
+    tbme.generate_tbme(task, postfix)
+            
+    # convert tbme files
+    tbme_conversion = task.get("tbme_conversion")
+    if tbme_conversion:
+        target_format = tbme_conversion["target_format"]
+        keep_h2 = tbme_conversion.get("keep_h2")
+        if target_format != "me2j":
+            raise(ValueError("Unrecognized tbme target format ({})".format(target_format)))
+        me2j_extension = tbme_conversion["me2j_extension"]
+        me2j_precision = tbme_conversion.get("me2j_precision", "double")
+        me2j_tag = "me2j-{}".format(me2j_precision) if me2j_extension=="bin" else "me2j"
+        work_dir = "work{:s}".format(postfix)
+        h2_filename_list = glob.glob(os.path.join(work_dir, "tbme-*"))
+        for h2_filename in h2_filename_list:
+            me2j_filename = "{}_{}.{}".format(h2_filename[:-4], me2j_tag, me2j_extension)
+            mcscript.control.call(
+                [
+                    environ.shell_filename("h22me2j"), "--precision", me2j_precision, h2_filename, me2j_filename,
+                ],
+                mode=mcscript.control.CallMode.kSerial
+            )
+        if not keep_h2:
+            mcscript.control.call(
+                [
+                    "rm", h2_filename,
+                ],
+                mode=mcscript.control.CallMode.kSerial
+            )
+
+    # save tbme files
+    tbme.save_tbme(task, postfix=postfix)
 
 
 ################################################################
@@ -440,6 +800,7 @@ def task_handler_mfdn_postprocessor_pre(task, postfix=""):
     radial.set_up_obme_analytic(task, postfix)
     tbme.generate_tbme(task, postfix)
 
+    
 def task_handler_mfdn_postprocessor_run(task, postfix=""):
     """Task handler for MFDn postprocessor phase of postprocessor run.
 
@@ -450,6 +811,7 @@ def task_handler_mfdn_postprocessor_run(task, postfix=""):
     postprocessing.run_postprocessor_two_body(task, postfix=postfix, one_body=True)
     postprocessing.run_postprocessor_one_body(task, postfix=postfix)
 
+    
 def task_handler_mfdn_postprocessor_post(task, postfix="", cleanup=True):
     """Task handler for components after postprocessor run.
 
@@ -458,11 +820,15 @@ def task_handler_mfdn_postprocessor_post(task, postfix="", cleanup=True):
         postfix (string): identifier to add to generated files
     """
     postprocessing.evaluate_ob_observables(task, postfix)
+    if task.get("convert_obdme"):
+        postprocessing.convert_ob_densities(task, postfix)
+
     postprocessing.save_postprocessor_obdme(task, postfix)
 
     if cleanup:
         postprocessing.cleanup_workdir(task, postfix=postfix)
 
+        
 def task_handler_mfdn_postprocessor_post_no_cleanup(task, postfix=""):
     """ Task handler for serial components after postprocessor run (no cleanup).
 
@@ -485,6 +851,7 @@ def task_handler_mfdn_postprocessor(task, postfix="", cleanup=True):
     task_handler_mfdn_postprocessor_run(task, postfix)
     task_handler_mfdn_postprocessor_post(task, postfix, cleanup)
 
+    
 task_handler_mfdn_postprocessor_phases = [
     task_handler_mfdn_postprocessor_pre,
     task_handler_mfdn_postprocessor_run,
@@ -501,16 +868,19 @@ def task_handler_relative_run(task):
     relative.generate_rel_targets(task)
     relative.generate_moshinsky_targets(task)
 
+    
 def task_handler_relative_post(task):
     """Task handler for components after relative run."""
     relative.save_rel(task)
     relative.save_moshinsky(task)
 
+    
 def task_handler_relative(task):
     """Task handler for basic relative/Moshinsky run."""
     task_handler_relative_run(task)
     task_handler_relative_post(task)
 
+    
 task_handler_relative_phases = [
     task_handler_relative_run,
     task_handler_relative_post,
@@ -531,10 +901,13 @@ def archive_handler_mfdn():
             {"postfix" : "-lanczos", "paths" : ["results/lanczos"], "compress" : True},
             {"postfix" : "-task-data", "paths" : ["results/task-data"], "compress" : True},
             {"postfix" : "-obdme", "paths" : ["results/obdme"], "compress" : True},
+            {"postfix" : "-dens", "paths" : ["results/obdme"], "compress" : True},  # retabulated densities
+            {"postfix" : "-tbme", "paths" : ["results/tbme"], "compress" : False},
             {"postfix" : "-wf", "paths" : ["results/wf"]},
         ]
     )
     return archive_filename_list
+
 
 def archive_handler_mfdn_lightweight():
     """Generate archives for MFDn results (but not task data or wavefunctions).
@@ -550,6 +923,7 @@ def archive_handler_mfdn_lightweight():
         ]
     )
     return archive_filename_list
+
 
 def archive_handler_mfdn_hsi(split_large_archives=False):
     """Generate archives for MFDn and save to tape.
@@ -568,6 +942,7 @@ def archive_handler_mfdn_hsi(split_large_archives=False):
     # save to tape
     mcscript.task.archive_handler_hsi(archive_filename_list, split_large_archives=split_large_archives)
 
+    
 def archive_handler_mfdn_postprocessor():
     """Generate archives for MFDn postprocessor results."""
 
@@ -576,10 +951,12 @@ def archive_handler_mfdn_postprocessor():
             {"postfix" : "-transitions-output", "paths" : ["results/transitions-output"], "compress" : True, "include_metadata" : True},
             {"postfix" : "-res", "paths" : ["results/res"], "compress" : True},
             {"postfix" : "-obdme", "paths" : ["results/obdme"], "compress" : True},
+            {"postfix" : "-dens", "paths" : ["results/dens"], "compress" : True},
         ]
     )
     print(archive_filename_list)
     return archive_filename_list
+
 
 def archive_handler_mfdn_postprocessor_hsi():
     """Generate archives for MFDn postprocessor and save to tape."""

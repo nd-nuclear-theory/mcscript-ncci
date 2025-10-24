@@ -1,6 +1,8 @@
 # mcscript-ncci installation #
 Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
 
+----------------------------------------------------------------
+
 # 1. Retrieving source
 
   Change to the directory where you want the repository to be installed,
@@ -51,6 +53,7 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
   % python3 -m pip install --user .
   ~~~~~~~~~~~~~~~~
 
+
 # 2. Environment Configuration
 
   The environment variable `NCCI_DATA_DIR_H2` is used to tell `mcscript-ncci`
@@ -84,32 +87,36 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
 
     * `NCCI_DATA_DIR_H2` for two-body matrix element files
 
+    * `NCCI_DATA_DIR_PARTITIONING` for MFDn partitioning files
+    
     * `NCCI_DATA_DIR_REL` for relative matrix element files
 
     * `NCCI_DATA_DIR_DECOMPOSITION` for decomposition operators coefficient files
 
-  However, only `NCCI_DATA_DIR_H2` need be set for ordinary MFDn diagonalization runs.
+  However, only `NCCI_DATA_DIR_H2` need be set for basic MFDn diagonalization runs.
 
-  E.g., for running under project m2032 at NERSC:
+  E.g., for running under project m2032 at NERSC...
 
-  For `.cshrc` or `.tcshrc`:
+  For `tcsh` shell users (`.cshrc` or `.tcshrc`):
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
   # Use read-only mount point for /global/cfs/cdirs/m2032.
   # See https://docs.nersc.gov/performance/io/dvs/.
   setenv GROUP_HOME "/dvs_ro/cfs/cdirs/m2032"
-  setenv NCCI_DATA_DIR_H2 "${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/docs/examples/example-data"
-  setenv NCCI_DATA_DIR_DECOMPOSITION "${GROUP_HOME}/data/u3-subspaces/decomposition:${HOME}/code/mcscript-ncci/docs/examples/example-data"
+  setenv NCCI_DATA_DIR_H2 "${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/doc/examples/data/h2"
+  setenv NCCI_DATA_DIR_PARTITIONING "${GROUP_HOME}/data/partitioning/v15"
+  setenv NCCI_DATA_DIR_DECOMPOSITION "${GROUP_HOME}/data/u3-subspaces/decomposition:${HOME}/code/mcscript-ncci/doc/examples/data/decomposition"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  For `.bashrc` or `.bash_profile`:
+  For `bash` shell users (`.bashrc` or `.bash_profile`):
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # mcscript-ncci
   # Use read-only mount point for /global/cfs/cdirs/m2032.
   # See https://docs.nersc.gov/performance/io/dvs/.
   export GROUP_HOME="/dvs_ro/cfs/cdirs/m2032"
-  export NCCI_DATA_DIR_H2="${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/docs/examples/example-data"
-  export NCCI_DATA_DIR_DECOMPOSITION="${GROUP_HOME}/data/u3-subspaces/decomposition:${HOME}/code/mcscript-ncci/docs/examples/example-data"
+  export NCCI_DATA_DIR_H2="${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/doc/examples/data/h2"
+  export NCCI_DATA_DIR_PARTITIONING="${GROUP_HOME}/data/partitioning/v15"
+  export NCCI_DATA_DIR_DECOMPOSITION="${GROUP_HOME}/data/u3-subspaces/decomposition:${HOME}/code/mcscript-ncci/doc/examples/data/decomposition"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   Or, at the ND CRC, one would set `GROUP_HOME="/afs/crc.nd.edu/group/nuclthy"`
@@ -129,12 +136,12 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
   `${HOME}/code/mcscript-ncci/docs/examples`, you might define the following
   search path:
 
-  For `.cshrc` or `.tcshrc`:
+  For `tcsh` shell users (`.cshrc` or `.tcshrc`):
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  setenv NCCI_LIBRARY_PATH "${SCRATCH}/runs:${SCRATCH}/library:${HOME}/code/mcscript-ncci/docs/examples"
+  setenv NCCI_LIBRARY_PATH "${SCRATCH}/runs:${SCRATCH}/library:${HOME}/code/mcscript-ncci/doc/examples"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  For `.bashrc` or `.bash_profile`:
+  For `bash` shell users (`.bashrc` or `.bash_profile`):
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  export NCCI_LIBRARY_PATH="${SCRATCH}/runs:${SCRATCH}/library:${HOME}/code/mcscript-ncci/docs/examples"
+  export NCCI_LIBRARY_PATH="${SCRATCH}/runs:${SCRATCH}/library:${HOME}/code/mcscript-ncci/doc/examples"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
