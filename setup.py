@@ -12,7 +12,7 @@ setup(
         "deprecated>=1.2.10",
         "mcscript>=2.1.0",
         "am",
-        "mfdnres>=1.0.1",
+        "mfdnres>=1.1.0",
     ],
     classifiers=[],
 )
