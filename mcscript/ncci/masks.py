@@ -18,7 +18,7 @@
     - 11/20/22 (mac): Add mask_by_energy_cutoff().
     - 01/03/23 (mac): Provide "negate_mask" option for mask_allow_near_yrast.
     - 03/21/24 (mac): Add mask_transitions().
-
+    - 12/01/25 (zz): Add mask_isospin().
 """
 
 import math
@@ -299,3 +299,43 @@ def mask_good_J(task:dict, mask_params:dict, qn_pair, verbose=False):
         print(f"  WARNING: Invalid Jf={Ji} for nuclide {bra_nuclide}")
 
     return (allow_bra and allow_ket)
+
+def mask_isospin(task:dict, mask_params:dict, qn_pair, verbose=False):
+    """Mask function with bra and ket isospins.
+
+    Mask parameters:
+
+        "isospin_i" (float, optional): value of isospin for ket
+        "isospin_f" (float, optional): value of isospin for bra
+
+    Arguments:
+
+        task (dict): task dictionary
+
+        mask_params (dict): parameters specific to this mask
+
+        qn_pair (tuple): (qnf,qni) for transition
+
+        verbose (book, optional): verbosity (argument required by handler)
+
+    Returns:
+
+        allow (bool): mask value
+
+    """
+
+    # unpack quantum numbers
+    (qnf,qni) = qn_pair
+    (Ji,gi,ni) = qni
+    (Jf,gf,nf) = qnf
+
+    # calculate mask value
+    ket_results_data = task["metadata"]["ket_results_data"]
+    bra_results_data = task["metadata"]["bra_results_data"]
+    allow = True
+    if mask_params.get("isospin_i",None)!=None:
+        allow &= (ket_results_data.get_isospin(qni)==mask_params["isospin_i"])
+    if mask_params.get("isospin_f",None)!=None:
+        allow &= (bra_results_data.get_isospin(qnf)==mask_params["isospin_f"])
+
+    return allow
