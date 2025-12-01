@@ -383,7 +383,7 @@ def task_descriptor_decomposition_1(task):
 
     template_string = (
         "{source_wf_descriptor:s}"
-        "-J{wf_source_qn[0]:04.1f}-g{wf_source_qn[1]:1d}-n{wf_source_qn[2]:02d}"
+        "-J{source_wf_qn[0]:04.1f}-g{source_wf_qn[1]:1d}-n{source_wf_qn[2]:02d}"
         "-op{decomposition_operator_name:s}-dlan{max_iterations:d}"
         # 01/19/21 (mac): However, we propose moving away from calling this an "operator",
         # but rather a decomposition type.  See runmac0566.py.  "-{decomposition_name:s}".
@@ -406,7 +406,7 @@ def task_descriptor_decomposition_2(task):
     # extracted from runmac0688
     template_string = (
         "{source_wf_descriptor:s}"
-        "-J{wf_source_qn[0]:04.1f}-g{wf_source_qn[1]:1d}-n{wf_source_qn[2]:02d}"
+        "-J{source_wf_qn[0]:04.1f}-g{source_wf_qn[1]:1d}-n{source_wf_qn[2]:02d}"
         "-{decomposition_type:s}-dlan{max_iterations:d}"
     )
     

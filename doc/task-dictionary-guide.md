@@ -228,7 +228,7 @@ University of Notre Dame
     source wave functions.
   - Defaults to `'*.res'`.
 
-- `decomposition_qn`: tuple
+- `wf_qn`: tuple
   - State (J, g, i) to use as pivot vector for Lanczos decomposition [i.e., ith
     state of angular momentum J and parity (-)^g, as determined from the source
     run's res file].
@@ -289,7 +289,7 @@ older run scripts:
     descriptor for the present decomposition run.
 
 - `source_wf_qn`: tuple
-  - DEPRECATED: Instead, use `qn`.
+  - DEPRECATED: Instead, use `wf_qn`.
 
 
 ----------------------------------------------------------------
