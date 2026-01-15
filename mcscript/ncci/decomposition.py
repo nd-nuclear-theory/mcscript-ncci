@@ -98,29 +98,40 @@ def read_decomposition_operator_coefs(
 
 def L2_operator(nuclide,Nmax,hw):
     return operators.tb.L2()
+
 def S2_operator(nuclide,Nmax,hw):
     return operators.tb.S2()
+
 def T2_operator(nuclide,Nmax,hw):
     A = sum(nuclide)
     return operators.tb.T2(A)
+
 def LS_operator(nuclide,Nmax,hw,coefs,swap):
     return mcscript.utils.dot(
     	[operators.tb.S2(), operators.tb.L2()],
     	coefs
     	)
+
 def Nex_operator(nuclide,Nmax,hw):
     return operators.tb.Nex(nuclide, hw)
+
 def CSU3_operator(nuclide,Nmax,hw):
     A = sum(nuclide)
     return mcscript.utils.CoefficientDict({"CSU3-U": 1/(A-1), "CSU3-V": 1.0})
+
+def CSU4_operator(nuclide, Nmax, hw):
+    return mcscript.utils.CoefficientDict({"CSU4": 1.0})
+
 def CSp3R_operator(nuclide,Nmax,hw):
     A = sum(nuclide)
     return mcscript.utils.CoefficientDict({"CSp3R-U": 1/(A-1), "CSp3R-V": 1.0})
+
 def U3S_operator(nuclide,Nmax,hw,coefs,swap):
     return mcscript.utils.dot(
             [operators.tb.Nex(nuclide, hw), CSU3_operator(nuclide,Nmax,hw), operators.tb.S2()],
             coefs
             )
+
 def U3LS_operator(nuclide,Nmax,hw,coefs,swap):
     return mcscript.utils.dot(
             [operators.tb.Nex(nuclide, hw), CSU3_operator(nuclide,Nmax,hw), operators.tb.S2(),operators.tb.L2()],
@@ -153,6 +164,11 @@ def Sp3RSpSnS_operator(nuclide,Nmax,hw,coefs,swap):
         ops = [CSp3R_operator(nuclide,Nmax,hw), operators.tb.Sp2(), operators.tb.Sn2(), operators.tb.S2()]
     return mcscript.utils.dot(ops,coefs)
 
+def U3U4ST_operator(nuclide,Nmax,hw,coefs):
+    ops = [operators.tb.Nex(nuclide, hw), CSU3_operator(nuclide,Nmax,hw), CSU4_operator(nuclide, Nmax, hw), 
+            operators.tb.S2(), operators.tb.T2()]
+    return mcscript.utils.dot(ops,coefs)
+
 # registry of decomposition operators
 #
 #     decomposition_type -> (decomposition_operator,use_coefs)
@@ -173,6 +189,7 @@ decomposition_operator_registry={
     "U3LSpSnS": (U3LSpSnS_operator,True),
     "Sp3RS": (Sp3RS_operator,True),
     "Sp3RSpSnS": (Sp3RSpSnS_operator,True),
+    "U3U4ST": (U3U4ST_operator, True),
 }
 
 
