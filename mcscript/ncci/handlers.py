@@ -322,11 +322,13 @@ def extract_partitioning_from_smwf_info_file(
 
     
 def get_wf_source_info(task):
-    """ Identify source directory and sequence number for single wf to process.
+    """Identify 'source' directory and sequence number for single wf to process.
 
     Arguments:
 
-        task (dict): as described in module docstring
+        task (dict): Dictionary in the form of a standard task dictionary,
+        providing specifically: wf_run_list, wf_selector, wf_qn, wf_res_format
+        (optional), wf_glob_pattern (optional).
 
     Returns:
         
@@ -337,9 +339,9 @@ def get_wf_source_info(task):
         res_data (mfdnres.ResultsData): Results data object providing level
 
         level_seq [int]: Sequence number
-     
-    """
 
+    """
+    
     # legacy: support deprecated task key "source_wf_qn"
     if "source_wf_qn" in task:
         task.setdefault("wf_qn", task["source_wf_qn"])
