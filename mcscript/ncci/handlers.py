@@ -68,6 +68,7 @@ University of Notre Dame
 - 08/08/25 (mac): Add wf truncation capability for decomposition.
 - 09/26/25 (mac): Add TBME generation run task handler task_handler_tbme.
 - 10/22/25 (mac/seb): Move truncation before decomposition into task_handler_decomposition_pre.
+- 01/30/26 (seb): Add task handler for strength function runs.
 """
 import glob
 import os
@@ -83,6 +84,7 @@ from . import (
     menj,
     mfdn_v15,
     modes,
+    operators,
     postprocessing,
     radial,
     relative,
@@ -969,6 +971,223 @@ def archive_handler_mfdn_postprocessor_hsi():
 
     # save to tape
     mcscript.task.archive_handler_hsi(archive_filename_list)
+
+################################################################
+# strength function run
+################################################################
+
+def task_handler_mfdn_strength_pre(task, postfix=""):
+    """Task handler for serial components before MFDn phase of Lanczos trick
+    strength function calculation, assuming oscillator basis.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+
+    """
+
+    work_dir = "work{:s}".format(postfix)
+
+    # set some defaults
+    task.setdefault("diagonalization", True)  # to disable unnecessary obdme calculation
+    task.setdefault("calculate_obdme", False)  # to disable unnecessary obdme calculation
+    # 08/08/25 (mac): Setting calculate_tbo to false leads to intermittent and
+    # nondeterministic memory deallocation errors with mfdn commit 3f34aa7,
+    # dependent upon OpenMP parameters.
+    ## task.setdefault("calculate_tbo", False)  # to disable unnecessary Ncm and rrel2 operators
+    task.setdefault("tolerance", 0)  # iterate to max iterations
+
+    task_handler_mfdn_pre(task, postfix)
+
+    print("DONE WITH TASKPRE, NOW TBME")
+
+    tbme.generate_tbme(task, postfix=postfix)
+
+def task_handler_mfdn_strength_apply(task, postfix=""):
+    """Task handler for apply operator phase of Lanczos trick strength function
+    calculation, assuming oscillator basis.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+
+    """
+    # set some defaults
+    task.setdefault("diagonalization", True)  # to disable unnecessary obdme calculation
+    task.setdefault("calculate_obdme", False)  # to disable unnecessary obdme calculation
+    # 08/08/25 (mac): Setting calculate_tbo to false leads to intermittent and
+    # nondeterministic memory deallocation errors with mfdn commit 3f34aa7,
+    # dependent upon OpenMP parameters.
+    ## task.setdefault("calculate_tbo", False)  # to disable unnecessary Ncm and rrel2 operators
+    task.setdefault("tolerance", 0)  # iterate to max iterations
+        # convenience variables
+    descriptor = task["metadata"]["descriptor"]
+    work_dir = "work{:s}".format(postfix)
+    transitions_executable = environ.mfdn_postprocessor_filename(
+        task.get("mfdn-transitions_executable", "xapply")
+    )
+
+
+    # create work directory if it doesn't exist yet
+    mcscript.utils.mkdir(work_dir, exist_ok=True, parents=True)
+
+   # get template model run
+
+    print("Reading template mesh data:")
+    wf_template_run_list = task["wf_template_run_list"]
+    wf_template_selector = task["wf_template_selector"]
+
+    #Get Operator qn
+    tb_observables = operators.tb.get_tbme_targets(task)
+
+    for qn, operator_list in tb_observables.items():
+        for operator in operator_list:
+            print(operator, qn)
+            if operator == task["transition_operator"]:
+                operator_qn = qn
+
+    #Get template qn from operator qn, assuming 0+ g.s.
+    template_qn = (operator_qn[0], operator_qn[1], 1)
+
+    #Construct 'source' dictionary
+    template_dict = {
+                     "wf_source_run_list": wf_template_run_list,
+                     "wf_source_selector": wf_template_selector,
+                     "wf_qn": template_qn,
+            }
+
+
+    wf_template_run, wf_template_descriptor, res_data, level_seq  = get_wf_source_info(template_dict)
+
+   #copy template directory
+
+    template_prefix = library.get_wf_prefix(wf_template_run, wf_template_descriptor)
+
+    print(template_prefix)
+
+    pivot_prefix = "pivot"
+    mcscript.utils.mkdir(pivot_prefix, exist_ok=True)
+    template_indexing_files = (
+        [os.path.join(template_prefix, "mfdn_smwf.info")]
+        + glob.glob(os.path.join(template_prefix, "mfdn_MBgroups*"))
+    )
+    mcscript.control.call(
+        [
+            "cp",
+            "--target-directory={}".format(pivot_prefix),
+        ] + template_indexing_files,
+    )
+
+   # get source wf
+
+    wf_source_run, wf_source_descriptor, res_data, level_seq = get_wf_source_info(task)
+
+    source_prefix = library.get_wf_prefix(wf_source_run, wf_source_descriptor)
+
+    source_qn = task["wf_qn"]
+    
+    operator_file_loc = os.path.join(work_dir, "tbme-"+task["transition_operator"])
+
+    #construct apply input file
+    apply_inputlist = {
+            "infofilename_ket": "{:s}/mfdn_smwf.info".format(source_prefix),
+            "basisfilename_ket": "{:s}/mfdn_MBgroups".format(source_prefix),
+            "smwffilename_ket": "{:s}/mfdn_smwf".format(source_prefix),
+            "TwoJ_ket(1)": int(source_qn[0]),
+            "n_ket(1)": int(source_qn[2]),
+
+            "infofilename_bra": "{:s}/mfdn_smwf.info".format(pivot_prefix),
+            "basisfilename_bra": "{:s}/mfdn_MBgroups".format(pivot_prefix),
+            "smwffilename_bra": "{:s}/mfdn_smwf".format(pivot_prefix),
+            "TwoJ_out(1)": 2*int(template_qn[0]),
+            "n_out(1)": int(template_qn[2]),
+
+            "TBMEoperators(1)": operator_file_loc,
+            "normalize": False,
+    }
+    mcscript.utils.write_namelist(
+        "apply.input",
+        input_dict={"transition_data": apply_inputlist}
+    )
+    #Run xapply
+    mcscript.control.call(["rm", "--force", "apply.out"])  # remove old output so file watchdog can work
+    mcscript.control.call(
+        [transitions_executable],
+        mode=mcscript.control.CallMode.kHybrid,
+        file_watchdog=mcscript.control.FileWatchdog("apply.out"),
+        file_watchdog_restarts=3
+    )
+
+    # copy out norm
+    norm_sq = 1
+    norm_file = open("apply.out")
+    norm_file_lines = [row for row in norm_file]
+    norm_file.close()
+    tokenized_lines = list(mfdnres.tools.split_and_prune_lines(norm_file_lines))
+
+    for row in tokenized_lines:
+        if len(row) < 6:
+            continue
+        if row[2] == "norm":
+            print("NORM SQUARED: ", row[5])
+            norm_sq = float(row[5])
+
+
+    descriptor = task["metadata"]["descriptor"]
+    filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+    norm_source_filename = "normsq.dat".format(work_dir)
+    norm_target_filename = "{:s}.normsq".format(filename_prefix)
+    norm_file = open(norm_source_filename, "w")
+    norm_file.write(str(norm_sq))
+    norm_file.close()
+    mcscript.task.save_results_single(
+        task, norm_source_filename, norm_target_filename, "norm"
+    )
+def task_handler_mfdn_strength_decomp(task, postfix= ""):
+    """Task handler for decomposition phase of Lanczos trick strength function
+    calculation, assuming oscillator basis.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+
+    """
+
+    work_dir = "work{:s}".format(postfix)
+    wf_prefix = "pivot"
+    level_seq = 1
+
+    task["mfdn_inputlist"] = {
+        "selectpiv" : 4,
+        "initvec_index": level_seq,
+        "initvec_smwffilename": os.path.join("..", wf_prefix, "mfdn_smwf"),
+    }
+
+    mfdn_driver = task.get("mfdn_driver")
+    if mfdn_driver is None:
+        mfdn_driver = default_mfdn_driver
+    mfdn_driver.generate_mfdn_input(
+        task=task, run_mode=modes.MFDnRunMode.kNormal, postfix=postfix
+    )
+    mfdn_driver.run_mfdn(task=task, postfix=postfix)
+
+    # copy out lanczos file
+    descriptor = task["metadata"]["descriptor"]
+    filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+    lanczos_source_filename = os.path.join(work_dir, "mfdn_alphabeta.dat")
+    lanczos_target_filename = "{:s}.lanczos".format(filename_prefix)
+    mcscript.task.save_results_single(
+        task, lanczos_source_filename, lanczos_target_filename, "lanczos"
+    )
+
+task_handler_mfdn_strength_post = task_handler_mfdn_post
+
+task_handler_mfdn_strength_phases=[
+            task_handler_mfdn_strength_pre,
+            task_handler_mfdn_strength_apply,
+            task_handler_mfdn_strength_decomp,
+            task_handler_mfdn_strength_post,
+            ]
 
 
 ################################################################
