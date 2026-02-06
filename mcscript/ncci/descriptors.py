@@ -28,6 +28,7 @@ University of Notre Dame
 - 09/26/24 (mac): Add trial field in task_descriptor_7.
 - 04/09/25 (mac): Add task_descriptor_10_trans for transitions following shell model runs.
 - 01/30/26 (seb): Add task_descriptor_7_strength for strength function runs.
+- 02/06/26 (seb): Update task_descriptor_7_strength for mfdnres compatibility.
 
 """
 import mcscript.exception
@@ -491,9 +492,11 @@ def task_descriptor_7_strength(task):
     task_for_wf_descriptor["truncation_parameters"].pop("M")  # suppress M (otherwise included as a legacy field by task_descriptor_7_trans)
     task_for_wf_descriptor["truncation_parameters"]["Nmax"] = Nmax  # use Nmax for source wf
 
-    descriptor = task_descriptor_7_trans(task_for_wf_descriptor)
+    wf_descriptor = task_descriptor_7_trans(task_for_wf_descriptor)
 
-    descriptor += "-" + task["transition_operator"]
+    task["decomposition_type"] = task["transition_operator"]
+    
+    descriptor = task_descriptor_with_decomposition_tags(task, wf_descriptor)
 
     return descriptor
 
