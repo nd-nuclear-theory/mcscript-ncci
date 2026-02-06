@@ -69,6 +69,7 @@ University of Notre Dame
 - 09/26/25 (mac): Add TBME generation run task handler task_handler_tbme.
 - 10/22/25 (mac/seb): Move truncation before decomposition into task_handler_decomposition_pre.
 - 01/30/26 (seb): Add task handler for strength function runs.
+- 02/30/26 (seb): Update norm output for strength function runs.
 """
 import glob
 import os
@@ -763,7 +764,7 @@ def task_handler_tbme(task, postfix=""):
         keep_h2 = tbme_conversion.get("keep_h2")
         if target_format != "me2j":
             raise(ValueError("Unrecognized tbme target format ({})".format(target_format)))
-        me2j_extension = tbme_conversion["me2j_extension"]
+      View all repositories    me2j_extension = tbme_conversion["me2j_extension"]
         me2j_precision = tbme_conversion.get("me2j_precision", "double")
         me2j_tag = "me2j-{}".format(me2j_precision) if me2j_extension=="bin" else "me2j"
         work_dir = "work{:s}".format(postfix)
@@ -1119,7 +1120,6 @@ def task_handler_mfdn_strength_apply(task, postfix=""):
     )
 
     # copy out norm
-    norm_sq = 1
     norm_file = open("apply.out")
     norm_file_lines = [row for row in norm_file]
     norm_file.close()
@@ -1131,17 +1131,27 @@ def task_handler_mfdn_strength_apply(task, postfix=""):
         if row[2] == "norm":
             print("NORM SQUARED: ", row[5])
             norm_sq = float(row[5])
+    
+    lines = []
+    lines += ["[Two-body observable]"]
+    lines += ["# {:>3s} {:>3s} {:>3s}  {:s}".format("J0", "g0", "Tz0", "name")]
+    lines += ["  {:>3d} {:>3d} {:>3d}  {:s}".format(
+        operator_qn[0], operator_qn[1], operator_qn[2], task["transition_operator"]
+            )
+        ]
+    lines += ["# {:>4s} {:>3s} {:>3s}  {:>15s}".format( "Ji", "gi", "ni", "rme")]
+    lines += ["  {:>4.1f} {:>3d} {:>3d}  {:15.8e}".format(
+        source_qn[0], source_qn[1], source_qn[2], norm_sq
+            )
+        ]
 
+    filename_prefix = "{:s}-transitions-tb-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+    res_filename = "{:s}.res".format(filename_prefix)
 
-    descriptor = task["metadata"]["descriptor"]
-    filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
-    norm_source_filename = "normsq.dat".format(work_dir)
-    norm_target_filename = "{:s}.normsq".format(filename_prefix)
-    norm_file = open(norm_source_filename, "w")
-    norm_file.write(str(norm_sq))
-    norm_file.close()
+    mcscript.utils.write_input(res_filename, lines, verbose=False)
+
     mcscript.task.save_results_single(
-        task, norm_source_filename, norm_target_filename, "norm"
+        task, res_filename, res_filename, "res"
     )
 def task_handler_mfdn_strength_decomp(task, postfix= ""):
     """Task handler for decomposition phase of Lanczos trick strength function
