@@ -69,7 +69,8 @@ University of Notre Dame
 - 09/26/25 (mac): Add TBME generation run task handler task_handler_tbme.
 - 10/22/25 (mac/seb): Move truncation before decomposition into task_handler_decomposition_pre.
 - 01/30/26 (seb): Add task handler for strength function runs.
-- 02/30/26 (seb): Update norm output for strength function runs.
+- 02/06/26 (seb): Update norm output for strength function runs.
+- 02/09/26 (seb): Remove mistakenly added text from tbme handler.
 """
 import glob
 import os
@@ -764,7 +765,7 @@ def task_handler_tbme(task, postfix=""):
         keep_h2 = tbme_conversion.get("keep_h2")
         if target_format != "me2j":
             raise(ValueError("Unrecognized tbme target format ({})".format(target_format)))
-      View all repositories    me2j_extension = tbme_conversion["me2j_extension"]
+        me2j_extension = tbme_conversion["me2j_extension"]
         me2j_precision = tbme_conversion.get("me2j_precision", "double")
         me2j_tag = "me2j-{}".format(me2j_precision) if me2j_extension=="bin" else "me2j"
         work_dir = "work{:s}".format(postfix)
