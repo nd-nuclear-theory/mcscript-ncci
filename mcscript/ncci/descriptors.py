@@ -27,6 +27,8 @@ University of Notre Dame
 - 07/27/24 (mac): Add task_descriptor_10 for shell model runs.
 - 09/26/24 (mac): Add trial field in task_descriptor_7.
 - 04/09/25 (mac): Add task_descriptor_10_trans for transitions following shell model runs.
+- 01/30/26 (seb): Add task_descriptor_7_strength for strength function runs.
+- 02/06/26 (seb): Update task_descriptor_7_strength for mfdnres compatibility.
 
 """
 import mcscript.exception
@@ -461,6 +463,43 @@ def task_descriptor_with_decomposition_tags(task, wf_descriptor):
 
     return descriptor
 
+def task_descriptor_7_strength(task):
+    """Task descriptor format 7_strength
+        
+        - Provide descriptor similar to task_descriptor_7_decomposition,
+          but including transition operator.
+
+    """
+
+   # Nmax for source wf
+    if task.get("wf_source_selector"):
+        # use Nmax from wf_source_selector
+        Nmax = task["wf_source_selector"]["Nmax"]
+    elif task.get("wf_source_info"):
+        # use Nmax from wf_source_info (deprecated)
+        Nmax = task["wf_source_info"]["truncation_parameters"]["Nmax"]
+    else:
+        # wf must have been manually specified as run and descriptor
+        if "truncation_model_info" not in task:
+            # if no truncation is applied, we can use the run Nmax
+            Nmax = task["truncation_parameters"]["Nmax"]
+        else:
+            raise mcscript.exception.ScriptError("No way to determine Nmax of source wave function")
+
+    # prepare stripped down descriptor for source wf
+    task_for_wf_descriptor = task.copy()  # shallow copy -- beware need to make deeper copy of truncation_parameters
+    task_for_wf_descriptor["truncation_parameters"] = task_for_wf_descriptor["truncation_parameters"].copy()  # safely editable copy of truncation_parameters
+    task_for_wf_descriptor["truncation_parameters"].pop("M")  # suppress M (otherwise included as a legacy field by task_descriptor_7_trans)
+    task_for_wf_descriptor["truncation_parameters"]["Nmax"] = Nmax  # use Nmax for source wf
+
+    wf_descriptor = task_descriptor_7_trans(task_for_wf_descriptor)
+
+    task["decomposition_type"] = task["transition_operator"]
+    
+    descriptor = task_descriptor_with_decomposition_tags(task, wf_descriptor)
+
+    return descriptor
+
 ################################################################
 # task descriptor for mfdn menj runs (and postprocessing)
 ################################################################
@@ -565,6 +604,7 @@ def task_descriptor_menj_trans(task):
         subset_field=subset_field,
         **mcscript.utils.dict_union(task, truncation_parameters)
     )
+
 
     return descriptor
 
