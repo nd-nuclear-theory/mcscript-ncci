@@ -453,7 +453,10 @@ def task_descriptor_with_decomposition_tags(task, wf_descriptor):
     elif "decomposition_qn" in task:
         task.setdefault("wf_qn", task["decomposition_qn"])
 
-    decomposition_Nmax = task["truncation_parameters"]["Nmax"]
+    if "truncation_model_info" in task:
+        decomposition_Nmax = task["truncation_model_info"]["truncation_parameters"]["Nmax"]
+    else:
+        decomposition_Nmax = task["truncation_parameters"]["Nmax"]
 
     descriptor = template_string.format(
         wf_descriptor=wf_descriptor,
