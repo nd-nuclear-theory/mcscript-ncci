@@ -496,7 +496,7 @@ def task_handler_mfdn_decomposition_pre(task, postfix=""):
                 model_prefix,  # truncation model wf directory
                 target_prefix,  # target wf directory
                 "{:d}".format(level_seq),  # state sequence number
-                "test",  # TEMPORARY mode flag for slv
+                "multi-diag-test",  # TEMPORARY mode flag for slv
             ],
             mode=mcscript.control.CallMode.kSerial,
         )
