@@ -269,6 +269,8 @@ start of each run script, for further commentary.
   
   * runmfdndecomp02: Examples of angular momentum and joint U(3) decompositions.
 
+  * runmfdndecomp03: Examples of joint U(3) decompositions with wave function truncation.
+
 ## TBME generation runs ##
 
   * runtbme01: Illustration of generating TBMEs for various operators, at

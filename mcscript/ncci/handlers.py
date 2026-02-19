@@ -481,7 +481,7 @@ def task_handler_mfdn_decomposition_pre(task, postfix=""):
 
         # truncate
         target_prefix = os.path.join(work_dir, "smwf")
-        mcscript.utils.mkdir(target_prefix, exist_ok=True)
+        mcscript.utils.mkdir(target_prefix, parents=True, exist_ok=True)
         model_indexing_files = (
             [os.path.join(model_prefix, "mfdn_smwf.info")]
             + glob.glob(os.path.join(model_prefix, "mfdn_MBgroups*"))
@@ -583,8 +583,18 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
     )
 
    
-task_handler_mfdn_decomposition_post = task_handler_mfdn_post
+def task_handler_mfdn_decomposition_post(task, postfix="", cleanup=True):
+    """Task handler for serial components after MFDn Lanczos decomposition run."""
 
+    if(cleanup):
+        mcscript.control.call(
+                [
+                    "rm", "-rf", "work/smwf",
+                ],
+                mode=mcscript.control.CallMode.kSerial
+            )
+
+    task_handler_mfdn_post(task, postfix, cleanup)
 
 def task_handler_mfdn_decomposition(task, postfix=""):
     """Task handler for complete decomposition run, including serial pre and post
