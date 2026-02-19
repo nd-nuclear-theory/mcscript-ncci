@@ -5,13 +5,7 @@
     Add `mcscript-ncci/docs/examples` to NCCI_DATA_DIR_H2 to ensure that this
     script can find the relevant h2 files.
 
-    Requires previously running:
-
-        runmfdn17 -- to provide wave functions
-
-        runmfdncounting02 -- to provide truncation template info
- 
-    Example:
+    Example invocation:
 
         qsubm mfdn17 --toc
 
