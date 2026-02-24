@@ -1,7 +1,6 @@
 """runmfdncounting02.py
 
-    Example "counting" run meant to generate template smwf info files for use
-    with postprocessing codes (mfdn-transitions, smwf-truncate, etc.).
+    Example "counting" run to generate template wave function indexing files.
 
     See examples.md for full description.
 
@@ -9,18 +8,22 @@
 
         qsubm mfdncounting02 --toc
 
-        qsubm mfdncounting02 --pool=Nmax02 --serialthread=8 --phase=0
+        qsubm mfdncounting02 --pool="Nmax02-M*-n*" --threads=8 --phase=0
 
-        qsubm mfdncounting02 --pool=Nmax04 --serialthread=8 --phase=0
+        qsubm mfdncounting02 --pool="Nmax04-M*-n001" --threads=1 --phase=0
 
-        # qsubm mfdncounting02 --pool=Nmax04 --serialthread=8 --threads=1 --ranks=6 --phase=1
+        qsubm mfdncounting02 --pool="Nmax04-M*-n003" --threads=1 --ranks=6 --phase=0
+
+        ## qsubm mfdncounting02 --pool="Nmax04-M*-n005" --threads=1 --ranks=5 --phase=0  # to demonstrate scripting check on number of ranks
+
+        qsubm mfdncounting02 --pool="Nmax04-M*-n005" --threads=1 --ranks=15 --phase=0
 
         qsubm mfdncounting02 --pool="*" --phase=1
 
     Mark A. Caprio
     University of Notre Dame
 
-    - 02/18/26 (pjf): Created, based on runmfdncounting01.
+    - 02/18/26 (mac): Created, based on runmfdncounting01.
 
 """
 
@@ -39,6 +42,10 @@ Nmax_range = (2, 4, 2)
 Nmax_list = mcscript.utils.value_range(*Nmax_range)
 M_list = [1.0]
 Nmax_orb = 5  # set uniform orbital set independent of Nmax (for template wave function info files)
+num_segments_list_by_Nmax = {
+    2: [1],
+    4: [1,3,5],
+}
 
 ##################################################################
 # build task list
@@ -51,6 +58,7 @@ tasks = [
 
         # basis parameters
         "basis_mode": ncci.modes.BasisMode.kDirect,
+        "num_segments": num_segments,
         
         # traditional oscillator many-body truncation
         "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
@@ -72,6 +80,7 @@ tasks = [
     }
     for M in M_list
     for Nmax in Nmax_list
+    for num_segments in num_segments_list_by_Nmax[Nmax]
 ]
 
 ##################################################################
@@ -79,7 +88,7 @@ tasks = [
 ##################################################################
 
 def task_pool(current_task):
-    pool = "Nmax{truncation_parameters[Nmax]:02d}-M{truncation_parameters[M]:3.1f}".format(**current_task)
+    pool = "Nmax{truncation_parameters[Nmax]:02d}-M{truncation_parameters[M]:3.1f}-n{num_segments:03d}".format(**current_task)
     return pool
 
 

@@ -17,7 +17,9 @@ invocations.
 
 08/19/25 (mac): Add runmfdncounting01 counting run example.
 
-0926/25 (mac): Add runtbme01 TBME generation run example.
+09/26/25 (mac): Add runtbme01 TBME generation run example.
+
+02/23/26 (mac): Add runmfdncounting02
 
 ----------------------------------------------------------------
 
@@ -73,7 +75,7 @@ start of each run script, for further commentary.
 
 ## MFDn diagonalization runs ##
 
-  * runmfdn13: harmonic oscillator basis run with MFDn v15 (CPU version)
+  * runmfdn13: Harmonic oscillator basis run with MFDn v15 (CPU version)
 
     6Li Nmax02..04 hw15..20
 
@@ -117,7 +119,7 @@ start of each run script, for further commentary.
     submitting the next one.
 
 
-  * runmfdn13gpu: harmonic oscillator direct run with MFDn v15 (GPU version)
+  * runmfdn13gpu: Harmonic oscillator direct run with MFDn v15 (GPU version)
 
     For a GPU run, we must disable calculation of one-body observables, since
     these are not yet GPU enabled, and use gpu version of the mfdn executable.
@@ -149,13 +151,13 @@ start of each run script, for further commentary.
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-  * runmfdn15menj: diagonalization run with MFDn v15 3-body (menj) variant
+  * runmfdn15menj: Diagonalization run with MFDn v15 3-body (menj) variant
 
     - Note: The input interaction files required for this run (including a large
       3-body interaction file) are not provided.
 
 
-  * runmfdn16: shell model diagonalization runs in sd shell, with MFDn v15 (CPU version)
+  * runmfdn16: Shell model diagonalization runs in sd shell, with MFDn v15 (CPU version)
 
     18O/20O/18F/19F/20N/25Mg, Wildenthal USD and Brown-Richter USDB interactions
 
@@ -166,6 +168,16 @@ start of each run script, for further commentary.
         qsubm --pool=ALL --phase=1 mfdn16
         qsubm --pool=ALL --phase=2 mfdn16
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  * runmfdn17: Generate wave functions for decomposition example `runmfdndecomp03`
+  
+    6Li Nmax02..04 hw15
+    
+    This is a harmonic oscillator basis run with MFDn v15 (CPU version), very
+    similar to `runmfdn13`.  However, a uniform single-particle indexing is
+    imposed across different Nmax (by enforcing a common value for the `Nmax_orb`
+    parameter).  This is required for the wave function truncation step in
+    `runmfdndecomp03`.
 
 
 ## mfdn-transitions postprocessing runs ##
@@ -233,7 +245,7 @@ start of each run script, for further commentary.
 
 ## MFDn counting runs ##
 
-  * runmfdncounting01: counting run
+  * runmfdncounting01: Counting run
   
       6Li Nmax02..04
 
@@ -244,14 +256,36 @@ start of each run script, for further commentary.
         demands, than a full counting run for dimension and number of nonzeros
         (phase 1 below).  The dimension will be found in the res file.
       
-      - Phase 1: Count dimension and number of nonzeros.  This subsumes the simple
-        dimension counting run, but takes longer (and has higher memory
+      - Phase 1: Count dimension and number of nonzeros.  This subsumes the
+        simple dimension counting run, but takes longer (and has higher memory
         demands). The dimension and number of nonzeros will be found in the res
         file.
       
-      - Phase 2: Save wave function indexing information (`mfdn_smwf.info` and
-        `mfdn_MBgroups`).  These files may be needed for codes which postprocess
-        MFDn wave functions.
+      - Phase 2: Clean up (optional).
+
+  * runmfdncounting02: Counting run to generate template wave function indexing files
+
+      6Li Nmax02..04
+
+      Namely, these are the files (`mfdn_smwf.info` and `mfdn_MBgroups`) which
+      provide the indexing information for a wave function.  These files are
+      needed for codes which postprocess MFDn wave functions and write out a new
+      wave function (`apply-operator`, `smwf-truncate`, etc.)  and thus for
+      decomposition runs with truncation, to provide a "template" for the output
+      wave function.
+    
+      Generates wave function indexing files matching the cases (M=1.0, Nmax=2/4)
+      used for the target wave function truncations in `runmfdndecomp03`.
+      
+      This run also demonstrates generating template files with different wave
+      function segmentation (i.e., different number of "diagonals") for the same
+      Nmax (in the case of Nmax=4).
+      
+      - Phase 0: Count dimension and number of nonzeros.  This also generates
+        the template wave function indexing files.  file.
+
+      - Phase 1: Save wave function indexing files (`mfdn_smwf.info` and
+        `mfdn_MBgroups`).
 
 
 ## MFDn Lanczos decomposition runs ##

@@ -182,9 +182,6 @@ University of Notre Dame
 - `tolerance`: `float`
   - Diagonalization tolerance parameter.
 
-- `ndiag`: `int`
-  - Number of spare diagonal nodes (MFDn v14 only).
-
 - `partition_filename`: `str`, optional
   - Filename for partition file to use with MFDn.
   - If `None`, no partition file.
@@ -193,6 +190,24 @@ University of Notre Dame
   - NOTE: This parameter is ignored in Lanczos decomposition runs, for which the
     partitioning is extracted from the `mfdn_smwf.info` file of the input wave
     function.
+
+- `num_segments`: `int`, optional
+  - Number of segments into which the wave function is divided.
+  - This number is also known colloquially as the number of "diagonals", since
+    it equals the number of "diagonal" blocks in the Hamiltonian matrix and
+    hence the number of MPI processes dedicated to such diagonal blocks.  It
+    appears as `ndiags` in the MFDn output.  See, e.g., Fig. 3.6 of Fasano
+    [DOI:10.7274/w9504x5568h].
+  - This parameter is purely diagnostic.  The scripting checks that the number
+    of MPI ranks allocated for the job matches the number expected for the given
+    number of segments [ranks = n*(n+1)/2].
+  - This parameter may also be included in the descriptor for MFDn "counting"
+    runs used to generate template wave functions (for use with the MFDn
+    postprocessor or `smwf-truncate`) so as to distinguish template wave
+    functions involving different numbers of segments.
+
+- `ndiag`: `int`
+  - Number of spare diagonal nodes (MFDn v14 only).
 
 ----------------------------------------------------------------
 ## decomposition parameters ##

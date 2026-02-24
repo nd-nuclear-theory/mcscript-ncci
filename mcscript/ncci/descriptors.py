@@ -29,6 +29,7 @@ University of Notre Dame
 - 04/09/25 (mac): Add task_descriptor_10_trans for transitions following shell model runs.
 - 01/30/26 (seb): Add task_descriptor_7_strength for strength function runs.
 - 02/06/26 (seb): Update task_descriptor_7_strength for mfdnres compatibility.
+- 02/23/26 (mac): Add number of segments to task_descriptor_c1.
 
 """
 import mcscript.exception
@@ -626,7 +627,7 @@ def task_descriptor_c1(task):
 
     template_string = (
         "Z{nuclide[0]:02d}-N{nuclide[1]:02d}"
-        "{sp_truncation:s}{mb_truncation:s}{mixed_parity_indicator}-Mj{M:03.1f}"
+        "{sp_truncation:s}{mb_truncation:s}{mixed_parity_indicator}-Mj{M:03.1f}{num_segments_indicator}"
     )
     if task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kNmax:
         sp_truncation = "-Nmax{Nmax:02d}".format(**task["truncation_parameters"])
@@ -643,11 +644,16 @@ def task_descriptor_c1(task):
     elif task["mb_truncation_mode"] is modes.ManyBodyTruncationMode.kWeightMax:
         mb_truncation = "-WTmax{mb_weight_max:06.3f}".format(**truncation_parameters)
     mixed_parity_indicator = mcscript.utils.ifelse(truncation_parameters.get("parity") == 0, "x", "")
-
+    if "num_segments" in task:
+        num_segments_indicator = "-n{:03d}".format(task["num_segments"])
+    else:
+        num_segments_indicator = ""
+    
     descriptor = template_string.format(
         sp_truncation=sp_truncation,
         mb_truncation=mb_truncation,
         mixed_parity_indicator=mixed_parity_indicator,
+        num_segments_indicator=num_segments_indicator,
         **mcscript.utils.dict_union(task, truncation_parameters)
         )
 

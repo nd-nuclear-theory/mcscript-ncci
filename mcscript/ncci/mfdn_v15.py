@@ -79,6 +79,7 @@ University of Notre Dame
     + Add menj.par to archive list.
 - 05/21/25 (mac): Ensure single particle orbitals are set in all run modes.
 - 08/19/25 (mac): In save_mfdn_task_data, gracefully handle missing h2mixer.in and tbo_names.dat files.
+- 02/23/26 (mac): Provide check on number of MPI ranks if given "num_segments" task option.
 """
 import errno
 import os
@@ -374,6 +375,16 @@ def run_mfdn(task, postfix=""):
     if os.path.exists("mfdn.res"):
         mcscript.control.call(["rm", "-v", "mfdn.res"])
 
+    # check number of ranks (optional)
+    num_segments = task.get("num_segments")
+    if num_segments is not None:
+        if not (num_segments % 2):
+            raise mcscript.exception.ScriptError("Invoked with unexpected number of segments {:d} (must be odd)".format(num_segments))
+        ranks = mcscript.parameters.run.hybrid_ranks
+        expected_ranks = num_segments*(num_segments+1)//2
+        if ranks != expected_ranks:
+            raise mcscript.exception.ScriptError("Invoked with unexpected number of ranks (expected {:d}, actual {:d})".format(expected_ranks, ranks))
+    
     # invoke MFDn
     mcscript.control.call(
         [

@@ -11,11 +11,11 @@
     
         qsubm mfdndecomp03 --pool="*" --serialthreads=8 --phase=0
     
-        qsubm mfdndecomp03 --pool=Nmax02 --serialthread=8 --threads=8 --ranks=1 --phase=1
+        qsubm mfdndecomp03 --pool=Nmax02 --threads=8 --ranks=1 --phase=1
     
-        qsubm mfdndecomp03 --pool=Nmax04 --serialthread=8 --threads=8 --ranks=1 --phase=1
+        qsubm mfdndecomp03 --pool=Nmax04 --threads=8 --ranks=1 --phase=1
     
-        # qsubm mfdndecomp03 --pool=Nmax04 --serialthread=8 --threads=1 --ranks=6 --phase=1
+        ## qsubm mfdndecomp03 --pool=Nmax04 --threads=1 --ranks=6 --phase=1
     
         qsubm mfdndecomp03 --pool="*" --phase=2
 
@@ -81,6 +81,10 @@ hw_coul = 20.
 Nmax_range = (2, 4, 2)
 Nmax_list = mcscript.utils.value_range(*Nmax_range)
 Nmax_orb = 5
+num_segments_by_Nmax = {
+    2: 1,
+    4: 1,  # 3
+}
 
 # hw
 hw_range = (15, 15, 5)
@@ -180,7 +184,8 @@ tasks = [
             "Nstep": 2,
             "Nmax_orb": Nmax_orb,
         },
-
+        "num_segments": num_segments_by_Nmax[decomposition_Nmax],
+        
         # diagonalization parameters
         "max_iterations": decomposition_max_iterations,
 
