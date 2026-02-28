@@ -85,7 +85,7 @@ hw_range = (15, 15, 5)
 hw_list = mcscript.utils.value_range(*hw_range)
 
 # decomposition
-wf_run_dir = "mfdn13"
+wf_source_run_list = ["mfdn13"]
 qn = (1.0,0,1)
 M = 1.0
 ## decomposition_type = "Ntot"
@@ -120,7 +120,7 @@ tasks = [
         "truncation_parameters": {
             "M": M,
             "Nmax": Nmax,
-            "Nstep": 2
+            "Nstep": 2,
         },
 
         # diagonalization parameters
@@ -136,7 +136,7 @@ tasks = [
         "decomposition_type": decomposition_type,
 
         # wf selection
-        "wf_source_run_list": ["mfdn13"],
+        "wf_source_run_list": wf_source_run_list,
         "wf_source_selector": {
             "nuclide": nuclide,
             "interaction": interaction,

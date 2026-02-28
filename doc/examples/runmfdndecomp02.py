@@ -68,15 +68,8 @@ Nmax_list = mcscript.utils.value_range(*Nmax_range)
 hw_range = (15, 20, 5)
 hw_list = mcscript.utils.value_range(*hw_range)
 
-# eigenvector convergence -- for source wave functions
-max_iterations = 600
-tolerance = 1e-6
-
-# Lawson -- for source wave functions
-a_cm = 50.
-
 # decomposition
-wf_run_dir = "mfdn13"
+wf_source_run_list = ["mfdn13"]
 qn_list_by_Nmax={
     # quantum numbers (J,g,n) for states to decompose at each Nmax
     Nmax: [
@@ -118,7 +111,7 @@ tasks = [
         "decomposition_type": decomposition_type,
 
         # wf selection
-        "wf_source_run_list": ["mfdn13"],
+        "wf_source_run_list": wf_source_run_list,
         "wf_source_selector": {
             "nuclide": nuclide,
             "interaction": interaction,
@@ -142,7 +135,7 @@ tasks = [
         "truncation_parameters": {
             "M": wf_source_M(qn),
             "Nmax": Nmax,
-            "Nstep": 2
+            "Nstep": 2,
         },
 
         # diagonalization parameters

@@ -29,7 +29,7 @@
 
     See examples/README.md for full description.
 
-    Patrick J. Fasano, Mark A. Caprio
+    Mark A. Caprio
     University of Notre Dame
 
     02/19/26 (mac): Created, from runmfdndecomp02.
@@ -78,8 +78,8 @@ interaction_coulomb_truncation_list = [
 hw_coul = 20.
 
 # truncation parameters
-Nmax_range = (2, 4, 2)
-Nmax_list = mcscript.utils.value_range(*Nmax_range)
+source_Nmax_range = (2, 4, 2)
+source_Nmax_list = mcscript.utils.value_range(*source_Nmax_range)
 Nmax_orb = 5
 num_segments_by_Nmax = {
     2: 1,
@@ -90,21 +90,14 @@ num_segments_by_Nmax = {
 hw_range = (15, 15, 5)
 hw_list = mcscript.utils.value_range(*hw_range)
 
-# eigenvector convergence -- for source wave functions
-max_iterations = 600
-tolerance = 1e-6
-
-# Lawson -- for source wave functions
-a_cm = 50.
-
 # decomposition
-wf_run_dir = "mfdn13"
-qn_list_by_Nmax={
+wf_source_run_list = ["mfdn17"]
+qn_list_by_source_Nmax={
     # quantum numbers (J,g,n) for states to decompose at each Nmax
-    Nmax: [
+    source_Nmax: [
         (1.0,0,1),
     ]
-    for Nmax in Nmax_list
+    for source_Nmax in source_Nmax_list
 }
 def wf_source_M(qn):
     """ M value for source wave function to use (for given state).
@@ -120,7 +113,7 @@ def wf_source_M(qn):
 decomposition_type_list = ["Nex", "U3SpSnS"]
 decomposition_max_iterations = 100
 decomposition_Nmax_list = [2, 4]
-
+decomposition_truncation_template_run = "mfdncounting02"
 
 ##################################################################
 # build task list
@@ -136,27 +129,28 @@ tasks = [
         "use_coulomb": coulomb,
 
         # decomposition
-        "hamiltonian": ncci.decomposition.decomposition_operator(nuclide,Nmax,hw,decomposition_type,verbose=False),
+        "hamiltonian": ncci.decomposition.decomposition_operator(nuclide,decomposition_Nmax,hw,decomposition_type,verbose=False),
         "decomposition_type": decomposition_type,
 
         # wf selection
-        "wf_source_run_list": ["mfdn17"],
+        "wf_source_run_list": wf_source_run_list,
         "wf_source_selector": {
             "nuclide": nuclide,
             "interaction": interaction,
             "hw": hw,
-            "Nmax": Nmax,
+            "Nmax": source_Nmax,
             "M": wf_source_M(qn),
             },
         "wf_qn": qn,
 
         # decomposition truncation model wf selection
         "truncation_model_info": {
-            "run": "mfdncounting02",
+            "run": decomposition_truncation_template_run,
             ##"nuclide": nuclide,  # INHERITED
             "truncation_parameters": {
                 "M": wf_source_M(qn),
-                "Nmax": decomposition_Nmax
+                "Nmax": decomposition_Nmax,
+                "Nmax_orb": Nmax_orb,
             },
             "descriptor": ncci.descriptors.task_descriptor_c1,
             # required modes to keep task descriptor function happy
@@ -201,16 +195,14 @@ tasks = [
         "mfdn_driver": ncci.mfdn_v15,
     }
     for nuclide in nuclide_list
-    for Nmax in Nmax_list
+    for source_Nmax in source_Nmax_list
     for decomposition_Nmax in decomposition_Nmax_list
-    if decomposition_Nmax <= Nmax
+    if decomposition_Nmax <= source_Nmax
     for (interaction,coulomb,truncation_int) in interaction_coulomb_truncation_list
     for hw in hw_list
-    for qn in qn_list_by_Nmax[Nmax]
+    for qn in qn_list_by_source_Nmax[source_Nmax]
     for decomposition_type in decomposition_type_list
 ]
-
-print(len(tasks))
 
 ##################################################################
 # task dictionary postprocessing functions
