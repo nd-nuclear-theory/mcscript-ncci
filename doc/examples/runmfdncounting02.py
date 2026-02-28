@@ -60,7 +60,7 @@ tasks = [
         "basis_mode": ncci.modes.BasisMode.kDirect,
         "num_segments": num_segments,
         
-        # traditional oscillator many-body truncation
+        # single-particle and many-body bases
         "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
         "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
         "truncation_parameters": {
@@ -69,7 +69,8 @@ tasks = [
             "M": M,
             "Nmax_orb": Nmax_orb,
         },
-
+        "partition_filename": None,
+        
         # wavefunction storage -- save mfdn_smwf.info and mfdn_MBgroups files
         "save_wavefunctions": True,
         

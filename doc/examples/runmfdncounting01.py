@@ -41,7 +41,7 @@ tasks = [
         # basis parameters
         "basis_mode": ncci.modes.BasisMode.kDirect,
         
-        # traditional oscillator many-body truncation
+        # single-particle and many-body bases
         "sp_truncation_mode": ncci.modes.SingleParticleTruncationMode.kNmax,
         "mb_truncation_mode": ncci.modes.ManyBodyTruncationMode.kNmax,
         "truncation_parameters": {
