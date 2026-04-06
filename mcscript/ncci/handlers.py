@@ -449,7 +449,8 @@ def task_handler_mfdn_decomposition_pre(task, postfix=""):
     # dependent upon OpenMP parameters.
     ## task.setdefault("calculate_tbo", False)  # to disable unnecessary Ncm and rrel2 operators
     task.setdefault("tolerance", 0)  # iterate to max iterations
-
+    task_handler_mfdn_pre(task, postfix)
+    
     # impose truncation
     if "truncation_model_info" in task:
 
@@ -486,7 +487,7 @@ def task_handler_mfdn_decomposition_pre(task, postfix=""):
             [os.path.join(model_prefix, "mfdn_smwf.info")]
             + glob.glob(os.path.join(model_prefix, "mfdn_MBgroups*"))
         )
-        mcscript.call(
+        mcscript.control.call(
             [
                 "cp",
                 "--target-directory={}".format(target_prefix),
@@ -505,7 +506,7 @@ def task_handler_mfdn_decomposition_pre(task, postfix=""):
             mode=mcscript.control.CallMode.kSerial,
         )
     
-    task_handler_mfdn_pre(task, postfix)
+    
 
     
 def task_handler_mfdn_decomposition_run(task, postfix=""):
