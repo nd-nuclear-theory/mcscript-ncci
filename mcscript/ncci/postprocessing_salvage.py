@@ -242,7 +242,7 @@ def task_handler_mfdn_postprocessor_salvage_mfdn_levels(task):
     info_file.write(info_string)
     info_file.close()
         
-    # generate Energies section for mfdn.out
+    # generate Energies section for mfdn.res
     if not os.path.isfile("mfdn.res_stub"):
         mcscript.control.call(["cp", "--verbose", "mfdn.res", "mfdn.res_stub"])
     mcscript.control.call(["cp", "--verbose", "mfdn.res_stub", "mfdn.res"])
