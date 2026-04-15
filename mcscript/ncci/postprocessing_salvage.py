@@ -28,7 +28,7 @@ def task_handler_mfdn_postprocessor_salvage_mfdn_levels(task):
 
         - TBME files for the J2 and T2 operators must already be in the working
           directory.  If by any chance they were already explicitly included as
-          two-body observables in the original run, then this sufficied.
+          two-body observables in the original run, then this suffices.
           Otherwise, you need to add them to the task dictionary now, and re-run
           the task_handler_mfdn_pre phase:
 
