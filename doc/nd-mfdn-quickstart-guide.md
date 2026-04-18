@@ -8,6 +8,7 @@ Some initial pointers on where to look to get started.
 06/18/24 (mac): Expand notes on ndconfig.
 12/20/24 (mac): Update notes on mfdn.
 06/27/25 (mac): Update notes on mfdn-transitions.
+04/17/26 (mac): Update notes on mfdn.
 
 ----------------
 
@@ -84,47 +85,73 @@ Some initial pointers on where to look to get started.
     you will need to submit your github userid to the administrator of that
     repository and request read permission.
 
-  - Branch.  The CPU version of the code is on the `master` branch, or the
+  - Branch.  The different versions of MFDn (CPU vs. GPU) are on different
+    branches.  The CPU version of the code is on the `master` branch, or the
     `develop` branch for the latest updates.  The GPU version of the code is on
-    the `port_GPU_ACC` branch.  Check out whichever branch you wish to use.
+    the `port_GPU_ACC` branch.  Check out the branch corresponding to the
+    version of the code you wish to compile.
+    
+    If you are going to be working frequently with both codes, rather than using
+    git to switch back and forth each time, you may wish to clone two copies of
+    the repository, and keep the CPU code checked out in one, and the GPU code
+    checked out in the other.
   
-  - Instructions.  See `README.md` for installation instructions.  Important
-    topics include:
+  - Instructions.  The mfdn repository contains a `README.md`, which you should
+    check for the latest installation instructions.  For instance, it explains
+    about selecting different "variants" (for different input TBME file formats)
+    and different "solvers".
+    
+    However, we will sketch the general procedure below.
+    
+  - Setting up a symlink to the appropriate config file, which will set compiler
+    flags appopriate to the compiler and machine.  (These are local to the MFDn
+    repository, under `config`.  These are *not* our standard config.mk files
+    from `ndconfig`.)
+    
+    For example, at NERSC for Perlmutter CPU:
 
-    + Setting up a symlink to the appropriate config file.  (These are local to
-      mfdn's repository, not our standard ndconfig config.mk files.)  For example:
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    % ln -s config/config_Perlmutter_CPU_gnu.mk config.mk
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     % ln -s config/config_Perlmutter_CPU_gnu.mk config.mk
-     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    + Recommendations on modules to load.  For instance, on Cori at one point,
-    better performance was obtained by unloading the default cray-libsci module,
-    to ensure that the MKL linear algebra libraries were used instead.
-
-    + Different compilation modes to select for (a) the interaction file format
-      and (b) the eigensolver.
-
-  - If you are installing locally on a an Ubuntu system, rather than on a
+    Or at NERSC for Perlmutter GPU:
+    
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    % ln -s config/config_Perlmutter_GPU.mk
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    Or if you are installing locally on an Ubuntu system, rather than on a
     cluster:
+
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    % ln -s config/config_ubuntu_gnu.mk config.mk
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - If you are working on a cluster, make sure the correct modules are loaded.
+
+    You can source our usual "env" file from `ndconfig`, for whichever system
+    and compiler you are targeting.  But beware that the recommendations in
+    `README.md` might augment or supersede these, e.g., it might recommend
+    loading or unloading specific modules for optimal performance.  (For
+    instance, on Cori at one point, better performance was obtained by unloading
+    the default cray-libsci module, to ensure that the MKL linear algebra
+    libraries were used instead.)
+    
+    For instance, at NERSC on Perlmutter, for the CPU code, you just need to
+    have the default GNU programming environment (`PrgEnv-gnu`) loaded.  It is
+    okay, but not necessary, to source `env-gnu-nersc` from `ndconfig`.
+    
+    However, for the GPU code, you need to have the NVIDIA programming
+    environment (`PrgEnv-nvidia`) loaded, plus a few CUDA modules.  You can
+    accomplish this by sourcing `env-nvidia-nersc` from `ndconfig`.
   
-    + Use this config file:
- 
-      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-       % ln -s config/config_ubuntu_gnu.mk config.mk
-      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- 
-    + You will also need to have the correct compiler and libraries installed:
+  - If you are installing locally on an Ubuntu system, rather than on a cluster,
+    you will need to have the correct compiler and libraries installed:
 
       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       % sudo apt install build-essential gfortran
       % sudo apt install intel-mkl
       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  - Environment.  You can source our usual "env" file from ndconfig, for
-    whichever system and compiler you are targeting.  But beware that the
-    recommendations in `README.md` might augment or supersede these, e.g., `module
-    unload cray-libsci`.
 
   - Building.  First run 'make' with no arguments to display help.  Note that
     you will have to specify which TBME file format to use (`VAR=...`) and which
@@ -133,6 +160,12 @@ Some initial pointers on where to look to get started.
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     % make mfdn SOLVER=lan
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    or
+    
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    % make mfdn SOLVER=lan-gpu
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   - Installing executable.  Below, when you start using the scripting in
@@ -182,13 +215,10 @@ Some initial pointers on where to look to get started.
        "mfdn_executable": "xmfdn-h2-lan"
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    Hint: If you need to work with various versions of the mfdn executable,
-    e.g., if you are switching between running versions compiled with different
-    compilers, or built from different commits of mfdn, then you may want to use
-    a subdirectory structure to keep track of different executables, e.g.,
-
+    Or, for the GPU example `runmfdn13gpu.py`:
+    
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-       "mfdn_executable": "f94feb3/xmfdn-h2-lan"
+       "mfdn_executable": "xmfdn-h2-lan-gpu"
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
