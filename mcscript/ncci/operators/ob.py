@@ -63,9 +63,9 @@ implicit definition is
 One-body observables.  A one-body observable operator (a.k.a. target), as given
 in "ob_observables", is defined by the tuple:
 
-    (name, qn, operator_id)
+    (name, qn, source_id)
 
-where operator_id is the id of an obme source.  This may either be the id for an
+where source_id is the id of an obme source.  This may either be the id for an
 explicitly defined obme source or builtin source id.
 
 One-body observable sets.  Predefined sets of one-body observables can be

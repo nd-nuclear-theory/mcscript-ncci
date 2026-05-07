@@ -21,6 +21,8 @@ invocations.
 
 02/23/26 (mac): Add runmfdncounting02
 
+05/07/26 (mac): Expand runtransitions02 to further OBME sources.
+
 ----------------------------------------------------------------
 
 ## Setup ##
@@ -241,6 +243,10 @@ start of each run script, for further commentary.
     We also construct the naive one-body lab-frame kinetic energy operator,
     which will contain a spurious contribution from the zero-point motion of the
     center of mass.
+    
+    We also demonstrate reading in OBMEs for an operator, for the one-body
+    identity operator (provided in `data/obme`), and compare with the built-in
+    one-body identity operator.
 
 
 ## MFDn counting runs ##

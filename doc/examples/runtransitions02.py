@@ -1,6 +1,6 @@
 """runtransitions02.py
 
-    Example of explicitly defining one-bodyand two-body observables.
+    Example of explicitly defining one-body and two-body observables.
 
     Here we explicitly construct the intrinsic kinetic energy operator from its
     expression as a sum of one-body and separable two-body terms, e.g, equation
@@ -14,6 +14,23 @@
 
     We compare their expectation values in the eigenstates of 6Li, already
     calculated in runmfdn13.
+
+    As a separate illustration, we also generate the one-body identity operator two way:
+
+        - As a built-in operator in obmixer.
+
+        - By reading in the OBMEs from file (given in data/obme/obme-identity-ob-6.dat).
+
+    The one-body identity operator acts as the operator A*I on the A-body space.
+    So, for the J=1 ground state of 6Li, the eigenvalue should be
+    6*sqrt(3)=10.392...  Beware that an explicit path must be given to the OBME
+    data file (there is no automatic search within different data directories).
+    This is set, in the variable obme_data_dir below, to
+
+        ${HOME}/code/mcscript-ncci/doc/examples/data/obme
+
+    but you may need to change this location, depending where you have installed
+    mcscript-ncci.
 
     For documentation on the syntax we use to define the entries in the lists
     "obme_sources", "ob_observables", "tbme_sources", and "tb_observables", see
@@ -105,9 +122,13 @@
     University of Notre Dame
 
     - 04/14/25 (mac): Created, with overall structure from runtransitions00.
+    - 05/07/26 (mac): Add one-body identity example, for builtin operators and
+      reading OBMEs from file.
 
 """
+
 import math
+import os
 
 import mcscript
 import mcscript.control
@@ -147,6 +168,11 @@ interaction_coulomb_truncation_list = [
     ("Daejeon16", True, ("tb",6)),
     ## ("JISP16",    True, ("tb",6)),
 ]
+
+obme_data_dir = os.path.join(
+    os.environ["HOME"], "code", "mcscript-ncci",
+    "doc", "examples", "data", "obme"
+)
 
 # truncation parameters
 Nmax_range = (2, 2, 2)
@@ -211,6 +237,8 @@ tasks = [
             #
             #       T = 1/(2*mN) sum_i p_i^2
             ("Tlab", (0,0,0), "Tlab"),
+            ("identity-from-file", (0,0,0), "identity-from-file"),
+            ("identity-as-builtin", (0,0,0), "identity"),
         ],
         "obme_sources": [
             (
@@ -218,6 +246,20 @@ tasks = [
                 {
                     "qn": (0,0,0),
                     "linear-combination": mcscript.utils.CoefficientDict({"ik.ik": -(ncci.constants.k_hbar_c**2/(2*ncci.constants.k_mN_csqr))}),
+                },
+            ),
+            (
+                "identity-from-file",
+                {
+                    "qn": (0,0,0),
+                    "filename": os.path.join(obme_data_dir, "obme-identity-ob-6.dat"),
+                },
+            ),
+            (
+                "identity",
+                {
+                    "qn": (0,0,0),
+                    "builtin": "kinematic",
                 },
             ),
         ],

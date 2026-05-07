@@ -308,40 +308,100 @@ older run scripts:
 
 
 ----------------------------------------------------------------
-## obdme parameters ##
+## obdme generation (MFDn) ##
 
-- `calculate_obdme`: `bool`
-  - whether or not to enable calculation of OBDMEs in MFDn
-  - also thus controls calculation of any native MFDn one-body observables
-  
-- `obdme_multipolarity`: `int`
-  - maximum multipolarity for calculation of densities
-  - for `mfdn` runs, this must be large enough to support any one-body operators
-    desired to be calculated by `mfdn`, e.g., for M1 or E2 moments
-  - for postprocessor runs, this parameter is optional, but serves to:
-    + request tabulation of obdmes for extra, higher multipolarities beyond
+One-body density parameters apply either to calculation of "static" one-body
+density matrix elements in `mfdn` or calculation of general one-body density
+matrix elements in the postprocessor.  Parameters relating to one-body operators
+apply only to postprocessor runs (and the actual calculation of one-body
+operator RMEs is carried out afterwards by `obscalc-ob`).
+
+- `calculate_obdme`: `bool`, optional
+  - For `mfdn` runs:
+    + Whether or not to enable calculation of OBDMEs.
+    + Also thus controls calculation of any native MFDn one-body observables.
+  - For postprocessor runs, calculation of OBDMEs is always enabled, and this
+    parameter is ignored.
+
+- `save_obdme`: `bool`, optional
+  - Whether or not to save obdme files in archive.
+  - Defaults to not saving.
+
+- `obdme_multipolarity`: `int`, optional
+  - Maximum multipolarity for calculation of densities.
+  - For `mfdn` runs:
+    + This must be large enough to support any one-body operators desired to be
+      calculated by `mfdn`, e.g., for M1 or E2 moments.
+    + If this parameter is omitted, `mfdn` defaults internally to `2`.
+    + Therefore, this parameter is generally only needed if higher
+      multipolarities are required for some special purpose.
+  - For postprocessor runs, the maximum multipolarity for calculation of
+    densities is normally deduced based on the requested one-body operators.
+    However, this parameter may optionally be used to:
+    + Request tabulation of obdmes for extra, higher multipolarities beyond
       those which occur as a byproduct of calculating the one-body observables
       (or are specified by the operator quantum numbers specified in
-      `obdme_qn_list`)
-    + define the multipolarities for the densities to be converted to tabular
-      "dens" format for interchange with other codes (see "convert_obdme" option)
+      `obdme_qn_list`).
+    + Define the multipolarities for the densities to be converted to tabular
+      `dens` format for interchange with other codes (see `convert_obdme` option).
+  - This parameter controls the `max2K` keyword argument (taken as twice the
+    value of this parameter) in the `mfdn` or postprocessor keyword input list.
       
-- `obdme_reference_state_list`: list of tuples
-  - list of reference states (J, g, i) for density calculation
+- `ob_observables`: list of `(id, qn, source_id)` tuples
+  - Additional one-body observable definitions (see `ncci.operators.ob`).
+  - Tuple contains:
+    + `id` : `str`
+      * String identifier for one-body operator (in output).
+      * Multiple operators may be defined with the same name but different Tz0,
+        and the correct operator will be selected automatically.  E.g., the
+        Fermi operator `"F"` may be doubly defined, with either Tz-raising and
+        Tz-lowering variants.
+    + `qn` : `tuple`
+      * `(J0, g0, Tz0)` labels for operator
+    + `source_id`: `str`
+      * An OBME source as described below.
+  - See docstring for `ncci.operators.ob`.
+  - Example: `[("F", (0,0,+1), "F+"), ("F", (0,0,-1), "F-")]`
 
-- `ob_observables`: list of operators
-  - list of operators (type, order) to calculate, e.g., `[('E',2),('M',1)]`
+- `obme_sources`: list of `(id, parameter_dict)` tuples
+  - Defines sources (e.g., from file or one of a set of one-body operators built
+    into `obmixer`) for OBMEs for additional one-body observables.
+  - Tuple contains:
+    + `id` : `str`
+      * String identifier for OBME source.
+    + `parameter_dict` : `dict`
+      * Provides definition of one-body operator, i.e., how the OBMEs are to be
+        generated (namely, read from file, as a built-in one-body operator, as a
+        linear combination of existing one-body sources, or as a spherical
+        tensor coupled product of to other existing one-body sources).
+  - See docstring for `ncci.operators.ob`.
+  - Example: `[("F+", "obme-F+.dat"), ("F-", "obme-F-.dat")]`
 
-- `calculate_obdme`: `bool`
-  - whether or not to enable calculation of OBDMEs in MFDn
+- `convert_obdme`: `bool`, optional
+  - For postprocessor runs: Whether or not to subsequently convert the
+    calculated OBDMEs to a simple tabular `dens` format for interchange with
+    other codes, e.g., reaction codes (see initial code comments in
+    `obme2dens.cpp`).
 
-- `convert_obdme`: `bool`
-  - whether or not to convert OBDMEs to a simple tabular "dens" format for
-    interchange with other codes, e.g., reaction codes (see initial code
-    comments in `obme2dens.cpp`)
+- `obdme_reference_state_list`: list of tuples, optional
+  - For `mfdn` runs: List of reference states `(J, g, i)` for density calculation.
+  - Only applicable to `mfdn` v15b00 and earlier.
+
+- `legacy_obdme_multipolarity_in_obslist`: `bool`, optional
+  - Provides legacy support for older versions of MFDn which expect the `max2K`
+    parameter to be provided in `/obslist/`:
+    + The GPU version of MFDn expects the `max2K` parameter to be in `/inputlist/`.
+    + The CPU version of MFDn historically expects the `max2K` parameter to be
+      in `/obslist/`.  However, the developer of MFDn indicates the intent to
+      move this parameter to `/inputlist/`.
+  - If the `obdme_multipolarity` task dictionary parameter is omitted, this
+    choice is not of concern.
 
 ----------------------------------------------------------------
 ## two-body observables ##
+
+Two-body observable parameters apply either to the calculation of "static" TBO
+matrix elements in `mfdn` or to calculations in the postprocessor.
 
 - `calculate_tbo`: `bool`
   - Whether or not to enable calculation of two-body observables in MFDn.
@@ -349,32 +409,46 @@ older run scripts:
     nondeterministic memory deallocation errors, dependent upon OpenMP
     parameters (with mfdn commit 3f34aa7).  [08/08/25 (mac)]
   
-- `tb_observables`: list of `("basename", CoefficientDict)` tuples
-  - Additional observable definitions (see `ncci.operators`).
-
-- `observable_sets`: list of `str`
+- `tb_observable_sets`: list of `str`
   - Codes for predefined observable sets to include:
     - "H-components": Hamiltonian terms
     - "am-sqr": squared angular momenta
     - "isospin": isospin observables
     - "R20K20": center-of-mass diagnostic observables (TODO)
 
+- `tb_observables`: list of `(id, qn, coefficient_dictionary)` tuples
+  - Additional two-body observable definitions.
+  - Tuple contains:
+    + `id` : `str`
+      * String identifier for two-body operator (in output).
+    + `qn` : `tuple`
+      * `(J0, g0, Tz0)` labels for operator
+    + `coefficient_dictionary`: `CoefficientDict`
+  - See docstring for `ncci.operators.tb`.
+
+- `tbme_sources`: list of `(id, parameter_dict)` tuples
+  - Defines sources (from file or built into `h2mixer`) for TBMEs for
+    additional two-body observables.
+  - Tuple contains:
+    + `id` : `str`
+      * String identifier for TBME source.
+    + `parameter_dict` : `dict`
+      * Provides definition of two-body operator.
+  - See docstring for `ncci.operators.tb`.
+
+
 ----------------------------------------------------------------
 ## storage ##
 
 - `save_tbme`: `bool`, optional
-  - whether or not to save Hamiltonian (and other operator) tbme files in archive
-  - this is useful if you wish to "set up" an MFDn run, by generating the tbme files,
-    then hand them off to someone else to do an unscripted run
-  - defaults to not saving
-
-- `save_obdme`: `bool`, optional
-  - whether or not to save obdme files in archive
-  - defaults to not saving
+  - Whether or not to save Hamiltonian (and other operator) tbme files in archive.
+  - This is useful if you wish to "set up" an MFDn run, by generating the tbme files,
+    then hand them off to someone else to do an unscripted run.
+  - Defaults to not saving.
 
 - `save_wavefunctions`: `bool`, optional
-  - whether or not to save smwf files in (separate) archive
-  - defaults to not saving
+  - Whether or not to save smwf files in (separate) archive.
+  - Defaults to not saving.
 
 ----------------------------------------------------------------
 ## version parameters ##
