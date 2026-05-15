@@ -71,6 +71,7 @@ University of Notre Dame
 - 01/30/26 (seb): Add task handler for strength function runs.
 - 02/06/26 (seb): Update norm output for strength function runs.
 - 02/09/26 (seb): Remove mistakenly added text from tbme handler.
+- 05/15/26 (seb): Update strength function output to be consistent with existing parsers.
 """
 import glob
 import os
@@ -1151,9 +1152,9 @@ def task_handler_mfdn_strength_apply(task, postfix=""):
         operator_qn[0], operator_qn[1], operator_qn[2], task["transition_operator"]
             )
         ]
-    lines += ["# {:>4s} {:>3s} {:>3s}  {:>15s}".format( "Ji", "gi", "ni", "rme")]
-    lines += ["  {:>4.1f} {:>3d} {:>3d}  {:15.8e}".format(
-        source_qn[0], source_qn[1], source_qn[2], norm_sq
+    lines += ["# {:>4s} {:>3s} {:>3s}  {:>4s} {:>3s} {:>3s}  {:>15s}".format( "Jf", "gf", "nf", "Ji", "gi", "ni", "rme")]
+    lines += ["  {:>4.1f} {:>3d} {:>3d}  {:>4.1f} {:>3d} {:>3d}  {:15.8e}".format(
+        source_qn[0], source_qn[1], source_qn[2], source_qn[0], source_qn[1], source_qn[2], norm_sq
             )
         ]
 
