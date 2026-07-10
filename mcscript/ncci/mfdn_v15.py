@@ -384,17 +384,33 @@ def run_mfdn(task, postfix=""):
         expected_ranks = num_segments*(num_segments+1)//2
         if ranks != expected_ranks:
             raise mcscript.exception.ScriptError("Invoked with unexpected number of ranks (expected {:d}, actual {:d})".format(expected_ranks, ranks))
-    
-    # invoke MFDn
-    mcscript.control.call(
-        [
-            environ.mfdn_filename(task["mfdn_executable"])
-        ],
-        mode=mcscript.control.CallMode.kHybrid,
-        check_return=True,
-        file_watchdog=mcscript.control.FileWatchdog("mfdn.out"),
-        file_watchdog_restarts=3,
-    )
+    callMode = task.get("callmode")
+    if callMode is not None:
+        if (callMode == mcscript.control.CallMode.kHybrid or callMode == mcscript.control.CallMode.kSerial or callMode == mcscript.control.CallMode.kLocal):
+            # invoke MFDn
+            mcscript.control.call(
+                [
+                    environ.mfdn_filename(task["mfdn_executable"])
+                ],
+                mode=callMode,
+                check_return=True,
+                file_watchdog=mcscript.control.FileWatchdog("mfdn.out"),
+                file_watchdog_restarts=3,
+            )
+        else:
+            raise mcscript.exception.ScriptError("Invalid call mode. An example is mcscript.control.CallMode.kHybrid")
+    # default call mode
+    else:
+        # invoke MFDn
+        mcscript.control.call(
+            [
+                environ.mfdn_filename(task["mfdn_executable"])
+            ],
+            mode=mcscript.control.CallMode.kHybrid,
+            check_return=True,
+            file_watchdog=mcscript.control.FileWatchdog("mfdn.out"),
+            file_watchdog_restarts=3,
+        )
 
     # test for basic indications of success
     if (not os.path.exists("mfdn.out")):
