@@ -27,7 +27,7 @@ University of Notre Dame
 - 07/15/21 (zz): Fix parts that make unnecessary error messages in generate_smwf_info_in_library().
 - 07/25/21 (mac): Remove temporary generate_smwf_info_in_library_handler().
 - 05/05/22 (mac): Provide keep_archives, keep_metadata, and keep_obdme flags for modern his archives.
-- 07/10/26 (mac): Fix recover_from_hsi to respect keep_archives flag.
+- 07/10/26 (mac): Provde extract_archives flag.  Fix recover_from_hsi to respect keep_archives flag.
 """
 
 import glob
@@ -153,8 +153,8 @@ def recover_from_hsi_legacy(
 ################################################################
 
 def recover_from_hsi(
-        year,run,date,library_base,
-        keep_archives=False,keep_metadata=False,keep_obdme=False,
+        year, run,date, library_base,
+        extract_archives=True, keep_archives=False, keep_metadata=False, keep_obdme=False,
 ):
     """Extract results subarchives from hsi.
 
@@ -163,15 +163,18 @@ def recover_from_hsi(
     archive.
 
     The archives should be <basename>-{res,task-data,wf}.<ext>, where <ext> can
-    be any of {tar,tar.gz,.tgz}.  Automatic support is still provided for
-    extracting individual task task-data tarballs (legacy).
+    be any of {tar,tar.gz,.tgz}.
+
+    Legacy support: Support is still provided for extracting individual task
+    task-data tarballs from withing the task-data subarchive.
 
     Args
         year (str): year code (for archive file hsi subdirectory)
         run (str): run name
         date (str): date code (for archive filename)
         library_base (str): path to library directory
-        keep_archives (bool, optional): whether or not to save unextracted archives (useful in debugging this scripting)
+        extract_archives (bool, optional): whether or not to actually extract archives after retrieval
+        keep_archives (bool, optional): whether or not to save unextracted archives (useful in debugging this scripting or for further transfer to another location)
         keep_metadata (bool, optional): whether or not to retrieve/keep flags/batch/output directories (useful for diagnostics)
         keep_obdme (bool, optional): whether or not to retrieve/keep obdme results
 
@@ -203,7 +206,8 @@ def recover_from_hsi(
             archive_filename = "run{run}-archive-{date}-{archive_type}.{extension}".format(run=run,date=date,archive_type=archive_type,extension=extension)
             if os.path.isfile(archive_filename):
                 print("Extracting {}...".format(archive_filename))
-                mcscript.control.call(["tar","xvf",archive_filename],check_return=False)
+                if extract_archives:
+                    mcscript.control.call(["tar","xvf",archive_filename],check_return=False)
                 if not keep_archives:
                     mcscript.control.call(["rm",archive_filename],check_return=False)
 
@@ -244,7 +248,8 @@ def hsi_retrieval_handler(task):
         year (str): year code (for archive file hsi subdirectory)
         date (str): date code (for archive filename)
         library_base (str): path to library directory
-        keep_archives (bool, optional): whether or not to save unextracted archives (useful in debugging this scripting)
+        extract_archives (bool, optional): whether or not to actually extract archives after retrieval
+        keep_archives (bool, optional): whether or not to save unextracted archives (useful in debugging this scripting or for further transfer to another location)
         keep_metadata (bool, optional): whether or not to retrieve/keep flags/batch/output directories (useful for diagnostics)
         keep_obdme (bool, optional): whether or not to retrieve/keep obdme results
         repo_str (str,optional): group name for file permissions
@@ -266,10 +271,11 @@ def hsi_retrieval_handler(task):
     year = task["year"]
     date = task["date"]
     library_base= task["library_base"]
-    keep_archives = task.get("keep_archives",False)
-    keep_metadata = task.get("keep_metadata",False)
-    keep_obdme = task.get("keep_obdme",False)
-    repo_str = task.get("repo_str",None)
+    extract_archives = task.get("extract_archives", True)
+    keep_archives = task.get("keep_archives", False)
+    keep_metadata = task.get("keep_metadata", False)
+    keep_obdme = task.get("keep_obdme", False)
+    repo_str = task.get("repo_str", None)
 
     # construct paths
     target_run_top_prefix = os.path.join(library_base,"run{run}".format(run=run))
@@ -279,13 +285,13 @@ def hsi_retrieval_handler(task):
     if task["legacy"]:
         # keep archives to facilitate resumption on error; keep metadata to facilitate rebundling into modern archive
         recover_from_hsi_legacy(
-            year,run,date,library_base,
-            keep_archives=True,keep_metadata=True,keep_obdme=False,
+            year, run, date, library_base,
+            keep_archives=True, keep_metadata=True, keep_obdme=False,
         )
     else:
         recover_from_hsi(
-            year,run,date,library_base,
-            keep_archives=keep_archives,keep_metadata=keep_metadata,keep_obdme=keep_obdme
+            year, run, date, library_base,
+            extract_archives=extract_archives, keep_archives=keep_archives, keep_metadata=keep_metadata, keep_obdme=keep_obdme,
         )
 
     # provide wf info files if needed (for mfdn v15b00/b01)
