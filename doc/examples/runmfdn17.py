@@ -1,6 +1,14 @@
 """runmfdn17.py
 
-    Example diagonalization run as setup for decomposition (uniform orbital set).
+    Example diagonalization run with uniform orbital set for different Nmax.
+
+    A uniform orbital set (and uniform partitioning) is typically needed if
+    mfdn-transitions is to be run with bra and ket from different Nmax spaces.
+    (More precisely, the partitioning for the smaller space has to be a *subset*
+    of that for the large space, obtained by truncation.  But it is typically
+    more convenient to just run with the same partition file and orbital set for
+    all Nmax.)
+
 
     Add `mcscript-ncci/docs/examples` to NCCI_DATA_DIR_H2 to ensure that this
     script can find the relevant h2 files.
@@ -23,28 +31,6 @@
 
     Patrick J. Fasano, Mark A. Caprio
     University of Notre Dame
-
-"""
-
-"""Generating text file mfdn_partitioning.info:
-21 21 ! Number of proton and neutron partitions
-1
-3 5
-9 11 15
-21 23 27 33
-41 43 47 53 61
-71 73 77 83 91 101
-1
-3 5
-9 11 15
-21 23 27 33
-41 43 47 53 61
-71 73 77 83 91 101
-
-
- ERROR in input partitioning 1 3 5 9 11 15 21 23 27 33 41 43 47 53 61 71 73 77
-           83 91 101 241 243 245 249 251 255 261 263 267 273 281 283 287 293 301
-           311 313 317 323 331 341 481 is not subdivision of automatic partition
 
 """
 

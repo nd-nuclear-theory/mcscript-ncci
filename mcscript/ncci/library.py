@@ -1,4 +1,4 @@
-"""library.py -- utilities for accessing run library
+"""library.py -- utilities for retrieving runs from tape and accessing run library
 
 Mark A. Caprio
 University of Notre Dame
@@ -27,7 +27,7 @@ University of Notre Dame
 - 07/15/21 (zz): Fix parts that make unnecessary error messages in generate_smwf_info_in_library().
 - 07/25/21 (mac): Remove temporary generate_smwf_info_in_library_handler().
 - 05/05/22 (mac): Provide keep_archives, keep_metadata, and keep_obdme flags for modern his archives.
-
+- 07/10/26 (mac): Fix recover_from_hsi to respect keep_archives flag.
 """
 
 import glob
@@ -204,7 +204,8 @@ def recover_from_hsi(
             if os.path.isfile(archive_filename):
                 print("Extracting {}...".format(archive_filename))
                 mcscript.control.call(["tar","xvf",archive_filename],check_return=False)
-                mcscript.control.call(["rm",archive_filename],check_return=False)
+                if not keep_archives:
+                    mcscript.control.call(["rm",archive_filename],check_return=False)
 
     # extract individual task tarballs (legacy)
     target_run_results_prefix = os.path.join(library_base,"run{run}".format(run=run),"results")

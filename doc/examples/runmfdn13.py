@@ -114,7 +114,6 @@ tasks = [
         "partition_filename": None,
 
         # obdme parameters
-        "obdme_multipolarity": 2,
         "save_obdme": True,
         "ob_observable_sets": ['M1', 'E2'],
 

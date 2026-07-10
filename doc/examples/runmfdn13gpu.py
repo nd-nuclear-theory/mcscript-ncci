@@ -125,7 +125,6 @@ tasks = [
 
         # obdme parameters
         "calculate_obdme": False,
-        "obdme_multipolarity": None,  # must set to None for mfdn GPU code (commit db2400a), since max2K in mfdn.input yields error "entity name is not member of group"
         "save_obdme": False,
 
         # two-body observables
