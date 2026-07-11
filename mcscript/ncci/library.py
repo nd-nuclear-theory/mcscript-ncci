@@ -212,25 +212,27 @@ def recover_from_hsi(
                     mcscript.control.call(["rm",archive_filename],check_return=False)
 
     # extract individual task tarballs (legacy)
-    target_run_results_prefix = os.path.join(library_base,"run{run}".format(run=run),"results")
-    os.chdir(os.path.join(target_run_results_prefix,"task-data"))
-    for filename in glob.glob("*.tgz"):
-        mcscript.control.call([
-            "tar","xvf",filename,
-            "--strip-components=1",
-            "--exclude=mfdn*obdme*",
-        ])
-        if not keep_archives:
-            mcscript.control.call(["rm","-v",filename])
-    os.chdir(os.path.join(target_run_results_prefix,"wf"))
-    for filename in glob.glob("*.tar"):
-        mcscript.control.call([
-            "tar","xvf",filename,
-            "--strip-components=1",
-            "--totals"
-        ])
-        if not keep_archives:
-            mcscript.control.call(["rm","-v",filename])
+    target_run_results_prefix = os.path.join(library_base, "run{run}".format(run=run), "results")
+    task_data_dir = os.path.join(target_run_results_prefix, "task-data")
+    if os.path.isdir(task_data_dir):
+        os.chdir(task_data_dir)
+        for filename in glob.glob("*.tgz"):
+            mcscript.control.call([
+                "tar","xvf",filename,
+                "--strip-components=1",
+                "--exclude=mfdn*obdme*",
+            ])
+            if not keep_archives:
+                mcscript.control.call(["rm","-v",filename])
+        os.chdir(os.path.join(target_run_results_prefix,"wf"))
+        for filename in glob.glob("*.tar"):
+            mcscript.control.call([
+                "tar","xvf",filename,
+                "--strip-components=1",
+                "--totals"
+            ])
+            if not keep_archives:
+                mcscript.control.call(["rm","-v",filename])
 
     os.chdir(library_base)
 
