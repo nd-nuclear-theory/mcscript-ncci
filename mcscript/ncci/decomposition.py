@@ -197,16 +197,24 @@ def decomposition_operator(
     proton and neuton spin coefficients.
 
     Arguments:
+
         nuclide (tuple): (Z,N) of nuclide for the coefficient file
+
         Nmax (int): Nmax
+
         decomposition_type (str): identifier for decomposition type (e.g., "U3SpSnS")
-        decomposition_path (str,list[str], optional): path to decomposition files
+
+        decomposition_path (str,list[str], optional): path to decomposition
+        files (defaults to environ.decomposition_dir_list)
+
         coef_filename_format (str, optional): format template for coef filename
+
         swap (bool,optional): whether swapping Z and N is needed to find the decomposition files
+
     """
 
 
-    (decomposition_operator,use_coefs) = decomposition_operator_registry[decomposition_type]
+    (the_decomposition_operator,use_coefs) = decomposition_operator_registry[decomposition_type]
 
     if use_coefs:
         coefs = read_decomposition_operator_coefs(
@@ -217,9 +225,9 @@ def decomposition_operator(
             coef_filename_format,
             verbose
             )
-        operator = decomposition_operator(nuclide,Nmax,hw,coefs,swap)
+        operator = the_decomposition_operator(nuclide,Nmax,hw,coefs,swap)
     else:
-        operator = decomposition_operator(nuclide,Nmax,hw)
+        operator = the_decomposition_operator(nuclide,Nmax,hw)
 
     return operator
 
