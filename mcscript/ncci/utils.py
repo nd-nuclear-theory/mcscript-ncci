@@ -35,6 +35,8 @@ def nuclide_string(nuclide, **kwargs):
     >>> nuclide_string(**task)
         "Z02-N02"
 
+    Note: Equivalent to mfdnres.tools.nuclide_str().
+
     Arguments:
         nuclide (tuple of int): (Z,N) of nuclide
     """
@@ -88,6 +90,8 @@ def oscillator_length(hw):
 
     b(hw) = (hbar c)/[(m_N c^2) (hbar omega)]^(1/2)
 
+    Note: A copy is also found in mfdnres.ncci.
+
     Arguments:
         hw (numeric): hbar omega in MeV
 
@@ -101,6 +105,8 @@ def hw_from_oscillator_length(b):
     """Calculate oscillator frequency for given oscillator length.
 
     hw(b) = (hbar c)^2/[(m_N c^2) (b^2)]
+
+    Note: A copy is also found in mfdnres.ncci.
 
     Arguments:
         b (numeric): oscillator length in fm
@@ -187,6 +193,8 @@ def N0_for_nuclide(nuclide):
     Natural parity grade can then be obtained as N0_for_nuclide(nuclide)%2.
 
     Inspired by spncci lgi::Nsigma0ForNuclide.
+
+    Note: A copy is also found in mfdnres.ncci.
 
     Arguments:
         nuclide (tuple): (Z,N) for nuclide
