@@ -491,7 +491,7 @@ def task_handler_mfdn_decomposition_pre(task, postfix=""):
     decomp_data = mfdnres.decomposition_io.parse_decomp_file(target_decomposition_filename)
 
     # define decomposition operator (if not provided)
-    if decomposition_type is not None:
+    if task.get("hamiltonian") is None:
         coefs = list(decomp_data["coefficients"].values())
         the_decomposition_operator, use_coefs = decomposition.decomposition_operator_registry[decomposition_type]
         print(coefs, the_decomposition_operator, use_coefs)
