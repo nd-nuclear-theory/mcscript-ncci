@@ -15,8 +15,6 @@
     
         qsubm mfdndecomp03 --pool=Nmax04 --threads=8 --ranks=1 --phase=1
     
-        ## qsubm mfdndecomp03 --pool=Nmax04 --threads=1 --ranks=6 --phase=1
-    
         qsubm mfdndecomp03 --pool="*" --phase=2
 
     Requires previously running:
@@ -110,7 +108,7 @@ def wf_source_M(qn):
         # even half-integer
         M = (0.0 if J==0.0 else 1.0)
     return M
-decomposition_type_list = ["Nex", "U3SpSnS"]
+decomposition_type_list = ["U3SpSnS"]
 decomposition_max_iterations = 100
 decomposition_Nmax_list = [2, 4]
 decomposition_truncation_template_run = "mfdncounting02"
@@ -129,7 +127,7 @@ tasks = [
         "use_coulomb": coulomb,
 
         # decomposition
-        "hamiltonian": ncci.decomposition.decomposition_operator(nuclide,decomposition_Nmax,hw,decomposition_type,verbose=False),
+        ## "hamiltonian": ncci.decomposition.decomposition_operator(nuclide,decomposition_Nmax,hw,decomposition_type,verbose=False),
         "decomposition_type": decomposition_type,
 
         # wf selection

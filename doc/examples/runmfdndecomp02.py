@@ -15,6 +15,9 @@
     03/27/25 (mac): Rename from runmfdn14 to runmfdndecomp02.
     07/21/25 (mac): Switch to wf selection by "wf_source_runs" and "wf_source_selector".
     07/21/25 (mac): Reduce number of iterations to match maximum number of eigenvalues.
+    09/11/26 (mac):
+        + Remove explicit Hamiltonian specification, for use with new decomp files.
+        + Reduce mesh size and remove Nex (prone to crashing due to degenerate 0 eigenvalue) operator.
 
 """
 
@@ -65,7 +68,7 @@ Nmax_range = (2, 4, 2)
 Nmax_list = mcscript.utils.value_range(*Nmax_range)
 
 # hw
-hw_range = (15, 20, 5)
+hw_range = (15, 15, 5)
 hw_list = mcscript.utils.value_range(*hw_range)
 
 # decomposition
@@ -74,8 +77,8 @@ qn_list_by_Nmax={
     # quantum numbers (J,g,n) for states to decompose at each Nmax
     Nmax: [
         (1.0,0,1),
-        (3.0,0,1),
-        (0.0,0,1),
+        ## (3.0,0,1),
+        ## (0.0,0,1),
     ]
     for Nmax in Nmax_list
 }
@@ -90,8 +93,8 @@ def wf_source_M(qn):
         # even half-integer
         M = (0.0 if J==0.0 else 1.0)
     return M
-decomposition_type_list = ["L", "S", "Nex", "U3SpSnS"]
-decomposition_max_iterations = 110
+decomposition_type_list = ["L", "S", "U3SpSnS"]
+decomposition_max_iterations = 100
 
 ##################################################################
 # build task list
@@ -107,7 +110,7 @@ tasks = [
         "use_coulomb": coulomb,
 
         # decomposition
-        "hamiltonian": ncci.decomposition.decomposition_operator(nuclide,Nmax,hw,decomposition_type,verbose=False),
+        ##"hamiltonian": ncci.decomposition.decomposition_operator(nuclide,Nmax,hw,decomposition_type,verbose=False),
         "decomposition_type": decomposition_type,
 
         # wf selection

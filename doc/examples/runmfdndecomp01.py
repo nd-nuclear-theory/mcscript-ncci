@@ -1,7 +1,8 @@
 """runmfdndecomp01.py
 
     "Bare bones" example of Lanczos decomposition with MFDn, for an explicitly
-    specified operator (i.e., not using predefined "decomposition types").
+    specified decoposition ("Hamiltonian") operator (i.e., not using predefined
+    "decomposition types").
 
     Decomposition is by the total number of oscillator quanta in the NCCI
     configuration, that is, by the Ntot operator.  Then the Nex operator (which
@@ -16,7 +17,6 @@
     and the descriptor within that run
 
        "Z3-N3-Daejeon16-coul1-hw15.000-a_cm50-Nmax04-Mj1.0-lan600-tol1.0e-06"
-
 
     This example accompanies the decomposition tutorial
     decomposition-tutorial.md.
@@ -60,6 +60,7 @@ ncci.environ.operator_dir_list = [
 
 # decomposition coefficient paths
 ncci.environ.decomposition_dir_list = [
+    "Z03-N03",
 ]
 
 ##################################################################
@@ -88,9 +89,7 @@ hw_list = mcscript.utils.value_range(*hw_range)
 wf_source_run_list = ["mfdn13"]
 qn = (1.0,0,1)
 M = 1.0
-## decomposition_type = "Ntot"
-decomposition_type_list = ["Ntot", "Nex"]
-## decomposition_max_iterations = 1200  # TODO (mac): Reduce (to make example run faster) and update tutorial.
+decomposition_type_list = ["NexByNtot", "Nex"]
 decomposition_max_iterations = 100
 
 ##################################################################
@@ -130,7 +129,7 @@ tasks = [
         ## "hamiltonian": ncci.operators.tb.Ntotal(A, hw),
         "hamiltonian": (
             ncci.operators.tb.Ntotal(A, hw)  # Ntot
-            if decomposition_type=="Ntot" else
+            if decomposition_type=="NexByNtot" else
             ncci.operators.tb.Nex(nuclide, hw)  # Nex
         ),
         "decomposition_type": decomposition_type,

@@ -1,0 +1,17 @@
+# manually generated file for Nex decomposition obtained from Ntot operator
+
+[Coefficients]
+# Manually generated decomposition operator.
+
+[Statistics]
+num_entries = 3
+num_eigenvalues = 3
+
+[Labels]
+N_omega
+
+[Eigenvalues]
+     0      2.0
+     2      4.0
+     4      6.0
+
