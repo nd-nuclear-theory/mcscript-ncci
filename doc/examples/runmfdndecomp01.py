@@ -21,6 +21,16 @@
     This example accompanies the decomposition tutorial
     decomposition-tutorial.md.
 
+    Example invocation:
+
+        qsubm mfdndecomp01 --toc
+
+        qsubm mfdndecomp01 --pool="*" --serialthreads=8 --phase=0
+
+        qsubm mfdndecomp01 --pool=Nmax04 --threads=8 --ranks=1 --phase=1
+
+        qsubm mfdndecomp01 --pool="*" --phase=2
+
     Ensure that the wave function and task data results of runmfdn13.py are in
     the current NCCI_LIBRARY_PATH.
 

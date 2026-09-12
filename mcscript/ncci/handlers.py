@@ -72,7 +72,8 @@ University of Notre Dame
 - 02/06/26 (seb): Update norm output for strength function runs.
 - 02/09/26 (seb): Remove mistakenly added text from tbme handler.
 - 05/15/26 (seb): Update strength function output to be consistent with existing parsers.
-- 08/24/26 (mac): Add support for decompositions using decomposition data files.
+- 08/24/26 (mac): Add support for decompositions using decomposition data files (restricted to legacy decomposition types).
+- 09/12/26 (mac): Add support for decompositions using decomposition data files (constructing operator as general linear combination).
 """
 import glob
 import os
@@ -491,17 +492,8 @@ def task_handler_mfdn_decomposition_pre(task, postfix=""):
     decomp_data = mfdnres.decomposition_io.parse_decomp_file(target_decomposition_filename)
 
     # define decomposition operator (if not provided)
-    if task.get("hamiltonian") is None:
-        coefs = list(decomp_data["coefficients"].values())
-        the_decomposition_operator, use_coefs = decomposition.decomposition_operator_registry[decomposition_type]
-        print(coefs, the_decomposition_operator, use_coefs)
-        if use_coefs:
-            swap = False  # TODO (mac): restore support for swapping Z and N
-            operator = the_decomposition_operator(nuclide,Nmax,hw,coefs,swap)
-        else:
-            operator = the_decomposition_operator(nuclide,Nmax,hw)
-            
-        task.setdefault("hamiltonian", operator)        
+    decomposition_operator = decomposition.decomposition_operator_from_coefs(nuclide, hw, decomp_data["coefficients"])
+    task.setdefault("hamiltonian", decomposition_operator)        
 
     # generate operators
     task_handler_mfdn_pre(task, postfix)

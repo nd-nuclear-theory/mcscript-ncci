@@ -9,6 +9,19 @@
     Debugging: Some tasks may intermittently fail.  This appears to be related
     to numerical issues in the presence of highly-degenerate 0 eigenvalues.
 
+    Example invocation:
+
+        qsubm mfdndecomp02 --toc
+    
+        qsubm mfdndecomp02 --pool="*" --serialthreads=8 --phase=0
+    
+        qsubm mfdndecomp02 --pool=Nmax02 --threads=8 --ranks=1 --phase=1
+    
+        qsubm mfdndecomp02 --pool=Nmax04 --threads=8 --ranks=1 --phase=1
+    
+        qsubm mfdndecomp02 --pool="*" --phase=2
+
+
     Patrick J. Fasano, Mark A. Caprio
     University of Notre Dame
 

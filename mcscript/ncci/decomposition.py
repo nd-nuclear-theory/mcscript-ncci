@@ -14,76 +14,28 @@ University of Notre Dame
     - 04/24/22 (zz):
         +  Add T operator.
     - 06/05/23 (mac): Use decomposition coefficient search path from environ.
+    - 09/12/26 (mac): Reimplement decomposition operator as general linear combination of basis operators.
 """
-
-import glob
-import os
 
 import numpy as np
 
 import mcscript.utils
 from . import (
     operators,
-    environ,
 )
 
 ################################################################
-# annealing coefficient input
+# decomposition basis operator library
 ################################################################
 
-def read_decomposition_operator_coefs(
-        nuclide,
-        Nmax,
-        decomposition_type,
-        decomposition_path,
-        coef_filename_format,
-        verbose=False
-):
-    """ Read decomposition operator coefficients from coefs.dat file.
-
-    Arguments:
-        nuclide (tuple): (Z,N) of nuclide
-        Nmax (int): Nmax
-        decomposition_type (str): identifier for decomposition type (e.g., "U3SpSnS")
-        decomposition_path (str,list[str], optional): path to decomposition coefficient file
-        coef_filename_format (str, optional): format template for decomposition coefficient filename
-
-    Returns:
-        coefs (np.array): vector of coefficients
-    """
-
-
-    coef_filename = coef_filename_format.format(nuclide=nuclide,Nmax=Nmax,decomposition_type=decomposition_type)
-    if type(decomposition_path)==str:
-        coefs = np.loadtxt(os.path.join(decomposition_path,coef_filename))
-    else:
-        if decomposition_path is None:
-            decomposition_path = environ.decomposition_dir_list
-        coefs = np.loadtxt(
-            mcscript.utils.search_in_subdirectories(
-                environ.data_dir_decomposition_list,
-                decomposition_path,
-                coef_filename,
-                error_message="file not found",
-                verbose=verbose
-            )
-        )
-
-    if (verbose):
-        print("nuclide {}, Nmax {}, operator {}: {}".format(nuclide,Nmax,decomposition_type,coefs))
-    return coefs
-
-################################################################
-# decomposition operator library
-################################################################
-
-# Operators for use in generating Lanczos decomposition operator TBMEs.
+# Basis operators for use in generating Lanczos decomposition operator TBMEs.
 #
-# Accept standardized arguments (nuclide,Nmax,hw) or (nuclide,Nmax,hw,coefs).
+# Operators must accept standardized arguments (nuclide,hw) and return a
+# CoefficientDict.
 #
-# The SU(3) and Sp(3,R) operators currently rely upon external TBME files for
-# the one-body and two-body parts of the Casimir operators ("CSU3-U", etc.), to
-# be read in as tbme_sources:
+# Note: The SU(3) and Sp(3,R) operators currently rely upon external TBME files
+# for the one-body and two-body parts of the Casimir operators ("CSU3-U", etc.),
+# to be read in as tbme_sources:
 #
 #      # two-body sources
 #      "tbme_sources": [
@@ -96,140 +48,96 @@ def read_decomposition_operator_coefs(
 # These could ultimately be generated on-the-fly:
 #     runs/mcaprio/h2mixer/symplectic-casimir_h2mixer.in
 
-def L2_operator(nuclide,Nmax,hw):
-    return operators.tb.L2()
-def S2_operator(nuclide,Nmax,hw):
-    return operators.tb.S2()
-def T2_operator(nuclide,Nmax,hw):
-    A = sum(nuclide)
-    return operators.tb.T2(A)
-def LS_operator(nuclide,Nmax,hw,coefs,swap):
-    return mcscript.utils.dot(
-    	[operators.tb.S2(), operators.tb.L2()],
-    	coefs
-    	)
-def Nex_operator(nuclide,Nmax,hw):
+def identity_op(nuclide, hw):
+    """Identity decomposition basis operator."""
+    return operators.tb.identity()
+
+def Nex_op(nuclide, hw):
+    """Excitation quanta (Nex) decomposition basis operator."""
     return operators.tb.Nex(nuclide, hw)
-def CSU3_operator(nuclide,Nmax,hw):
+
+def CSU3_op(nuclide, hw):
+    """SU(3) Casimir decomposition basis operator."""
     A = sum(nuclide)
     return mcscript.utils.CoefficientDict({"CSU3-U": 1/(A-1), "CSU3-V": 1.0})
-def CSp3R_operator(nuclide,Nmax,hw):
+
+def CSp3R_op(nuclide, hw):
+    """Sp(3,R) Casimir decomposition basis operator."""
     A = sum(nuclide)
     return mcscript.utils.CoefficientDict({"CSp3R-U": 1/(A-1), "CSp3R-V": 1.0})
-def U3S_operator(nuclide,Nmax,hw,coefs,swap):
-    return mcscript.utils.dot(
-            [operators.tb.Nex(nuclide, hw), CSU3_operator(nuclide,Nmax,hw), operators.tb.S2()],
-            coefs
-            )
-def U3LS_operator(nuclide,Nmax,hw,coefs,swap):
-    return mcscript.utils.dot(
-            [operators.tb.Nex(nuclide, hw), CSU3_operator(nuclide,Nmax,hw), operators.tb.S2(),operators.tb.L2()],
-            coefs
-            )
 
-def U3SpSnS_operator(nuclide,Nmax,hw,coefs,swap):
-    if swap:
-        ops = [operators.tb.Nex(nuclide, hw), CSU3_operator(nuclide,Nmax,hw), operators.tb.Sn2(), operators.tb.Sp2(), operators.tb.S2()]
-    else:
-        ops = [operators.tb.Nex(nuclide, hw), CSU3_operator(nuclide,Nmax,hw), operators.tb.Sp2(), operators.tb.Sn2(), operators.tb.S2()]
-    return mcscript.utils.dot(ops,coefs)
+def L2_op(nuclide, hw):
+    """Squared orbital angular momentum (L^2) decomposition basis operator."""
+    return operators.tb.L2()
 
-def U3LSpSnS_operator(nuclide,Nmax,hw,coefs,swap):
-    if swap:
-        ops = [operators.tb.Nex(nuclide, hw), CSU3_operator(nuclide,Nmax,hw), operators.tb.Sn2(), operators.tb.Sp2(), operators.tb.S2(),operators.tb.L2()]
-    else:
-        ops = [operators.tb.Nex(nuclide, hw), CSU3_operator(nuclide,Nmax,hw), operators.tb.Sp2(), operators.tb.Sn2(), operators.tb.S2(),operators.tb.L2()]
-    return mcscript.utils.dot(ops,coefs)
+def Sp2_op(nuclide, hw):
+    """Squared proton spin (Sp^2) decomposition basis operator."""
+    return operators.tb.Sp2()
 
-def Sp3RS_operator(nuclide,Nmax,hw,coefs,swap):
-    return mcscript.utils.dot(
-            [CSp3R_operator(nuclide,Nmax,hw), operators.tb.S2()],
-            coefs
-            )
-def Sp3RSpSnS_operator(nuclide,Nmax,hw,coefs,swap):
-    if swap:
-        ops = [CSp3R_operator(nuclide,Nmax,hw), operators.tb.Sn2(), operators.tb.Sp2(), operators.tb.S2()]
-    else:
-        ops = [CSp3R_operator(nuclide,Nmax,hw), operators.tb.Sp2(), operators.tb.Sn2(), operators.tb.S2()]
-    return mcscript.utils.dot(ops,coefs)
+def Sn2_op(nuclide, hw):
+    """Squared neutron spin (Sn^2) decomposition basis operator."""
+    return operators.tb.Sn2()
+    
+def S2_op(nuclide, hw):
+    """Squared spin (S^2) decomposition basis operator."""
+    return operators.tb.S2()
 
-# registry of decomposition operators
+def T2_op(nuclide, hw):
+    """Squared isospin (T^2) decomposition basis operator."""
+    A = sum(nuclide)
+    return operators.tb.T2(A)
+
+# registry of decomposition basis operators
 #
-#     decomposition_type -> (decomposition_operator,use_coefs)
-#
-# For use in decomposition_operator wrapper.
+#     dict[str, callable]: identifier -> operator
 
-decomposition_operator_registry={
-    "L" : (L2_operator,False),
-    "S": (S2_operator,False),
-    "T": (T2_operator,False),
-    "LS": (LS_operator,True),
-    "Nex": (Nex_operator,False),
-    "SU3": (CSU3_operator,False),
-    "Sp3R": (CSp3R_operator,False),
-    "U3S": (U3S_operator,True),
-    "U3LS": (U3LS_operator,True),
-    "U3SpSnS": (U3SpSnS_operator,True),
-    "U3LSpSnS": (U3LSpSnS_operator,True),
-    "Sp3RS": (Sp3RS_operator,True),
-    "Sp3RSpSnS": (Sp3RSpSnS_operator,True),
+decomposition_basis_operator_registry = {
+    "identity": identity_op,
+    "Nex": Nex_op,
+    "CSU3": CSU3_op,
+    "Sp3R": CSp3R_op,
+    "L2": L2_op,
+    "Sp2": Sp2_op,
+    "Sn2": Sn2_op,
+    "S2": S2_op,
+    "T2": T2_op,
 }
 
 
 ################################################################
-# decomposition operator wrapper
+# constructing decomposition operator from basis
 ################################################################
 
-def decomposition_operator(
-        nuclide,Nmax,hw,decomposition_type,
-        decomposition_path=None,
-        coef_filename_format = "decomposition_Z{nuclide[0]:02d}_N{nuclide[1]:02d}_Nmax{Nmax:02d}_{decomposition_type}_coefs.dat",
-        swap=False,
-        verbose=False
-):
-    """Generate Lanczos decomposition operator.
+def decomposition_operator_from_coefs(nuclide, hw, coefs):
+    """Generate Lanczos decomposition operator from given coefficients.
 
-    For decomposition operator involving coefficients, uses annealing
-    coefficients provided by coefs.dat file.
+    Any operator registered in decomposition_basis_operator_registry may be
+    included in the coefficient dictionary.
 
-    If a coefficient file is available for the mirror nuclide, you
-    can read that file, but specify swap=True to swap the roles of
-    proton and neuton spin coefficients.
+    If a coefficient file is available for the mirror nuclide, you can read that
+    file, but specify swap_pn=True to swap the roles of proton and neuton spin
+    coefficients (or any other registered proton/neutron operators).
 
     Arguments:
 
-        nuclide (tuple): (Z,N) of nuclide for the coefficient file
+        nuclide (tuple): (Z,N) of nuclide for the coefficient file.
 
-        Nmax (int): Nmax
+        hw (float): hw basis paremeter.
 
-        decomposition_type (str): identifier for decomposition type (e.g., "U3SpSnS")
-
-        decomposition_path (str,list[str], optional): path to decomposition
-        files (defaults to environ.decomposition_dir_list)
-
-        coef_filename_format (str, optional): format template for coef filename
-
-        swap (bool,optional): whether swapping Z and N is needed to find the decomposition files
+        coefs (dict[str, float]): Coefficients by operator identifier.
 
     """
 
+    decomposition_operator = mcscript.utils.CoefficientDict()
+    
+    for identifier, coef in coefs.items():
+        if identifier not in decomposition_basis_operator_registry:
+            raise ValueError("Requested basis operator ({}) not found in decomposition_basis_operator_registry.".format(identifier))
+        basis_operator = decomposition_basis_operator_registry[identifier](nuclide, hw)
+        decomposition_operator += coef*basis_operator
+            
+    return decomposition_operator
 
-    (the_decomposition_operator,use_coefs) = decomposition_operator_registry[decomposition_type]
-
-    if use_coefs:
-        coefs = read_decomposition_operator_coefs(
-            nuclide,
-            Nmax,
-            decomposition_type,
-            decomposition_path,
-            coef_filename_format,
-            verbose
-            )
-        operator = the_decomposition_operator(nuclide,Nmax,hw,coefs,swap)
-    else:
-        operator = the_decomposition_operator(nuclide,Nmax,hw)
-
-    return operator
 
 ################################################################
 # decomposition task descriptor
