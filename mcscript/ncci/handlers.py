@@ -639,7 +639,7 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
 
     # copy results out
     descriptor = task["metadata"]["descriptor"]
-    filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+    filename_prefix = "{:s}-decomp-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
 
     # ...copy res file
     res_filename = "{:s}.res".format(filename_prefix)
