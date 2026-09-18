@@ -619,30 +619,38 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
     )
     mfdn_driver.run_mfdn(task=task, postfix=postfix)
 
-    # copy out decomposition + Lanczos data
-    descriptor = task["metadata"]["descriptor"]
-    filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+    # generate decomposition file -- overwriting mfdn.res
+    print("Reading decomposition data...")
     source_decomposition_filename = "decomp.decomp"
-    intermediate_decomposition_filename = "decomp-lanczos.decomp"
-    target_decomposition_filename = "{:s}.decomp".format(filename_prefix)
-    source_lanczos_filename = os.path.join(work_dir, "mfdn_alphabeta.dat")
     decomp_data = mfdnres.decomposition_io.parse_decomp_file(source_decomposition_filename)
+
+    print("Reading Lanczos data...")
+    source_lanczos_filename = os.path.join(work_dir, "mfdn_alphabeta.dat")
     alpha_beta_array = np.loadtxt(source_lanczos_filename, usecols=(1, 2), ndmin=2)
     decomp_data["lanczos"] = alpha_beta_array
-    print("Writing {}...".format(intermediate_decomposition_filename))
-    lines = mfdnres.decomposition_io.generate_decomp_file(decomp_data, header_comment_lines=["mcscript-ncci", "Descriptor: {}".format(descriptor)])
+
+    decomposition_results_filename = os.path.join(work_dir, "mfdn.res")  # overwrite existing mfdn.res
+    print("Writing decomposition and Lanczos data to {}...".format(decomposition_results_filename))
+    lines = mfdnres.decomposition_io.generate_decomp_file(decomp_data, header_comment_lines=["mcscript-ncci"])
     output_str = "\n".join(lines) + "\n"
-    data_file = open(intermediate_decomposition_filename, "w")
+    data_file = open(decomposition_results_filename, "w")
     data_file.write(output_str)
     data_file.close()
+
+    # copy results out
+    descriptor = task["metadata"]["descriptor"]
+    filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+
+    # ...copy res file
+    res_filename = "{:s}.res".format(filename_prefix)
     mcscript.task.save_results_single(
-        task, intermediate_decomposition_filename, target_decomposition_filename, "lanczos",
+        task, os.path.join(work_dir, "mfdn.res"), res_filename, "res", command="cp",
     )
 
-    # copy out lanczos file -- DEPRECATED
-    target_lanczos_filename = "{:s}.lanczos".format(filename_prefix)
+    # ...copy lanczos file -- DEPRECATED
+    lanczos_filename = "{:s}.lanczos".format(filename_prefix)
     mcscript.task.save_results_single(
-        task, source_lanczos_filename, target_lanczos_filename, "lanczos",
+        task, source_lanczos_filename, lanczos_filename, "lanczos",
     )
     
    

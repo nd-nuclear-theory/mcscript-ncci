@@ -1,5 +1,4 @@
 # mcscript-ncci
-# Descriptor: Z3-N3-Daejeon16-coul1-hw15.000-Nmax02-J01.0-g0-n01-L-dNmax02-dlan0100
 
 [Coefficients]
 L2 = +1.000000e+00
