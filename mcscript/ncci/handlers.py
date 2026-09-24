@@ -624,7 +624,7 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
     mfdn_driver.run_mfdn(task=task, postfix=postfix)
     mfdn_driver.save_mfdn_output(task, postfix, save_mfdn_res=False)
 
-    # generate decomposition file -- overwriting mfdn.res
+    # generate decomposition results file
     print("Reading decomposition data...")
     source_decomposition_filename = "decomp.decomp"
     decomp_data = mfdnres.decomposition_io.parse_decomp_file(source_decomposition_filename)
@@ -634,7 +634,7 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
     alpha_beta_array = np.loadtxt(source_lanczos_filename, usecols=(1, 2), ndmin=2)
     decomp_data["lanczos"] = alpha_beta_array
 
-    decomposition_results_filename = os.path.join(work_dir, "mfdn.res")  # overwrite existing mfdn.res
+    decomposition_results_filename = os.path.join(work_dir, "decomp.res")
     print("Writing decomposition and Lanczos data to {}...".format(decomposition_results_filename))
     lines = mfdnres.decomposition_io.generate_decomp_file(decomp_data, header_comment_lines=["mcscript-ncci"])
     output_str = "\n".join(lines) + "\n"
@@ -649,7 +649,7 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
     # ...copy res file
     res_filename = "{:s}.res".format(filename_prefix)
     mcscript.task.save_results_single(
-        task, os.path.join(work_dir, "mfdn.res"), res_filename, "res", command="cp",
+        task, decomposition_results_filename, res_filename, "res", command="cp",
     )
 
     # ...copy lanczos file -- DEPRECATED
