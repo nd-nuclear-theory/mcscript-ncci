@@ -80,6 +80,7 @@ University of Notre Dame
 - 05/21/25 (mac): Ensure single particle orbitals are set in all run modes.
 - 08/19/25 (mac): In save_mfdn_task_data, gracefully handle missing h2mixer.in and tbo_names.dat files.
 - 02/23/26 (mac): Provide check on number of MPI ranks if given "num_segments" task option.
+- 03/27/26 (mac): Move parameter max2K from obslist to inputlist.
 - 09/23/26 (mac): Add save_mfdn_output(), and remove copy out of mfdn.out and mfdn.res from run_mfdn().
 """
 import errno
@@ -297,7 +298,11 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         # obdme: parameters
         inputlist["obdme"] = task.get("calculate_obdme", True)
         if task.get("obdme_multipolarity") is not None:
-            obslist["max2K"] = round(2*task["obdme_multipolarity"])
+            if task.get("legacy_obdme_multipolarity_in_obslist"):
+                # legacy support for older versions of CPU code which expect max2K in /obslist/
+                obslist["max2K"] = round(2*task["obdme_multipolarity"])
+            else:
+                inputlist["max2K"] = round(2*task["obdme_multipolarity"])
 
         # construct transition observable input if reference states given
         #
