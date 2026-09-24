@@ -72,6 +72,7 @@ University of Notre Dame
 - 02/06/26 (seb): Update norm output for strength function runs.
 - 02/09/26 (seb): Remove mistakenly added text from tbme handler.
 - 05/15/26 (seb): Update strength function output to be consistent with existing parsers.
+- 09/23/26 (mac): Suppress copying out mfdn.res for decomposition-type mfdn runs.
 """
 import glob
 import os
@@ -117,6 +118,7 @@ def task_handler_mfdn_dimension(task, postfix=""):
         task=task, run_mode=modes.MFDnRunMode.kDimension, postfix=postfix
     )
     mfdn_driver.run_mfdn(task=task, postfix=postfix)
+    mfdn_driver.save_mfdn_output(task, postfix)
 
 
 def task_handler_mfdn_nonzeros(task, postfix=""):
@@ -134,6 +136,7 @@ def task_handler_mfdn_nonzeros(task, postfix=""):
         task=task, run_mode=modes.MFDnRunMode.kNonzeros, postfix=postfix
     )
     mfdn_driver.run_mfdn(task=task, postfix=postfix)
+    mfdn_driver.save_mfdn_output(task, postfix)
 
 
 ################################################################
@@ -245,6 +248,7 @@ def task_handler_mfdn_run(task, postfix=""):
         mfdn_driver = default_mfdn_driver
     mfdn_driver.generate_mfdn_input(task=task, postfix=postfix)
     mfdn_driver.run_mfdn(task=task, postfix=postfix)
+    mfdn_driver.save_mfdn_output(task, postfix)
 
     
 def task_handler_mfdn(task, postfix=""):
@@ -574,6 +578,7 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
         task=task, run_mode=modes.MFDnRunMode.kLanczosOnly, postfix=postfix
     )
     mfdn_driver.run_mfdn(task=task, postfix=postfix)
+    mfdn_driver.save_mfdn_output(task, postfix, save_mfdn_res=False)
 
     # copy out lanczos file
     descriptor = task["metadata"]["descriptor"]
@@ -672,6 +677,7 @@ def task_handler_mfdn_natorb_run(task, postfix):
     task["basis_mode"] = modes.BasisMode.kGeneric
     mfdn_driver.generate_mfdn_input(task=task, postfix=postfix)
     mfdn_driver.run_mfdn(task=task, postfix=postfix)
+    mfdn_driver.save_mfdn_output(task, postfix)
 
     
 task_handler_mfdn_natorb_post = task_handler_mfdn_post
@@ -1017,6 +1023,7 @@ def task_handler_mfdn_strength_pre(task, postfix=""):
 
     tbme.generate_tbme(task, postfix=postfix)
 
+    
 def task_handler_mfdn_strength_apply(task, postfix=""):
     """Task handler for apply operator phase of Lanczos trick strength function
     calculation, assuming oscillator basis.
@@ -1166,6 +1173,8 @@ def task_handler_mfdn_strength_apply(task, postfix=""):
     mcscript.task.save_results_single(
         task, res_filename, res_filename, "res"
     )
+
+    
 def task_handler_mfdn_strength_decomp(task, postfix= ""):
     """Task handler for decomposition phase of Lanczos trick strength function
     calculation, assuming oscillator basis.
@@ -1193,6 +1202,7 @@ def task_handler_mfdn_strength_decomp(task, postfix= ""):
         task=task, run_mode=modes.MFDnRunMode.kNormal, postfix=postfix
     )
     mfdn_driver.run_mfdn(task=task, postfix=postfix)
+    mfdn_driver.save_mfdn_output(task, postfix, save_mfdn_res=False)
 
     # copy out lanczos file
     descriptor = task["metadata"]["descriptor"]

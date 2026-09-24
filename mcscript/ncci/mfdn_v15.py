@@ -80,6 +80,7 @@ University of Notre Dame
 - 05/21/25 (mac): Ensure single particle orbitals are set in all run modes.
 - 08/19/25 (mac): In save_mfdn_task_data, gracefully handle missing h2mixer.in and tbo_names.dat files.
 - 02/23/26 (mac): Provide check on number of MPI ranks if given "num_segments" task option.
+- 09/23/26 (mac): Add save_mfdn_output(), and remove copy out of mfdn.out and mfdn.res from run_mfdn().
 """
 import errno
 import os
@@ -429,23 +430,6 @@ def run_mfdn(task, postfix=""):
     # leave work directory
     os.chdir("..")
 
-    # copy results out
-    print("Saving basic output files...")
-    descriptor = task["metadata"]["descriptor"]
-    filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
-
-    # ...copy res file
-    res_filename = "{:s}.res".format(filename_prefix)
-    mcscript.task.save_results_single(
-        task, os.path.join(work_dir, "mfdn.res"), res_filename, "res", command="cp",
-    )
-
-    # ...copy out file
-    out_filename = "{:s}.out".format(filename_prefix)
-    mcscript.task.save_results_single(
-        task, os.path.join(work_dir, "mfdn.out"), out_filename, "out", command="cp",
-    )
-
 
 def extract_natural_orbitals(task, postfix=""):
     """Extract OBDME files for subsequent natural orbital iterations.
@@ -481,6 +465,41 @@ def extract_natural_orbitals(task, postfix=""):
         ]
     )
 
+def save_mfdn_output(task, postfix="", save_mfdn_res=True):
+    """Save MFDn-generated mfdn.out and mfdn.res (optional) files.
+
+    Saving of mfdn.res is optional since can be irrelevant, e.g., in
+    decomposition runs.
+
+    Arguments:
+        task (dict): as described in docs/task.md
+        postfix (str, optional): identifier to add to generated files
+        save_mfdn_res (boolean, optional): whether or not to save mfdn.res
+
+    """
+    # convenience definitions
+    descriptor = task["metadata"]["descriptor"]
+    work_dir = "work{:s}".format(postfix)
+
+    # copy results out
+    print("Saving basic output files...")
+    descriptor = task["metadata"]["descriptor"]
+    filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+
+    # ...copy out file
+    out_filename = "{:s}.out".format(filename_prefix)
+    mcscript.task.save_results_single(
+        task, os.path.join(work_dir, "mfdn.out"), out_filename, "out", command="cp",
+    )
+
+    # ...copy res file
+    res_filename = "{:s}.res".format(filename_prefix)
+    if save_mfdn_res:
+        mcscript.task.save_results_single(
+            task, os.path.join(work_dir, "mfdn.res"), res_filename, "res", command="cp",
+        )
+
+    
 def save_mfdn_task_data(task, postfix=""):
     """Collect and save working information.
 
