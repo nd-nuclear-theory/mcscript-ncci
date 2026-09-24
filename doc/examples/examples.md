@@ -276,16 +276,18 @@ start of each run script, for further commentary.
       Namely, these are the files (`mfdn_smwf.info` and `mfdn_MBgroups`) which
       provide the indexing information for a wave function.  These files are
       needed for codes which postprocess MFDn wave functions and write out a new
-      wave function (`apply-operator`, `smwf-truncate`, etc.)  and thus for
-      decomposition runs with truncation, to provide a "template" for the output
-      wave function.
+      wave function (`apply-operator`, `smwf-truncate`, etc.), to provide a
+      "template" for the output wave function.  Since decomposition runs with
+      truncation invoke `smwf-truncate`, they need a template wave functions for
+      the target truncation as well.
     
       Generates wave function indexing files matching the cases (M=1.0, Nmax=2/4)
       used for the target wave function truncations in `runmfdndecomp03`.
       
-      This run also demonstrates generating template files with different wave
-      function segmentation (i.e., different number of "diagonals") for the same
-      Nmax (in the case of Nmax=4).
+      This run also demonstrates generating template files with different
+      choices for the wave function segmentation (i.e., different number of
+      "diagonals") for the same Nmax (in the case of Nmax=4).  This segmentation
+      must be an odd integer, as required by MFDn.
       
       - Phase 0: Count dimension and number of nonzeros.  This also generates
         the template wave function indexing files.  file.

@@ -83,8 +83,9 @@ mcscript.task.init(
         ncci.handlers.task_handler_dimension,
         ncci.handlers.task_handler_nonzeros,
         ncci.handlers.task_handler_mfdn_post,
-    ]
-    )
+    ],
+    archive_phase_handler_list=[ncci.handlers.archive_handler_mfdn],  # or use ncci.handlers.archive_handler_mfdn_hsi to write to tape as well
+)
 
 ################################################################
 # termination

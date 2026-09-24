@@ -593,3 +593,11 @@ matrix elements in `mfdn` or to calculations in the postprocessor.
 - `mfdn_inputlist` : `dict`
    - additional key-value pairs to pass through to MFDn, e.g., `{"blksize":
      16000}` or `{"observables_only": True}`
+
+----------------------------------------------------------------
+## descriptor parameters ##
+
+- `trial` : `int`
+   - Used to distinguish multiple runs which would otherwise have identical descriptors.
+   - This is useful, e.g., to carry out multiple timing trials for otherwise
+     identical runs, or for replicability trials.

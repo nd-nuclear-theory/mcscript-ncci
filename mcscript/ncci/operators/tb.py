@@ -641,7 +641,9 @@ def Qnintr(nuclide):
 ################################################################
 
 def Hamiltonian(
-        A, hw, a_cm=0., hw_cm=None, use_interaction=True, use_coulomb=True, include_ke = True, hw_coul=None, hw_coul_rescaled=None,
+        A, hw, a_cm=0., hw_cm=None,
+        use_interaction=True, use_coulomb=True, include_ke = True,
+        hw_coul=None, hw_coul_rescaled=None,
         **kwargs,
 ):
     """A standard Hamiltonian for NCCI runs.
