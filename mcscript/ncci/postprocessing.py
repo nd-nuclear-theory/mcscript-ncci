@@ -105,6 +105,8 @@ def identify_obdme_files(work_dir):
 
        obme_files (dict): Mapping of (qn_bra, qn_ket) to (filename, code).
 
+           code (str): Code ("mfdn" or "transitions") generating OBDME files.
+
     """
 
     # get filenames for static densities and extract quantum numbers
