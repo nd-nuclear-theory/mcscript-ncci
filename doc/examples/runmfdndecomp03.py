@@ -41,7 +41,6 @@ import mcscript.utils
 
 import mcscript.ncci as ncci
 import mcscript.ncci.mfdn_v15
-import mcscript.ncci.decomposition
 
 # initialize mcscript
 mcscript.control.init()
@@ -127,7 +126,6 @@ tasks = [
         "use_coulomb": coulomb,
 
         # decomposition
-        ## "hamiltonian": ncci.decomposition.decomposition_operator(nuclide,decomposition_Nmax,hw,decomposition_type,verbose=False),
         "decomposition_type": decomposition_type,
 
         # wf selection

@@ -25,6 +25,14 @@ from . import (
 )
 
 ################################################################
+# support legacy decomposition operator
+################################################################
+
+from deprecated import deprecated
+from .legacy import decomposition_operator
+decomposition_operator = deprecated(reason="use decomposition data files")(decomposition_operator.decomposition_operator)  # beware overload of module name decomposition_operator
+
+################################################################
 # decomposition basis operator library
 ################################################################
 

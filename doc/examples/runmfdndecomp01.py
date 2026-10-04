@@ -1,8 +1,11 @@
 """runmfdndecomp01.py
 
-    "Bare bones" example of Lanczos decomposition with MFDn, for an explicitly
-    specified decoposition ("Hamiltonian") operator (i.e., not using predefined
-    "decomposition types").
+    WARNING: This is NOT recommended as a model for decomposition, but is
+    provided in support of a tutorial.  This is a "bare bones" example of
+    Lanczos decomposition with MFDn, for an explicitly specified decoposition
+    ("Hamiltonian") operator, i.e., not using predefined "decomposition types".
+    Please skip to runmfdndecomp02.py or runmfdndecomp03.py for a model of
+    typical decomposition run.
 
     Decomposition is by the total number of oscillator quanta in the NCCI
     configuration, that is, by the Ntot operator.  Then the Nex operator (which
@@ -54,7 +57,6 @@ import mcscript.utils
 
 import mcscript.ncci as ncci
 import mcscript.ncci.mfdn_v15
-import mcscript.ncci.decomposition
 
 # initialize mcscript
 mcscript.control.init()

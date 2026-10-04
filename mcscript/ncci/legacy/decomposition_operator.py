@@ -1,9 +1,9 @@
-"""decomposition.py -- utilities for Lanczos decompositions
+"""decomposition_operator.py -- legacy implementation of decomposition operator
 
 Mark A. Caprio
 University of Notre Dame
 
-    - 02/23/21 (mac): Created, with refactored code from runaem0110.
+    - 02/23/21 (mac): Created (decomposition.py), with refactored code from runaem0110.
     - 02/22/21 (aem):
         +  Add U3LS type operators
         +  Add option to search list of paths for decomposition coefficients.
@@ -29,7 +29,7 @@ import os
 import numpy as np
 
 import mcscript.utils
-from . import (
+from .. import (
     operators,
     environ,
 )
@@ -237,29 +237,3 @@ def decomposition_operator(
         operator = the_decomposition_operator(nuclide,Nmax,hw)
 
     return operator
-
-################################################################
-# decomposition task descriptor
-################################################################
-
-def task_descriptor_decomposition(task):
-    """Task descriptor for decomposition.
-
-    Uses task's "wf_source_info" to generate descriptor for underlying wave
-    functions, then appends decomposition-specific fields to descriptor string.
-
-    """
-
-    template_string = (
-        "{source_wf_descriptor:s}"
-        "-J{source_wf_qn[0]:04.1f}-g{source_wf_qn[1]:1d}-n{source_wf_qn[2]:02d}"
-        "-{decomposition_type:s}-dlan{max_iterations:d}"
-    )
-
-    descriptor_function = task["wf_source_info"]["descriptor"]
-    descriptor_str = template_string.format(
-        source_wf_descriptor=descriptor_function(task["wf_source_info"]),
-        **task
-    )
-
-    return descriptor_str

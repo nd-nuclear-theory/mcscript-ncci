@@ -454,8 +454,8 @@ def task_handler_mfdn_decomposition_pre(task, postfix=""):
     work_dir = "work{:s}".format(postfix)
 
     # set some defaults
-    task.setdefault("diagonalization", True)  # to disable unnecessary obdme calculation
-    task.setdefault("calculate_obdme", False)  # to disable unnecessary obdme calculation
+    task.setdefault("diagonalization", True)
+    task.setdefault("calculate_obdme", False)
     # 08/08/25 (mac): Setting calculate_tbo to false leads to intermittent and
     # nondeterministic memory deallocation errors with mfdn commit 3f34aa7,
     # dependent upon OpenMP parameters.
@@ -468,36 +468,42 @@ def task_handler_mfdn_decomposition_pre(task, postfix=""):
     hw = task["hw"]
     decomposition_filename_template = task.get("decomposition_filename")
     decomposition_type = task.get("decomposition_type")
-    if decomposition_filename_template is None:
-        decomposition_filename_template = "Z{nuclide[0]:02d}-N{nuclide[1]:02d}-Nmax{Nmax:02d}-{decomposition_type}.decomp"
-    decomposition_basename = decomposition_filename_template.format(nuclide=nuclide,Nmax=Nmax,decomposition_type=decomposition_type)
-    if os.path.isabs(decomposition_basename):
-        # explicit path to decomposition file
-        source_decomposition_filename = decomposition_basename
-        if not os.path.isfile(source_decomposition_filename):
-            raise mcscript.exception.ScriptError("Decomposition file {} not found.".format(source_decomposition_filename))
+    user_provided_hamiltonian = "hamiltonian" in task  # decomposition operator provided by user (legacy)
+    if user_provided_hamiltonian:
+        print("WARN: Decomposition operator overriden by user as 'hamiltonian'.  Not using decomposition data.")
     else:
-        # standard search for decomposition file
-        source_decomposition_filename = mcscript.utils.search_in_subdirectories(
-            environ.data_dir_decomposition_list,
-            environ.decomposition_dir_list,
-            decomposition_basename,
-            error_message="file not found",
-            verbose=True
+        print("Finding decomposition data...")
+        if decomposition_filename_template is None:
+            decomposition_filename_template = "Z{nuclide[0]:02d}-N{nuclide[1]:02d}-Nmax{Nmax:02d}-{decomposition_type}.decomp"
+        decomposition_basename = decomposition_filename_template.format(nuclide=nuclide,Nmax=Nmax,decomposition_type=decomposition_type)
+        if os.path.isabs(decomposition_basename):
+            # explicit path to decomposition file
+            source_decomposition_filename = decomposition_basename
+            if not os.path.isfile(source_decomposition_filename):
+                raise mcscript.exception.ScriptError("Decomposition file {} not found.".format(source_decomposition_filename))
+        else:
+            # standard search for decomposition file
+            source_decomposition_filename = mcscript.utils.search_in_subdirectories(
+                environ.data_dir_decomposition_list,
+                environ.decomposition_dir_list,
+                decomposition_basename,
+                error_message="file not found",
+                verbose=True
+            )
+        print("Using decomposition data {}.".format(source_decomposition_filename))
+        target_decomposition_filename = "decomp.decomp"
+        mcscript.control.call(
+            [
+                "cp",
+                source_decomposition_filename,
+                target_decomposition_filename,
+            ]
         )
-    target_decomposition_filename = "decomp.decomp"
-    mcscript.control.call(
-        [
-            "cp",
-            source_decomposition_filename,
-            target_decomposition_filename,
-        ]
-    )
-    decomp_data = mfdnres.decomposition_io.parse_decomp_file(target_decomposition_filename)
+        decomp_data = mfdnres.decomposition_io.parse_decomp_file(target_decomposition_filename)
 
     # define decomposition operator (if not provided)
-    decomposition_operator = decomposition.decomposition_operator_from_coefs(nuclide, hw, decomp_data["coefficients"])
-    task.setdefault("hamiltonian", decomposition_operator)        
+    if not user_provided_hamiltonian:
+        task["hamiltonian"] = decomposition.decomposition_operator_from_coefs(nuclide, hw, decomp_data["coefficients"])
 
     # generate operators
     task_handler_mfdn_pre(task, postfix)
@@ -625,16 +631,21 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
     mfdn_driver.save_mfdn_output(task, postfix, save_mfdn_res=False)
 
     # generate decomposition results file
-    print("Reading decomposition data...")
-    source_decomposition_filename = "decomp.decomp"
-    decomp_data = mfdnres.decomposition_io.parse_decomp_file(source_decomposition_filename)
+    user_provided_hamiltonian = "hamiltonian" in task  # decomposition operator provided by user (legacy)
+    if user_provided_hamiltonian:
+        print("No decomposition data...")
+        decomp_data = dict()
+    else:
+        print("Reading decomposition data...")
+        source_decomposition_filename = "decomp.decomp"
+        decomp_data = mfdnres.decomposition_io.parse_decomp_file(source_decomposition_filename)
 
     print("Reading Lanczos data...")
     source_lanczos_filename = os.path.join(work_dir, "mfdn_alphabeta.dat")
     alpha_beta_array = np.loadtxt(source_lanczos_filename, usecols=(1, 2), ndmin=2)
     decomp_data["lanczos"] = alpha_beta_array
 
-    decomposition_results_filename = os.path.join(work_dir, "decomp.res")
+    decomposition_results_filename = "decomp.res"
     print("Writing decomposition and Lanczos data to {}...".format(decomposition_results_filename))
     lines = mfdnres.decomposition_io.generate_decomp_file(decomp_data, header_comment_lines=["mcscript-ncci"])
     output_str = "\n".join(lines) + "\n"
@@ -655,7 +666,7 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
     # ...copy lanczos file -- DEPRECATED
     lanczos_filename = "{:s}.lanczos".format(filename_prefix)
     mcscript.task.save_results_single(
-        task, source_lanczos_filename, lanczos_filename, "lanczos",
+        task, source_lanczos_filename, lanczos_filename, "lanczos", command="cp",
     )
     
    
