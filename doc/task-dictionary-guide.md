@@ -212,13 +212,38 @@ University of Notre Dame
 ----------------------------------------------------------------
 ## decomposition parameters ##
 
-- `decomposition_type`: str
-   - Identifier for decomposition operator.
-   - Used here just to define the decomposition label in the task descriptor.
-   - But typically will be the same identifier used in as an argument to
-     ncci.decomposition.decomposition_operator() to construct the decomposition
-     operator to feed into MFDn as the "hamiltonian".
+- `decomposition_type`: `str`
+  - Identifier for decomposition type, e.g., `S` or `SU3`.
+  - Defines the decomposition label in the task descriptor.
+  - Used to search for a decomposition data file in the standard search
+    mechanism for decomposition data files (see entry for
+    `decomposition_filename` below).
+  - This same label, taken from the task descriptor, will be used within
+    `mfdnres` as the key to look up the decomposition data.
+  - In legacy decomposition runs, this label was typically also used as the
+    identifier given to `ncci.decomposition.decomposition_operator()` to select
+    one of several predefined decomposition operator types.
 
+- `decomposition_filename`: `str`, optional
+  - Allows the user to provide an explicit path to an existing decomposition
+    data file, rather than relying upon the standard search mechanism for
+    decomposition data files.
+  - Otherwise, if it does not explicitly point to an existing file, it is
+    interpreted as the template format string used construct the decomposition
+    data file name for use in the standard search mechanism for decomposition
+    data files.
+  - The default value for this template is:
+    `'Z{nuclide[0]:02d}-N{nuclide[1]:02d}-Nmax{Nmax:02d}-{decomposition_type}.decomp'`,
+    which resolves to, e.g., `Z03-N03-Nmax02-S.decomp`.
+  - This file name will then be searched for under the decomposition data
+    directories specified in the environment variable
+    `NCCI_DATA_DIR_DECOMPOSITION`, in their subdirectories with names defined in
+    the run script in `ncci.environ.decomposition_dir_list`.
+  - If the user explicitly provides a decomposition operator as the
+    `hamiltonian`, as in legacy run scripts from before decomposition data files
+    were defined, then no decomposition data file is sought, and this key is
+    ignored.
+  
 - `wf_source_run_list`: `list[str]`
   - List of runs to search for wave functions (omit initial `run` stem from run
     names).

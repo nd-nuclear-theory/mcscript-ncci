@@ -91,7 +91,8 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
     
     * `NCCI_DATA_DIR_REL` for relative matrix element files
 
-    * `NCCI_DATA_DIR_DECOMPOSITION` for decomposition operators coefficient files
+    * `NCCI_DATA_DIR_DECOMPOSITION` for decomposition data files 
+      (used to construct operators for Lanczos decompositions)
 
   However, only `NCCI_DATA_DIR_H2` need be set for basic MFDn diagonalization runs.
 
