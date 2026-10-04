@@ -72,17 +72,24 @@ University of Notre Dame
 - 02/06/26 (seb): Update norm output for strength function runs.
 - 02/09/26 (seb): Remove mistakenly added text from tbme handler.
 - 05/15/26 (seb): Update strength function output to be consistent with existing parsers.
+- 08/24/26 (mac): Add support for decompositions using decomposition data files (restricted to legacy decomposition types).
+- 09/12/26 (mac): Add support for decompositions using decomposition data files (constructing operator as general linear combination).
 - 09/23/26 (mac): Suppress copying out mfdn.res for decomposition-type mfdn runs.
 """
 import glob
 import os
 
+import numpy as np
+
 import mcscript.exception
 import mcscript.parameters
 import mcscript.task
+
 import mfdnres
+import mfdnres.decomposition_io
 
 from . import (
+    decomposition,
     environ,
     library,
     menj,
@@ -445,17 +452,62 @@ def task_handler_mfdn_decomposition_pre(task, postfix=""):
     """
 
     work_dir = "work{:s}".format(postfix)
-    
+
     # set some defaults
-    task.setdefault("diagonalization", True)  # to disable unnecessary obdme calculation
-    task.setdefault("calculate_obdme", False)  # to disable unnecessary obdme calculation
+    task.setdefault("diagonalization", True)
+    task.setdefault("calculate_obdme", False)
     # 08/08/25 (mac): Setting calculate_tbo to false leads to intermittent and
     # nondeterministic memory deallocation errors with mfdn commit 3f34aa7,
     # dependent upon OpenMP parameters.
     ## task.setdefault("calculate_tbo", False)  # to disable unnecessary Ncm and rrel2 operators
     task.setdefault("tolerance", 0)  # iterate to max iterations
+
+    # get decomposition data
+    nuclide = task["nuclide"]
+    Nmax = task["truncation_parameters"]["Nmax"]
+    hw = task["hw"]
+    decomposition_filename_template = task.get("decomposition_filename")
+    decomposition_type = task.get("decomposition_type")
+    user_provided_hamiltonian = "hamiltonian" in task  # decomposition operator provided by user (legacy)
+    if user_provided_hamiltonian:
+        print("WARN: Decomposition operator overriden by user as 'hamiltonian'.  Not using decomposition data.")
+    else:
+        print("Finding decomposition data...")
+        if decomposition_filename_template is None:
+            decomposition_filename_template = "Z{nuclide[0]:02d}-N{nuclide[1]:02d}-Nmax{Nmax:02d}-{decomposition_type}.decomp"
+        decomposition_basename = decomposition_filename_template.format(nuclide=nuclide,Nmax=Nmax,decomposition_type=decomposition_type)
+        if os.path.isabs(decomposition_basename):
+            # explicit path to decomposition file
+            source_decomposition_filename = decomposition_basename
+            if not os.path.isfile(source_decomposition_filename):
+                raise mcscript.exception.ScriptError("Decomposition file {} not found.".format(source_decomposition_filename))
+        else:
+            # standard search for decomposition file
+            source_decomposition_filename = mcscript.utils.search_in_subdirectories(
+                environ.data_dir_decomposition_list,
+                environ.decomposition_dir_list,
+                decomposition_basename,
+                error_message="file not found",
+                verbose=True
+            )
+        print("Using decomposition data {}.".format(source_decomposition_filename))
+        target_decomposition_filename = "decomp.decomp"
+        mcscript.control.call(
+            [
+                "cp",
+                source_decomposition_filename,
+                target_decomposition_filename,
+            ]
+        )
+        decomp_data = mfdnres.decomposition_io.parse_decomp_file(target_decomposition_filename)
+
+    # define decomposition operator (if not provided)
+    if not user_provided_hamiltonian:
+        task["hamiltonian"] = decomposition.decomposition_operator_from_coefs(nuclide, hw, decomp_data["coefficients"])
+
+    # generate operators
     task_handler_mfdn_pre(task, postfix)
-    
+
     # impose truncation
     if "truncation_model_info" in task:
 
@@ -510,8 +562,6 @@ def task_handler_mfdn_decomposition_pre(task, postfix=""):
             ],
             mode=mcscript.control.CallMode.kSerial,
         )
-    
-    
 
     
 def task_handler_mfdn_decomposition_run(task, postfix=""):
@@ -580,15 +630,45 @@ def task_handler_mfdn_decomposition_run(task, postfix=""):
     mfdn_driver.run_mfdn(task=task, postfix=postfix)
     mfdn_driver.save_mfdn_output(task, postfix, save_mfdn_res=False)
 
-    # copy out lanczos file
+    # generate decomposition results file
+    user_provided_hamiltonian = "hamiltonian" in task  # decomposition operator provided by user (legacy)
+    if user_provided_hamiltonian:
+        print("No decomposition data...")
+        decomp_data = dict()
+    else:
+        print("Reading decomposition data...")
+        source_decomposition_filename = "decomp.decomp"
+        decomp_data = mfdnres.decomposition_io.parse_decomp_file(source_decomposition_filename)
+
+    print("Reading Lanczos data...")
+    source_lanczos_filename = os.path.join(work_dir, "mfdn_alphabeta.dat")
+    alpha_beta_array = np.loadtxt(source_lanczos_filename, usecols=(1, 2), ndmin=2)
+    decomp_data["lanczos"] = alpha_beta_array
+
+    decomposition_results_filename = "decomp.res"
+    print("Writing decomposition and Lanczos data to {}...".format(decomposition_results_filename))
+    lines = mfdnres.decomposition_io.generate_decomp_file(decomp_data, header_comment_lines=["mcscript-ncci"])
+    output_str = "\n".join(lines) + "\n"
+    data_file = open(decomposition_results_filename, "w")
+    data_file.write(output_str)
+    data_file.close()
+
+    # copy results out
     descriptor = task["metadata"]["descriptor"]
-    filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
-    lanczos_source_filename = os.path.join(work_dir, "mfdn_alphabeta.dat")
-    lanczos_target_filename = "{:s}.lanczos".format(filename_prefix)
+    filename_prefix = "{:s}-decomp-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+
+    # ...copy res file
+    res_filename = "{:s}.res".format(filename_prefix)
     mcscript.task.save_results_single(
-        task, lanczos_source_filename, lanczos_target_filename, "lanczos"
+        task, decomposition_results_filename, res_filename, "res", command="cp",
     )
 
+    # ...copy lanczos file -- DEPRECATED
+    lanczos_filename = "{:s}.lanczos".format(filename_prefix)
+    mcscript.task.save_results_single(
+        task, source_lanczos_filename, lanczos_filename, "lanczos", command="cp",
+    )
+    
    
 def task_handler_mfdn_decomposition_post(task, postfix="", cleanup=True):
     """Task handler for serial components after MFDn Lanczos decomposition run."""
@@ -1174,7 +1254,7 @@ def task_handler_mfdn_strength_apply(task, postfix=""):
         task, res_filename, res_filename, "res"
     )
 
-    
+
 def task_handler_mfdn_strength_decomp(task, postfix= ""):
     """Task handler for decomposition phase of Lanczos trick strength function
     calculation, assuming oscillator basis.

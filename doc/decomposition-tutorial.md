@@ -248,7 +248,7 @@ paritioning info), and the wave function directory (for wave function files):
     /home/mcaprio/scratch/runs/runmfdn13/results/wf/Z3-N3-Daejeon16-coul1-hw15.000-a_cm50-Nmax04-Mj1.0-lan600-tol1.0e-06
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Then the actual `mfdn.input` file generated as a control file form MFDn
+Then the actual `mfdn.input` file generated as a control file for MFDn
 contains:
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -531,6 +531,161 @@ operator, the raw eigenvalues are shifted, but the end result is the same:
 
 ## 3. Using predefined decomposition types
 
+Suppose we wanted to decompose a state |Psi> simultaneously in terms of the L
+and S quantum numbers, that is, decompose it onto (L,S) subspaces.  The Casimir
+operator giving L, is the L.L operator, with eigenvalues L(L+1), and the Casimir
+operator giving S, is the S.S operator, with eigenvalues S(S+1).
+
+One approach would be to do the decomposition in two steps.  First decompose by
+L.  Make sure to do only as many iterations as there are eigenspaces of L
+contributing to |Psi>.  Then the resulting eigenvectors are the projections
+
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   |Psi_L> = proj_L |Psi>
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+       
+onto those eigenspaces.  And we can then do a second decomposition, of *each* of
+these vectors, onto S.
+
+The other, more compact approach, is to simply take a decomposition
+"Hamiltonian" which is a linear combination of the original Casimir operators.
+In this case, we would take
+
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   H = a*L.L + b*S.S
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This has eigenvalues
+
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   <H> = a*L*(L+1) + b*S*(S+1)
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Now, some linear combinations are better than others.  E.g., a=1 and b=1 would
+give
+
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    L   S   H
+    0   0   0+0=0
+    0   1   0+2=2  # Degenerate
+    0   2   0+6=6
+    1   0   2+0=2  # Degenerate
+    ...
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For a better choice, suppose we know that the eigenvalues will take on the
+ranges L=0,1,..,4 and S=0,1,2.  Here are the eigenvalue ranges, shown visually: 
+
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    S  * *   *
+    L  * *   *     *       *
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Then we could make one of the coefficients "much larger" than the other
+coefficient, so that the range of eigenvalues for one operator nests between the
+first two eigenvalues of the other operators.  E.g., the largest eigenvalue for
+S.S is 6.  So if our goal is to squeeze all the eigenvalues of S between two
+eigenvalues of L, we want a * (L.L)_{L=1} > b * (S.S)_{S=S_max=2}, e.g., if b=1,
+we need a>3.  So, for example, take a=4:
+
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    L   S   H
+    0   0   4*0+1*0=0
+    0   1   4*0+1*2=2
+    0   2   4*0+1*6=6
+    1   0   4*2+1*0=8
+    1   1   4*2+1*2=10
+    1   2   4*2+1*6=14
+    ...
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Visually, this is what we have done:
+
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    S  * *   *
+    L  *       * ...
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Such an approach of "nesting" the eigenvalues is straightforward when we have
+just two operators.  But can lead to a very large range in eigenvalues,
+especially if we have many operators.  If we want to squeeze all the eigenvalues
+of the first operator between the first two eigenvalues of the second operator,
+then squeeze all the eigenvalues of the second operator the first two
+eigenvalues of the third operator, and so on, nested ad nauseam, the eigenvalues
+will span many orders of magnitude.  This will become numerically problematic
+(see below).
+
+So another choice is to interleave the eigenvalues.  In this (L,S) example, for
+instance, we know all the eigenvalues are integers.  So we might choose one of
+the coefficients to be irrational, e.g., a=sqrt(2) and b=1:
+
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    L   S   H
+    0   0   r*0+1*0=0    # r=1.4142
+    0   1   r*0+1*2=2
+    0   2   r*0+1*6=6
+    1   0   r*2+1*0=2.828
+    1   1   r*2+1*2=4.828
+    1   2   r*2+1*6=8.828
+    ...
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This will at least avoid *strict* deneracies.  But then we have to hope for the
+best that we do not end up with any near degeneracies.
+
+The final solution is to give up on being clever, and instead to rely upon
+numerical optimization (which is arguably more clever).  Let us keep in mind the
+goals.  These are determined by how we want to use the Lanczos algorithm.  In
+principle, to do a full decomposition, we have to do as many Lanczos iterations
+as there are eigenvalues.  However, we might want to take advantage of the
+feature that the eigenvalue distribution coming out might *almost* converge,
+especially at the low end of the eigenvalue spectrum, in many fewer Lanczos
+iterations.  In such cases, we will want to make sure that:
+
+   - The eigenvalues should be well-separated (no near-degeneracies).  This
+     really means they should be as evenly separated as possible, to avoid any
+     differences in eigenvalues being radically smaller than the overall scale
+     of eigenvalues.  (Think of the condition number of a matrix.  We do not
+     want an ill conditioned matrix.)
+
+   - If a particular set of eigenspaces are the only ones we care about these
+     should be near (lower) end of the eigenvalue spectrum.  In practice, for
+     us, we are usually interested in the low Nex components of the wave
+     function, so we will care most about making sure that eigenvalues for
+     low-Nex eigenspaces have well-separated eigenvalues.
+     
+The approach proposed by Patrick Fasano, and first applied in
+Ref. [caprio2022:10be-shape-sdanca21], is to define a repulsive "potential"
+between eigenvalues, as if these eigenvalues are "charges" lined up in one
+dimension and repelling each other, and using simulated annealing to optimize
+the coefficients to ensure that neighboring charges have a chance to repel each
+other and avoid getting too close.  The charges can be "weighted" in a way such
+that the eigenvalues corresponding to low-Nex subspaces get larger "charges" to
+repel their neighbors.
+
+In any case, the starting point in selecting our coefficients in the
+decomposition operator is to determine the total set of simultaneous quantum
+numbers for the eigenspaces that might contribute to our wave function .  E.g.,
+for the above trivial example, this meant enumerating the set of (L,S) pairs.
+In a more sophisticated example, for the 10Be analysis in
+Ref. [caprio2022:10be-shape-sdanca21], we are decomposing simultanously with
+respect to U(3) irreps and the proton, neutron, and total spins.  So the quantum
+number tuples are (Nex,lambda,mu,Sp,Sn,S).  (For the reduction of some example
+NCCI spaces by these quantum numbers, see Fig. 4 of [luo2013-su3cmf].)
+
+Then, given this list of subspaces (by their quantum numbers), we must choose a
+reasonable set of coefficients, for the decomposition operator.  And we will
+want to keep track of what eigenvalues map back to what eigenspaces.
+
+To do the decomposition run, we only need to know the coefficients defining the
+decomposition operator (not its eigenvalues).  For example, a suitable set of
+coefficients for a simultaneous U(3) and spin decomposition as described above,
+which we term "U3SpSnS" within our scripting, can be found in
+
+TODO: Add plain old CSU3, before going on to joint decomposition.
+
+TODO: walk user through analysis of such a decomposition using mfdnres
+
 See `runmfdndecomp02.py`.
 
 
@@ -551,6 +706,10 @@ functions", PRC 91, 034313 (2015). http://dx.doi.org/10.1103/PhysRevC.91.034313
 [johnson2018:bigstick] "BIGSTICK: A flexible configuration-interaction
 shell-model code". https://arxiv.org/abs/1801.08432
   
+[luo2003:su3cmf] "Construction of the center-of-mass free space for the SU(3)
+no-core shell model", NPA 897, 109 (2013).
+http://dx.doi.org/10.1016/j.nuclphysa.2012.11.003
+
 [zbikowski2021:beyond-elliott] "Rotational bands beyond the {E}lliott
 model". http://dx.doi.org/10.1088/1361-6471/abdd8e
 

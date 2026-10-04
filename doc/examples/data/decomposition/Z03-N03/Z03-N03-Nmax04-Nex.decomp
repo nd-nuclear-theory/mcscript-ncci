@@ -1,0 +1,17 @@
+# manually generated file for Nex decomposition
+
+[Coefficients]
+Nex = +1e+00
+
+[Statistics]
+num_entries = 3
+num_eigenvalues = 3
+
+[Labels]
+N_omega
+
+[Eigenvalues]
+     0      0.0
+     2      2.0
+     4      4.0
+

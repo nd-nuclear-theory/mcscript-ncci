@@ -1,0 +1,20 @@
+# manually generated file for S decomposition
+# >>> import mfdnres.decomposition
+# >>> mfdnres.decomposition.eigenvalue_label_dict_am(3)
+# {0.0: 0.0, 2.0: 1.0, 6.0: 2.0, 12.0: 3.0}
+
+[Coefficients]
+S2 = +1e+00
+
+[Statistics]
+num_entries = 4
+num_eigenvalues = 4
+
+[Labels]
+S
+
+[Eigenvalues]
+     0      0.0
+     1      2.0
+     2      6.0
+     3     12.0
