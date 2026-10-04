@@ -106,7 +106,7 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
   setenv GROUP_HOME "/dvs_ro/cfs/cdirs/m2032"
   setenv NCCI_DATA_DIR_H2 "${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/doc/examples/data/h2"
   setenv NCCI_DATA_DIR_PARTITIONING "${GROUP_HOME}/data/partitioning/v15"
-  setenv NCCI_DATA_DIR_DECOMPOSITION "${GROUP_HOME}/data/u3-subspaces/decomposition:${HOME}/code/mcscript-ncci/doc/examples/data/decomposition"
+  setenv NCCI_DATA_DIR_DECOMPOSITION "${GROUP_HOME}/data/decomposition:${HOME}/code/mcscript-ncci/doc/examples/data/decomposition"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   For `bash` shell users (`.bashrc` or `.bash_profile`):
@@ -117,7 +117,7 @@ Prerequisites: `mcscript`, `shell`, `am`, `mfdnres`
   export GROUP_HOME="/dvs_ro/cfs/cdirs/m2032"
   export NCCI_DATA_DIR_H2="${GROUP_HOME}/data/h2:${HOME}/code/mcscript-ncci/doc/examples/data/h2"
   export NCCI_DATA_DIR_PARTITIONING="${GROUP_HOME}/data/partitioning/v15"
-  export NCCI_DATA_DIR_DECOMPOSITION="${GROUP_HOME}/data/u3-subspaces/decomposition:${HOME}/code/mcscript-ncci/doc/examples/data/decomposition"
+  export NCCI_DATA_DIR_DECOMPOSITION="${GROUP_HOME}/data/decomposition:${HOME}/code/mcscript-ncci/doc/examples/data/decomposition"
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   Or, at the ND CRC, one would set `GROUP_HOME="/afs/crc.nd.edu/group/nuclthy"`
