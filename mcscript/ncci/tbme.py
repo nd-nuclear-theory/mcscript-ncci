@@ -116,21 +116,29 @@ def generate_h2mixer_obme_source_lines(identifier, parameters, postfix):
     return lines
 
 
-def generate_h2mixer_tbme_source_lines(identifier, parameters, postfix):
-    """ Generate input lines for h2mixer to define a TBME source.
+def generate_h2mixer_tbme_source_lines(identifier, parameters):
+    """Generate input lines for h2mixer to define a TBME source.
 
     Arguments:
-        identifier (str): parameters for input line (id, parameters)  [TODO (mac): clarify]
-        parameters (dict): specification for input file
+
+        identifier (str): Identifier for TBME source.
+
+        parameters (dict): Specification for TBME source in the form of a
+        parameter_dict, as defined in docstring to operators.tb.
+
             {"filename": (str), "xform_filename": (str), "xform_truncation": (str)}
 
     Returns:
+
         (list of str): h2mixer input lines
+
     """
     filename = parameters.get("filename")
     xform_filename = parameters.get("xform_filename")
     xform_truncation = parameters.get("xform_truncation")
+    
     if filename is not None:
+        # source based on input TBME file (possibly with transform)
         tbme_filename = mcscript.utils.expand_path(filename)
         if not os.path.isfile(tbme_filename):
             tbme_filename = environ.find_operator_file(tbme_filename)
@@ -155,17 +163,20 @@ def generate_h2mixer_tbme_source_lines(identifier, parameters, postfix):
                 id=identifier, tbme_filename=tbme_filename
                 ))
     elif "operatorU" in parameters:
+        # source obtained by upgrading one-body source
         source_id = parameters["operatorU"]
         line = ("define-tb-source operatorU {id:s} {source_id:s}".format(
             id=identifier, source_id=source_id
         ))
     elif "operatorV" in parameters:
+        # source obtained as product of two one-body operators
         source_id_a, source_id_b = parameters["operatorV"]
         coefficient = parameters.get("coefficient", 1.0)
         line = ("define-tb-source operatorV {id:s} {source_id_a:s} {source_id_b:s} {coefficient:.17e}".format(
             id=identifier, source_id_a=source_id_a, source_id_b=source_id_b, coefficient=coefficient
         ))
     elif identifier in operators.tb.k_h2mixer_builtin:
+        # built-in source (e.g., "identity")
         line = ("define-tb-source builtin {id}".format(id=identifier))
     else:
         raise mcscript.exception.ScriptError(
@@ -208,6 +219,7 @@ def generate_tbme_targets(task, targets, target_qn, postfix=""):
     Arguments:
         task (dict): as described in module docstring
         targets
+        TODO
     """
     # extract parameters for convenience
     nuclide = task.get("nuclide")
@@ -304,7 +316,7 @@ def generate_tbme_targets(task, targets, target_qn, postfix=""):
 
     # sources: generate h2mixer input
     for id_ in sorted(required_tbme_sources):
-        lines.extend(generate_h2mixer_tbme_source_lines(id_, tbme_sources[id_], postfix))
+        lines.extend(generate_h2mixer_tbme_source_lines(id_, tbme_sources[id_]))
 
     lines.append("")
 
