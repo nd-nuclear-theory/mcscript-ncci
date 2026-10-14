@@ -206,6 +206,15 @@ University of Notre Dame
     postprocessor or `smwf-truncate`) so as to distinguish template wave
     functions involving different numbers of segments.
 
+- `block_size`: `int`, optional
+  - Block size for MFDn sparse matrix storage.
+  - Defaults within MFDn to `4000`.
+  - Should typically be increased so that the maximum many-body group size
+    (coming out of the partitioning) is not more than twice its value.
+  - Appears as `blksize` parameter in `mfdn.input`.
+
+- `reduce_solver_threads`: `str`, optional
+
 - `ndiag`: `int`
   - Number of spare diagonal nodes (MFDn v14 only).
 

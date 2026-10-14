@@ -82,6 +82,7 @@ University of Notre Dame
 - 02/23/26 (mac): Provide check on number of MPI ranks if given "num_segments" task option.
 - 03/27/26 (mac): Move parameter max2K from obslist to inputlist.
 - 09/23/26 (mac): Add save_mfdn_output(), and remove copy out of mfdn.out and mfdn.res from run_mfdn().
+- 10/14/26 (mac): Add "block_size" task option.
 """
 import errno
 import os
@@ -263,6 +264,8 @@ def generate_mfdn_input(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         inputlist["neivals"] = int(task.get("eigenvectors",4))
         inputlist["maxits"] = int(task["max_iterations"])
         inputlist["tol"] = float(task["tolerance"])
+        if task.get("block_size"):
+            inputlist["blksize"] = int(task["block_size"])
         if task.get("reduce_solver_threads"):
             inputlist["reduce_solver_threads"] = task["reduce_solver_threads"]
 

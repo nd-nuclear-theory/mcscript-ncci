@@ -112,6 +112,7 @@ tasks = [
         "max_iterations": max_iterations,
         "tolerance": tolerance,
         "partition_filename": None,
+        "block_size": None,
 
         # obdme parameters
         "save_obdme": True,
