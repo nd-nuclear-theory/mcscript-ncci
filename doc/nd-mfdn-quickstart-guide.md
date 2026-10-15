@@ -9,6 +9,39 @@ Some initial pointers on where to look to get started.
 12/20/24 (mac): Update notes on mfdn.
 06/27/25 (mac): Update notes on mfdn-transitions.
 04/17/26 (mac): Update notes on mfdn.
+10/15/26 (mac): Add notes on installation directory at NERSC.
+
+----------------
+
+# Installation directory #
+
+You will need to create a directory where executable binary files will be
+installed for the various compiled codes below (`shell`, `mfdn`, etc.).  In many
+of the examples in the documentation, this is assumed to be
+`${HOME}/code/install`.  But, on some systems, there may be a different
+preferred place for installing binaries, to avoid heavy access to the home
+directory filesystem from the compute nodes.
+
+For instance, at NERSC, it is recommended to install software under the
+`/global/common/software` filesystem, which more efficient to access from the
+compute nodes:
+    
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    https://docs.nersc.gov/filesystems/global-common/
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+Thus, you would need to create a directory named
+
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    /global/common/software/<project_name>/<user_name>
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+e.g., `/global/common/software/m2032/mcaprio`.
+
+In your shell initializataion file, be sure to set the `MCSCRIPT_INSTALL_HOME`
+environment variable to point to this the directory.  For some of the packages
+below, the makefile will then automatically install to the correct location,
+e.g., `/global/common/software/m2032/mcaprio/x86-milan/shell/bin` for `shell`.
 
 ----------------
 
@@ -273,6 +306,10 @@ Some initial pointers on where to look to get started.
       
   - Instructions.  See `INSTALL.md` for instructions.
 
+  - Be sure to set `MCSCRIPT_INSTALL_HOME` appropriately to point to the
+    directory where you are installing binary executables, as discussed near the
+    top of this document.
+  
   - See "qsubm --help" for the workings of qsubm.
 
     + qsubm: (1) sets the environment variables that our script expects, (2)
